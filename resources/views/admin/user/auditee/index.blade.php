@@ -1,0 +1,84 @@
+@php
+    use Carbon\Carbon;
+@endphp
+@extends('components.layout.main_layout')
+
+@section('content')
+    <div class="card card-dark">
+        <div class="card-header">
+            <h3 class="card-title title-size">{{ $title }}</h3>
+        </div>
+        <!-- /.card-header -->
+        <div class="card-body">
+
+            {{-- Auditor --}}
+            <div>
+                <table id="auditor" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th class="text-center">No</th>
+                            <th class="text-center">Jadwal Audit</th>
+                            <th class="text-center">Tgl Mulai</th>
+                            <th class="text-center">Tgl Selesai</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($jadwal as $item)
+                            <tr>
+                                <td class="text-center">{{ $loop->iteration }}</td>
+                                <td class="text-center">{{ $item->jadwal }}</td>
+                                <td class="text-center">{{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }}
+                                </td>
+                                <td class="text-center">{{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
+                                </td>
+                                <td class="text-center">
+                                    <a href="{{ route('auditee.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}"
+                                        class="btn btn-outline-info">Lihat
+                                        Auditan PS</a>
+                                    <a href="{{ route('auditee.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}"
+                                        class="btn btn-outline-primary">Lihat
+                                        Auditan UPPS</a>
+                                    <form action="{{ route('download.auditee_auditor', $item->id) }}" method="post"
+                                        class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-secondary">Daftar Auditan
+                                            Auditor</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- /.card-body -->
+    </div>
+@endsection
+
+
+@section('style')
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+@endsection
+
+@section('script')
+    <!-- DataTables & Plugins -->
+    <script src="{{ asset('plugins/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
+
+
+
+    <!-- Page specific script -->
+    <script>
+        $(function() {
+            $("#auditor").DataTable({
+                "responsive": true,
+                "autoWidth": false,
+            })
+        });
+    </script>
+@endsection

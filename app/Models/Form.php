@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Form extends Model
+{
+    use HasFactory, HasUuids;
+
+    protected $table = 'form';
+
+    protected $fillable = ['jadwal_id', 'instrumen_id'];
+
+    public function jadwal(): BelongsTo
+    {
+        return $this->belongsTo(JadwalAudit::class, 'jadwal_id');
+    }
+
+    public function instrumen(): BelongsTo
+    {
+        return $this->belongsTo(Instrumen::class, 'instrumen_id');
+    }
+
+    public function status_audit_auditee(): HasMany
+    {
+        return $this->hasMany(StatusAuditAuditee::class);
+    }
+
+    public function jawaban_auditor(): HasMany
+    {
+        return $this->hasMany(JawabanAuditor::class);
+    }
+    
+    public function jawaban_auditee(): HasMany
+    {
+        return $this->hasMany(JawabanAuditee::class);
+    }
+
+    public function link(): HasMany
+    {
+        return $this->hasMany(Link::class);
+    }
+
+    public function ptk(): HasMany
+    {
+        return $this->hasMany(Ptk::class);
+    }
+}
