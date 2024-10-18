@@ -50,7 +50,8 @@
 
                             {{-- User Manual --}}
                             <div class="">
-                                <a href="{{ asset('user_manual/Auditor.pdf') }}" target="_blank" class="btn btn-outline-info">
+                                <a href="{{ asset('user_manual/Auditor.pdf') }}" target="_blank"
+                                    class="btn btn-outline-info">
                                     <i class="fa fa-book mr-2"></i> User Manual
                                 </a>
                             </div>
@@ -129,7 +130,8 @@
                     <div class="card-body">
                         {{-- User Manual --}}
                         <div class="mb-3">
-                            <a href="{{ asset('user_manual/Auditan.pdf') }}" target="_blank" class="btn btn-outline-info">
+                            <a href="{{ asset('user_manual/Auditan.pdf') }}" target="_blank"
+                                class="btn btn-outline-info">
                                 <i class="fa fa-book mr-2"></i> User Manual
                             </a>
                         </div>
