@@ -40,15 +40,6 @@
                     Untuk sementara, Anda dapat <a href="{{ route('dashboard') }}">kembali ke dashboard.</a>
                 </p>
 
-                {{-- Debugging Error --}}
-                <p style="font-size: 14px; color: red;">
-                    @if (config('app.debug'))
-                        {{ $exception->getMessage() }} <br>
-                        File: {{ $exception->getFile() }} <br>
-                        Line: {{ $exception->getLine() }} <br>
-                    @endif
-                </p>
-
                 <pre style="background: #f8f8f8; padding: 10px; border: 1px solid #ccc;">
                     {{ file_get_contents(storage_path('logs/laravel.log')) }}
                 </pre>

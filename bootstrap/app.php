@@ -22,8 +22,16 @@ return Application::configure(basePath: dirname(__DIR__))
             'check_auditee' => \App\Http\Middleware\CheckAuditee::class,
             'check_auditor' => \App\Http\Middleware\CheckAuditor::class,
         ]);
-
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+
+        $exceptions->renderable(function (Throwable $e) {
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ], 500);
+        });
     })->create();
