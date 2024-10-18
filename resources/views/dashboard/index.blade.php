@@ -49,12 +49,12 @@
                             </div>
 
                             {{-- User Manual --}}
-                            <div class="">
+                            {{-- <div class="">
                                 <a href="https://jelita.unsoed.ac.id/user_manual/Auditor.pdf" target="_blank"
                                     class="btn btn-outline-info">
                                     <i class="fa fa-book mr-2"></i> User Manual
                                 </a>
-                            </div>
+                            </div> --}}
                         </div>
 
                         <!-- /.info-box -->
@@ -129,12 +129,12 @@
                     </div>
                     <div class="card-body">
                         {{-- User Manual --}}
-                        <div class="mb-3">
+                        {{-- <div class="mb-3">
                             <a href="https://jelita.unsoed.ac.id/user_manual/Auditan.pdf" target="_blank"
                                 class="btn btn-outline-info">
                                 <i class="fa fa-book mr-2"></i> User Manual
                             </a>
-                        </div>
+                        </div> --}}
 
                         <table id="auditee" class="table table-bordered table-striped">
                             <thead>
