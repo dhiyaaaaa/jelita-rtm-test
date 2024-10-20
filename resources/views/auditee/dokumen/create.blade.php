@@ -61,20 +61,23 @@
                                             <span class="text-danger">&#42;</span>
                                             @if ($item['form']->instrumen->jenis_pertanyaan->nama == 'text')
                                                 @role(['pj_universitas', 'pj_fakultas', 'pj_prodi'])
-                                                    <textarea name="instrumen_{{ $item['form']->id }}" cols="10" rows="5" class="form-control"
-                                                        {{ $isDisabled ? 'disabled' : '' }}>{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}</textarea>
+                                                    <textarea name="instrumen_{{ $item['form']->id }}" cols="10" rows="5"
+                                                        class="form-control @if ($errors->has('instrumen_' . $item['form']->id)) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}</textarea>
                                                 @endrole
                                                 @role(['gkm', 'gpm'])
-                                                    <textarea cols="10" rows="5" class="form-control" disabled>{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}</textarea>
+                                                    <textarea cols="10" rows="5" class="form-control @if ($errors->has('instrumen_' . $item['form']->id)) is-invalid @endif"
+                                                        disabled>{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}</textarea>
                                                 @endrole
                                             @elseif($item['form']->instrumen->jenis_pertanyaan->nama == 'number')
                                                 @role(['pj_universitas', 'pj_fakultas', 'pj_prodi'])
                                                     <input type="number" name="instrumen_{{ $item['form']->id }}"
-                                                        {{ $isDisabled ? 'disabled' : '' }} class="form-control"
+                                                        {{ $isDisabled ? 'disabled' : '' }}
+                                                        class="form-control @if ($errors->has('instrumen_' . $item['form']->id)) is-invalid @endif"
                                                         value="{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}">
                                                 @endrole
                                                 @role(['gkm', 'gpm'])
-                                                    <input type="number" class="form-control"
+                                                    <input type="number"
+                                                        class="form-control @if ($errors->has('instrumen_' . $item['form']->id)) is-invalid @endif"
                                                         value="{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}"
                                                         disabled>
                                                 @endrole
@@ -105,7 +108,8 @@
                                                     @foreach ($sessionLinks as $index => $link)
                                                         <div class="input-group mb-2">
                                                             <input type="text" name="link_{{ $item['form']->id }}[]"
-                                                                class="form-control" value="{{ $link->link ?? $link }}"
+                                                                class="form-control @if($errors->has('link_' . $item['form']->id . '.*')) is-invalid @endif"
+                                                                value="{{ $link->link ?? $link }}"
                                                                 data-link-id="{{ $link->id ?? '' }}"
                                                                 {{ $isDisabled ? 'disabled' : '' }}>
                                                             @if (!empty($link->id))
@@ -119,7 +123,7 @@
                                                 @else
                                                     <div class="input-group mb-2">
                                                         <input type="text" name="link_{{ $item['form']->id }}[]"
-                                                            class="form-control" {{ $isDisabled ? 'disabled' : '' }}>
+                                                            class="form-control @if($errors->has('link_' . $item['form']->id . '.*')) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>
                                                     </div>
                                                 @endif
                                             </div>
