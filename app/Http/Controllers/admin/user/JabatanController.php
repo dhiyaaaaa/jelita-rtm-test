@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\admin\user;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\JabatanStoreUpdateRequest;
+use App\Http\Requests\JabatanStoreRequest;
+use App\Http\Requests\JabatanUpdateRequest;
 use App\Models\Jabatan;
 use App\Models\Setting;
 use App\Models\Unit;
@@ -70,7 +71,7 @@ class JabatanController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(JabatanStoreUpdateRequest $request): RedirectResponse
+    public function store(JabatanStoreRequest $request): RedirectResponse
     {
         $jabatan = Jabatan::create([
             'nama' => $request->nama,
@@ -128,7 +129,7 @@ class JabatanController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(JabatanStoreUpdateRequest $request, Jabatan $jabatan): RedirectResponse
+    public function update(JabatanUpdateRequest $request, Jabatan $jabatan): RedirectResponse
     {
         $jabatan->update([
             'nama' => $request->nama,

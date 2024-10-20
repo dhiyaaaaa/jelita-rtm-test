@@ -3,8 +3,9 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class JabatanStoreUpdateRequest extends FormRequest
+class JabatanUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,7 +23,11 @@ class JabatanStoreUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nama' => 'required|string|unique:jabatan,nama',
+            'nama' => [
+                'required',
+                'string',
+                Rule::unique('jabatan', 'nama')->ignore($this->jabatan),
+            ],
             'type' => 'required|string|in:prodi,fakultas,universitas',
             'unik' => 'required|boolean',
             'unit' => 'required_if:type,universitas',
