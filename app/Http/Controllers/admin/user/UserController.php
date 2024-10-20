@@ -247,7 +247,7 @@ class UserController extends Controller
 
         $jabatan = Jabatan::findOrFail($request->jabatan);
 
-        $exist = User::whereHas('jabatan', function ($query) use ($jabatan, $request) {
+        $exist = User::where('id', '!=', $user->id)->whereHas('jabatan', function ($query) use ($jabatan, $request) {
             $query->where('jabatan_id', $jabatan->id);
             if ($jabatan->type === 'prodi') {
                 $query->where('prodi_id', $request->prodi);
