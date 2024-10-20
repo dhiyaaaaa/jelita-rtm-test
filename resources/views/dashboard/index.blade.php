@@ -49,12 +49,11 @@
                             </div>
 
                             {{-- User Manual --}}
-                            {{-- <div class="">
-                                <a href="https://jelita.unsoed.ac.id/user_manual/Auditor.pdf" target="_blank"
-                                    class="btn btn-outline-info">
+                            <div class="">
+                                <a href="{{ asset('user_manual/Auditor.pdf') }}" target="_blank" class="btn btn-outline-info">
                                     <i class="fa fa-book mr-2"></i> User Manual
                                 </a>
-                            </div> --}}
+                            </div>
                         </div>
 
                         <!-- /.info-box -->
@@ -122,19 +121,18 @@
             @endrole
 
 
-            @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm', 'gpm'])
+            @role(['pj_fakultas', 'pj_prodi', 'gkm', 'gpm'])
                 <div class="card card-dark">
                     <div class="card-header">
                         <h3 class="card-title title-size">Daftar Auditor</h3>
                     </div>
                     <div class="card-body">
                         {{-- User Manual --}}
-                        {{-- <div class="mb-3">
-                            <a href="https://jelita.unsoed.ac.id/user_manual/Auditan.pdf" target="_blank"
-                                class="btn btn-outline-info">
+                        <div class="mb-3">
+                            <a href="{{ asset('user_manual/Auditan.pdf') }}" target="_blank" class="btn btn-outline-info">
                                 <i class="fa fa-book mr-2"></i> User Manual
                             </a>
-                        </div> --}}
+                        </div>
 
                         <table id="auditee" class="table table-bordered table-striped">
                             <thead>
@@ -191,6 +189,126 @@
                         </table>
                     </div>
                 </div>
+            @endrole
+
+            @role('pj_universitas')
+                @if ($user->jabatan->first()->slug === 'rektor')
+                    <div class="card card-dark">
+                        <div class="card-header">
+                            <h3 class="card-title title-size">Hasil Audit</h3>
+                        </div>
+                        <!-- /.card-header -->
+                        <div class="card-body">
+
+                            {{-- Auditor --}}
+                            <div>
+                                <table id="hasil-audit" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center">No</th>
+                                            <th class="text-center">Jadwal</th>
+                                            <th class="text-center">Tgl Mulai</th>
+                                            <th class="text-center">Tgl Selesai</th>
+                                            <th class="text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+
+                                        @foreach ($jadwal as $item)
+                                            <tr>
+                                                <td class="text-center">{{ $loop->iteration }}</td>
+                                                <td class="text-center">{{ $item->jadwal }}</td>
+                                                <td class="text-center">
+                                                    {{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }}
+                                                </td>
+                                                <td class="text-center">
+                                                    {{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
+                                                </td>
+                                                <td class="text-center">
+                                                    <a class="btn btn-outline-info"
+                                                        href="{{ route('dashboard.hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">Hasil Audit
+                                                        PS</a>
+                                                    <a class="btn btn-outline-primary"
+                                                        href="{{ route('dashboard.hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}">Hasil Audit
+                                                        UPPS</a>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                @else
+                    <div class="card card-dark">
+                        <div class="card-header">
+                            <h3 class="card-title title-size">Daftar Auditor</h3>
+                        </div>
+                        <div class="card-body">
+                            {{-- User Manual --}}
+                            <div class="mb-3">
+                                <a href="{{ asset('user_manual/Auditan.pdf') }}" target="_blank" class="btn btn-outline-info">
+                                    <i class="fa fa-book mr-2"></i> User Manual
+                                </a>
+                            </div>
+
+                            <table id="auditee" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center">No</th>
+                                        <th class="text-center">Jadwal</th>
+                                        <th class="text-center">Periode</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Auditor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (!is_null($jadwal) && $jadwal->count() > 0)
+                                        @foreach ($jadwal as $item)
+                                            <tr>
+                                                <td class="text-center align-middle">{{ $loop->iteration }}</td>
+                                                <td class="text-center align-middle">{{ $item->jadwal }}</td>
+                                                <td class="text-center align-middle">
+                                                    {{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }} -
+                                                    {{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
+                                                </td>
+                                                <td class="text-center align-middle">
+                                                    @if (!$item->expired)
+                                                        <span class="badge badge-success">Terbuka</span>
+                                                    @else
+                                                        <span class="badge badge-danger">Tertutup</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if ($item->auditee->isNotEmpty())
+                                                        @foreach ($item->auditee as $auditee)
+                                                            @if ($auditee->auditor->isNotEmpty())
+                                                                @foreach ($auditee->auditor as $auditor)
+                                                                    <p style="margin:0; padding:0;">{{ $loop->iteration }}.
+                                                                        {{ $auditor->user->name }}
+                                                                        {{ '(' . $auditor->user->no_telepon . ')' }}</p>
+                                                                @endforeach
+                                                            @else
+                                                                <div class="text-center">
+                                                                    <a class="btn disabled">Belum ada auditor</a>
+                                                                </div>
+                                                            @endif
+                                                        @endforeach
+                                                    @else
+                                                        <div class="text-center">
+                                                            <a class="btn disabled">Belum ada auditor</a>
+                                                        </div>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @endif
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
             @endrole
         @else
             <section class="content">
@@ -288,6 +406,10 @@
                         "targets": [3]
                     },
                 ]
+            })
+            $("#hasil-audit").DataTable({
+                "responsive": true,
+                "autoWidth": false,
             })
         });
     </script>

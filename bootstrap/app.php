@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'check_auditee' => \App\Http\Middleware\CheckAuditee::class,
             'check_auditor' => \App\Http\Middleware\CheckAuditor::class,
+            'check_is_rektor' => \App\Http\Middleware\CheckIsRektor::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

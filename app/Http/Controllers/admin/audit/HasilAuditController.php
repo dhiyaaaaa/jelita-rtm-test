@@ -152,6 +152,110 @@ class HasilAuditController extends Controller
         return view('admin.audit.hasil_audit.show', $data);
     }
 
+    // Rektor
+    public function show_rektor(JadwalAudit $jadwalAudit, string $type): View
+    {
+        $ps = collect();
+        $upps = collect();
+
+        if ($type === 'ps') {
+            $ps = Prodi::with([
+                'berita_acara' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id);
+                },
+                'ptk' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_ptk_auditee', 'status_ptk_auditor']);
+                },
+                'laporan' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_laporan']);
+                },
+                'status_audit_auditee' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id);
+                },
+                'status_audit_auditor' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id);
+                },
+                'jenjang'
+            ])->with(['auditee' => function ($query) use ($jadwalAudit) {
+                $query->whereHas('jadwal_audit', function ($subQuery) use ($jadwalAudit) {
+                    $subQuery->where('jadwal_audit_id', $jadwalAudit->id);
+                })->with([
+                    'user',
+                    'auditor.user',
+                    'jadwal_audit'
+                ]);
+            }])->get();
+        } elseif ($type === 'upps') {
+            $fakultas = Fakultas::with([
+                'berita_acara' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id);
+                },
+                'ptk' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_ptk_auditee', 'status_ptk_auditor']);
+                },
+                'laporan' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_laporan']);
+                },
+                'status_audit_auditee' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id);
+                },
+                'status_audit_auditor' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id);
+                },
+            ])->with(['auditee' => function ($query) use ($jadwalAudit) {
+                $query->whereHas('jadwal_audit', function ($subQuery) use ($jadwalAudit) {
+                    $subQuery->where('jadwal_audit_id', $jadwalAudit->id);
+                })->with([
+                    'user.jabatan',
+                    'auditor.user',
+                    'jadwal_audit'
+                ]);
+            }])->get();
+
+            $unit = Unit::with([
+                'berita_acara' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id);
+                },
+                'ptk' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_ptk_auditee', 'status_ptk_auditor']);
+                },
+                'laporan' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_laporan']);
+                },
+                'status_audit_auditee' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id);
+                },
+                'status_audit_auditor' => function ($query) use ($jadwalAudit) {
+                    $query->where('jadwal_audit_id', $jadwalAudit->id);
+                },
+            ])->with(['auditee' => function ($query) use ($jadwalAudit) {
+                $query->whereHas('jadwal_audit', function ($subQuery) use ($jadwalAudit) {
+                    $subQuery->where('jadwal_audit_id', $jadwalAudit->id);
+                })->with([
+                    'user.jabatan',
+                    'auditor.user',
+                    'jadwal_audit' => function ($query) use ($jadwalAudit) {
+                        $query->where('id', $jadwalAudit->id);
+                    },
+                ]);
+            }])->get();
+
+            $upps = $unit->concat($fakultas)->all();
+        } else {
+            abort(404);
+        }
+
+        $data = [
+            'title' => 'Hasil ' . $jadwalAudit->jadwal,
+            'ps' => $ps,
+            'upps' => $upps,
+            'jadwalAudit' => $jadwalAudit,
+            'type' => $type,
+        ];
+
+        return view('dashboard.show_hasil_audit', $data);
+    }
+
     public function audit_dokumen(Request $request, JadwalAudit $jadwalAudit, string $unit, string $type): View
     {
         

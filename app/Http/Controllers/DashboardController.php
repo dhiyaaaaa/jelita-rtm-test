@@ -112,21 +112,26 @@ class DashboardController extends Controller
                 ];
             });
         } else if ($user->roles->pluck('name')->intersect($rolesAuditee)->isNotEmpty()) {
-            $auditees = Auditee::where('user_id', $user->id)->get();
-            $id = $auditees->pluck('id')->toArray();
-            $jadwal = JadwalAudit::with(['auditee' => function ($query) use ($user, $auditees) {
-                $query->where('user_id', $user->id)
-                    ->with('auditor', function ($query) use ($auditees) {
-                        foreach ($auditees as $auditee) {
-                            $unit = get_type_model($auditee);
-                            $query->where($unit['kolom'], $unit['value'])->with(['user']);
-                        }
-                    });
-            }])
-                ->whereHas('auditee', function ($query) use ($id) {
-                    $query->whereIn('id', $id);
-                })->orderBy('created_at', 'DESC')
-                ->get();
+            if ($user->jabatan->first()->slug === 'rektor') {
+                $jadwal = JadwalAudit::orderBy('created_at', 'desc')->get();
+            } else {
+
+                $auditees = Auditee::where('user_id', $user->id)->get();
+                $id = $auditees->pluck('id')->toArray();
+                $jadwal = JadwalAudit::with(['auditee' => function ($query) use ($user, $auditees) {
+                    $query->where('user_id', $user->id)
+                        ->with('auditor', function ($query) use ($auditees) {
+                            foreach ($auditees as $auditee) {
+                                $unit = get_type_model($auditee);
+                                $query->where($unit['kolom'], $unit['value'])->with(['user']);
+                            }
+                        });
+                }])
+                    ->whereHas('auditee', function ($query) use ($id) {
+                        $query->whereIn('id', $id);
+                    })->orderBy('created_at', 'DESC')
+                    ->get();
+            }
         }
 
         $data = [

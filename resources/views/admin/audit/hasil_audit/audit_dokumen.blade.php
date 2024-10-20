@@ -111,8 +111,7 @@
                                             <div class="custom-control custom-radio">
                                                 <input class="custom-control-input jawaban-auditor" type="radio"
                                                     id="customRadio{{ $item['form']->id }}-{{ $index }}"
-                                                    name="kriteria_{{ $item['form']->id }}"
-                                                    value="{{ $kriteria->id }}"
+                                                    name="kriteria_{{ $item['form']->id }}" value="{{ $kriteria->id }}"
                                                     {{ $sessionKriteria == $kriteria->id ? 'checked' : '' }} disabled>
                                                 <label for="customRadio{{ $item['form']->id }}-{{ $index }}"
                                                     class="custom-control-label">
@@ -219,12 +218,22 @@
 
 
                         {{-- Kembali ke halaman auditee --}}
-                        @if ($type === 'prodi')
-                            <a href="{{ route('hasil_audit.show', ['jadwalAudit' => $jadwal->id, 'type' => 'ps']) }}"
-                                class="btn btn-outline-secondary mt-3">Kembali</a>
-                        @elseif ($type === 'fakultas' || $type === 'universitas')
-                            <a href="{{ route('hasil_audit.show', ['jadwalAudit' => $jadwal->id, 'type' => 'upps']) }}"
-                                class="btn btn-outline-secondary mt-3">Kembali</a>
+                        @if (Auth::user()->jabatan->isNotEmpty() && Auth::user()->jabatan->first()->slug === 'rektor')
+                            @if ($type === 'prodi')
+                                <a href="{{ route('dashboard.hasil_audit.show', ['jadwalAudit' => $jadwal->id, 'type' => 'ps']) }}"
+                                    class="btn btn-outline-secondary mt-3">Kembali</a>
+                            @elseif ($type === 'fakultas' || $type === 'universitas')
+                                <a href="{{ route('dashboard.hasil_audit.show', ['jadwalAudit' => $jadwal->id, 'type' => 'upps']) }}"
+                                    class="btn btn-outline-secondary mt-3">Kembali</a>
+                            @endif
+                        @else
+                            @if ($type === 'prodi')
+                                <a href="{{ route('hasil_audit.show', ['jadwalAudit' => $jadwal->id, 'type' => 'ps']) }}"
+                                    class="btn btn-outline-secondary mt-3">Kembali</a>
+                            @elseif ($type === 'fakultas' || $type === 'universitas')
+                                <a href="{{ route('hasil_audit.show', ['jadwalAudit' => $jadwal->id, 'type' => 'upps']) }}"
+                                    class="btn btn-outline-secondary mt-3">Kembali</a>
+                            @endif
                         @endif
                     </div>
                 </div>
