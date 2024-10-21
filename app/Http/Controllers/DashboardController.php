@@ -27,7 +27,7 @@ class DashboardController extends Controller
         $auditorid = null;
 
         if ($user->roles->pluck('name')->contains('pusjamu')) {
-            if ($user->jabatan->first()->slug === 'rektor') {
+            if ($user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'rektor') {
                 $jadwal = JadwalAudit::orderBy('created_at', 'desc')->get();
             } else {
                 $box = [

@@ -10,7 +10,7 @@
         <!-- Small boxes (Stat box) -->
         @hasanyrole('pusjamu|auditor|pj_universitas|pj_fakultas|pj_prodi|gkm|gpm')
             @role('pusjamu')
-                @if ($user->jabatan->first()->slug === 'rektor')
+                @if ($user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'rektor')
                     <div class="card card-dark">
                         <div class="card-header">
                             <h3 class="card-title title-size">Hasil Audit</h3>
@@ -244,7 +244,7 @@
             @endrole
 
             @role('pj_universitas')
-                @if ($user->jabatan->first()->slug === 'rektor')
+                @if ($user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'rektor')
                     <div class="card card-dark">
                         <div class="card-header">
                             <h3 class="card-title title-size">Hasil Audit</h3>
