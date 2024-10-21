@@ -27,38 +27,42 @@ class DashboardController extends Controller
         $auditorid = null;
 
         if ($user->roles->pluck('name')->contains('pusjamu')) {
-            $box = [
-                'Program Studi' => [
-                    'count' => Prodi::count(),
-                    'route' => 'prodi',
-                    'color' => 'info'
-                ],
-                'Unit Pengelola Program Studi' => [
-                    'count' => Fakultas::count() + Unit::count(),
-                    'route' => 'fakultas',
-                    'color' => 'success'
-                ],
-                'Auditan' => [
-                    'count' => Auditee::distinct('user_id')->count(),
-                    'route' => 'auditee',
-                    'color' => 'warning'
-                ],
-                'Auditor' => [
-                    'count' => Auditor::distinct('user_id')->count(),
-                    'route' => 'auditor',
-                    'color' => 'danger'
-                ],
-                'Instrumen' => [
-                    'count' => Instrumen::count(),
-                    'route' => 'instrumen',
-                    'color' => 'secondary'
-                ],
-                'Hasil Audit' => [
-                    'count' => JadwalAudit::count(),
-                    'route' => 'hasil_audit',
-                    'color' => 'lightblue'
-                ],
-            ];
+            if ($user->jabatan->first()->slug === 'rektor') {
+                $jadwal = JadwalAudit::orderBy('created_at', 'desc')->get();
+            } else {
+                $box = [
+                    'Program Studi' => [
+                        'count' => Prodi::count(),
+                        'route' => 'prodi',
+                        'color' => 'info'
+                    ],
+                    'Unit Pengelola Program Studi' => [
+                        'count' => Fakultas::count() + Unit::count(),
+                        'route' => 'fakultas',
+                        'color' => 'success'
+                    ],
+                    'Auditan' => [
+                        'count' => Auditee::distinct('user_id')->count(),
+                        'route' => 'auditee',
+                        'color' => 'warning'
+                    ],
+                    'Auditor' => [
+                        'count' => Auditor::distinct('user_id')->count(),
+                        'route' => 'auditor',
+                        'color' => 'danger'
+                    ],
+                    'Instrumen' => [
+                        'count' => Instrumen::count(),
+                        'route' => 'instrumen',
+                        'color' => 'secondary'
+                    ],
+                    'Hasil Audit' => [
+                        'count' => JadwalAudit::count(),
+                        'route' => 'hasil_audit',
+                        'color' => 'lightblue'
+                    ],
+                ];
+            }
         } else if ($user->roles->pluck('name')->contains('auditor')) {
             $auditors = Auditor::where('user_id', $user->id)->get();
             $auditorid = $auditors->pluck('id')->toArray();
