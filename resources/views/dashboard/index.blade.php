@@ -10,25 +10,77 @@
         <!-- Small boxes (Stat box) -->
         @hasanyrole('pusjamu|auditor|pj_universitas|pj_fakultas|pj_prodi|gkm|gpm')
             @role('pusjamu')
-                <div class="row ">
-                    @foreach ($box as $item => $value)
-                        <div class="col-lg-3 col-6">
-                            <!-- small box -->
-                            <div class="small-box bg-{{ $value['color'] }}">
-                                <div class="inner">
-                                    <h3>{{ $value['count'] }}</h3>
+                @if ($user->jabatan->first()->slug === 'rektor')
+                    <div class="card card-dark">
+                        <div class="card-header">
+                            <h3 class="card-title title-size">Hasil Audit</h3>
+                        </div>
+                        <!-- /.card-header -->
+                        <div class="card-body">
 
-                                    <p>{{ $item }}</p>
-                                </div>
-                                <div class="icon">
-                                    <i class="ion ion-bag"></i>
-                                </div>
-                                <a href="{{ route($value['route']) }}" class="small-box-footer">More info <i
-                                        class="fas fa-arrow-circle-right"></i></a>
+                            {{-- Auditor --}}
+                            <div>
+                                <table id="hasil-audit" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center">No</th>
+                                            <th class="text-center">Jadwal</th>
+                                            <th class="text-center">Tgl Mulai</th>
+                                            <th class="text-center">Tgl Selesai</th>
+                                            <th class="text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+
+                                        @foreach ($jadwal as $item)
+                                            <tr>
+                                                <td class="text-center">{{ $loop->iteration }}</td>
+                                                <td class="text-center">{{ $item->jadwal }}</td>
+                                                <td class="text-center">
+                                                    {{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }}
+                                                </td>
+                                                <td class="text-center">
+                                                    {{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
+                                                </td>
+                                                <td class="text-center">
+                                                    <a class="btn btn-outline-info"
+                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">Hasil
+                                                        Audit
+                                                        PS</a>
+                                                    <a class="btn btn-outline-primary"
+                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}">Hasil
+                                                        Audit
+                                                        UPPS</a>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                    @endforeach
-                </div>
+                        <!-- /.card-body -->
+                    </div>
+                @else
+                    <div class="row">
+                        @foreach ($box as $item => $value)
+                            <div class="col-lg-3 col-6">
+                                <!-- small box -->
+                                <div class="small-box bg-{{ $value['color'] }}">
+                                    <div class="inner">
+                                        <h3>{{ $value['count'] }}</h3>
+
+                                        <p>{{ $item }}</p>
+                                    </div>
+                                    <div class="icon">
+                                        <i class="ion ion-bag"></i>
+                                    </div>
+                                    <a href="{{ route($value['route']) }}" class="small-box-footer">More info <i
+                                            class="fas fa-arrow-circle-right"></i></a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             @endrole
 
             @role('auditor')
@@ -226,10 +278,12 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <a class="btn btn-outline-info"
-                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">Hasil Audit
+                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">Hasil
+                                                        Audit
                                                         PS</a>
                                                     <a class="btn btn-outline-primary"
-                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}">Hasil Audit
+                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}">Hasil
+                                                        Audit
                                                         UPPS</a>
                                                 </td>
                                             </tr>
