@@ -32,7 +32,7 @@ class InstrumenController extends Controller
     {
         if ($request->ajax()) {
             try {
-                $instrumen = Instrumen::with(['jenjang', 'prodi', 'level', 'jabatan.unit'])
+                $instrumen = Instrumen::with(['jenjang', 'prodi', 'level', 'jabatan.unit', 'unit'])
                     ->select(['id', 'kode', 'pernyataan', 'level_id'])
                     ->orderBy('level_id', 'asc')
                     ->orderBy('standar_id', 'asc')
@@ -56,7 +56,7 @@ class InstrumenController extends Controller
                         });
                     }
 
-                    $instrumen->whereHas('jabatan.unit', function ($query) use ($request) {
+                    $instrumen->whereHas('unit', function ($query) use ($request) {
                         $query->where('nama', 'ilike', "%{$request->unit}%");
                     });
                 } else if (!empty($request->jenjangAuditee) && $request->level && $request->level !== 'all') {
@@ -82,7 +82,7 @@ class InstrumenController extends Controller
                         $query->whereIn('nama', $request->jenjangAuditee);
                     });
 
-                    $instrumen->whereHas('jabatan.unit', function ($query) use ($request) {
+                    $instrumen->whereHas('unit', function ($query) use ($request) {
                         $query->where('nama', 'ilike', "%{$request->unit}%");
                     });
                 } else if ($request->level && $request->level !== 'all' && $request->unit && $request->unit !== 'all') {
@@ -96,7 +96,7 @@ class InstrumenController extends Controller
                         });
                     }
 
-                    $instrumen->whereHas('jabatan.unit', function ($query) use ($request) {
+                    $instrumen->whereHas('unit', function ($query) use ($request) {
                         $query->where('nama', 'ilike', "%{$request->unit}%");
                     });
                 }
@@ -122,7 +122,10 @@ class InstrumenController extends Controller
                 }
 
                 if ($request->unit && $request->unit !== 'all') {
-                    $instrumen->whereHas('jabatan.unit', function ($query) use ($request) {
+                    // $instrumen->whereHas('jabatan.unit', function ($query) use ($request) {
+                    //     $query->where('nama', 'ilike', "%{$request->unit}%");
+                    // });
+                    $instrumen->whereHas('unit', function ($query) use ($request) {
                         $query->where('nama', 'ilike', "%{$request->unit}%");
                     });
                 }
@@ -159,13 +162,15 @@ class InstrumenController extends Controller
                         if (in_array($row->level->slug, ['prodi', 'fakultas'])) {
                             return '-';
                         } else {
-                            foreach ($row->jabatan as $jab) {
-                                $units = $jab->unit->pluck('nama')->unique()->map(function ($nama) {
-                                    return '<span class="badge bg-info mb-2">' . $nama . '</span>';
-                                })->implode(' ');
-
-                                return $units ?: '-';
+                            if ($row->unit->isEmpty()) {
+                                return '-';
                             }
+
+                            $units = $row->unit->pluck('nama')->map(function ($nama) {
+                                return '<span class="badge bg-info mb-2">' . $nama . '</span>';
+                            })->implode(' ');
+
+                            return $units ?: '-';
                         }
                     })
                     ->addColumn('level', function ($row) {
