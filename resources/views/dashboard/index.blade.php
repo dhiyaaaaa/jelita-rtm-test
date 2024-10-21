@@ -226,10 +226,10 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <a class="btn btn-outline-info"
-                                                        href="{{ route('dashboard.hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">Hasil Audit
+                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">Hasil Audit
                                                         PS</a>
                                                     <a class="btn btn-outline-primary"
-                                                        href="{{ route('dashboard.hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}">Hasil Audit
+                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}">Hasil Audit
                                                         UPPS</a>
                                                 </td>
                                             </tr>

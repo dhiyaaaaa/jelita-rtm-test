@@ -11,17 +11,21 @@
             @if ($type === 'ps')
                 <div>
                     <h5>Program Studi</h5>
-                    <a href="{{ route('hasil_audit') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
+                    @if (Auth::user()->jabatan->isNotEmpty() && Auth::user()->jabatan->first()->slug === 'rektor')
+                        <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
+                    @else
+                        <a href="{{ route('hasil_audit') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
+                    @endif
 
                     <table id="ps" class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th class="text-center">No</th>
                                 <th class="text-center">Prodi</th>
-                                <th class="text-center">Auditan</th>
+                                {{-- <th class="text-center">Auditan</th>
                                 <th class="text-center">Auditor</th>
                                 <th class="text-center">Status Audit Dokumen</th>
-                                <th class="text-center">Status Audit Lapangan</th>
+                                <th class="text-center">Status Audit Lapangan</th> --}}
                                 <th class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -37,7 +41,7 @@
                                     <td class="align-middle">{{ $item->nama }} {{ $item->jenjang->nama }}</td>
 
                                     {{-- Auditee --}}
-                                    <td class="align-middle">
+                                    {{-- <td class="align-middle">
                                         @if ($item->auditee->isNotEmpty())
                                             @foreach ($item->auditee as $auditee)
                                                 <p style="margin:0; padding:0;">{{ $loop->iteration }}.
@@ -47,10 +51,10 @@
                                         @else
                                             -
                                         @endif
-                                    </td>
+                                    </td> --}}
 
                                     {{-- Auditor --}}
-                                    <td class="align-middle">
+                                    {{-- <td class="align-middle">
                                         @if ($item->auditee->isNotEmpty())
                                             @php
                                                 $uniqueAuditors = collect();
@@ -79,10 +83,10 @@
                                         @else
                                             <a class="btn disabled text-center">Belum ada Auditor</a>
                                         @endif
-                                    </td>
+                                    </td> --}}
 
                                     {{-- Status Audit Dokumen --}}
-                                    <td class="text-center align-middle">
+                                    {{-- <td class="text-center align-middle">
                                         @php
                                             $status_audit_auditee = $item->status_audit_auditee->first();
                                             $status_audit_auditor = $item->status_audit_auditor->first();
@@ -104,10 +108,10 @@
                                         @else
                                             <a class="btn disabled">Belum Mulai</a>
                                         @endif
-                                    </td>
+                                    </td> --}}
 
                                     {{-- Status Audit Lapangan --}}
-                                    <td class="text-center align-middle">
+                                    {{-- <td class="text-center align-middle">
                                         @php
                                             $berita_acara = $item->berita_acara->first();
                                             $ptk = $item->ptk->first();
@@ -177,7 +181,7 @@
                                         @else
                                             <a class="btn disabled">Belum Ada</a>
                                         @endif
-                                    </td>
+                                    </td> --}}
 
                                     {{-- Aksi --}}
                                     <td class="text-center align-middle">
@@ -294,16 +298,20 @@
             @if ($type === 'upps')
                 <div>
                     <h5>Unit Pengelola Program Studi</h5>
-                    <a href="{{ route('hasil_audit') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
+                    @if (Auth::user()->jabatan->isNotEmpty() && Auth::user()->jabatan->first()->slug === 'rektor')
+                        <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
+                    @else
+                        <a href="{{ route('hasil_audit') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
+                    @endif
                     <table id="upps" class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th class="text-center">No</th>
                                 <th class="text-center">Fakultas/Unit</th>
-                                <th class="text-center">Auditan</th>
+                                {{-- <th class="text-center">Auditan</th>
                                 <th class="text-center">Auditor</th>
                                 <th class="text-center">Status Audit Dokumen</th>
-                                <th class="text-center">Status Audit Lapangan</th>
+                                <th class="text-center">Status Audit Lapangan</th> --}}
                                 <th class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -321,7 +329,7 @@
                                     </td>
 
                                     {{-- Auditee --}}
-                                    <td class="align-middle">
+                                    {{-- <td class="align-middle">
                                         @if ($item->auditee->isNotEmpty())
                                             @foreach ($item->auditee as $auditee)
                                                 <p style="margin:0; padding:0;">{{ $loop->iteration }}.
@@ -331,10 +339,10 @@
                                         @else
                                             -
                                         @endif
-                                    </td>
+                                    </td> --}}
 
                                     {{-- Auditor --}}
-                                    <td class="align-middle">
+                                    {{-- <td class="align-middle">
                                         @if ($item->auditee->isNotEmpty())
                                             @php
                                                 $uniqueAuditors = collect();
@@ -363,10 +371,10 @@
                                         @else
                                             <a class="btn disabled text-center">Belum ada Auditor</a>
                                         @endif
-                                    </td>
+                                    </td> --}}
 
                                     {{-- Status Audit Dokumen --}}
-                                    <td class="text-center align-middle">
+                                    {{-- <td class="text-center align-middle">
                                         @php
                                             $status_audit_auditee = $item->status_audit_auditee->first();
                                             $status_audit_auditor = $item->status_audit_auditor->first();
@@ -389,10 +397,10 @@
                                         @else
                                             <a class="btn disabled">Belum Mulai</a>
                                         @endif
-                                    </td>
+                                    </td> --}}
 
                                     {{-- Status Audit Lapangan --}}
-                                    <td class="text-center align-middle">
+                                    {{-- <td class="text-center align-middle">
                                         @php
                                             $berita_acara = $item->berita_acara->first();
                                             $ptk = $item->ptk->first();
@@ -462,7 +470,7 @@
                                         @else
                                             <a class="btn disabled">Belum Ada</a>
                                         @endif
-                                    </td>
+                                    </td> --}}
 
                                     {{-- Aksi --}}
                                     <td class="text-center align-middle">
