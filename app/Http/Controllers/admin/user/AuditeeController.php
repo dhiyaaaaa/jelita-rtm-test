@@ -52,7 +52,11 @@ class AuditeeController extends Controller
                 $prodi = Prodi::whereIn('jenjang_id', $jenjangPascaSarjana)->pluck('id')->toArray();
 
                 $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
-                    $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
+                    $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit)->orWhere([
+                        ['prodi_id', null],
+                        ['fakultas_id', null],
+                        ['unit_id', null],
+                    ]);
                 })->whereDoesntHave('roles', function ($query) {
                     $query->where('name', 'auditor');
                 })->get()->unique();
@@ -205,7 +209,11 @@ class AuditeeController extends Controller
                 $prodi = Prodi::whereIn('jenjang_id', $jenjangPascaSarjana)->pluck('id')->toArray();
 
                 $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
-                    $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
+                    $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit)->orWhere([
+                        ['prodi_id', null],
+                        ['fakultas_id', null],
+                        ['unit_id', null],
+                    ]);
                 })->whereDoesntHave('roles', function ($query) {
                     $query->where('name', 'auditor');
                 })->get()->unique();
