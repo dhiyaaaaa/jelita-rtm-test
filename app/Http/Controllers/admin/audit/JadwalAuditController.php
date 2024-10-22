@@ -29,11 +29,35 @@ class JadwalAuditController extends Controller
         if ($request->ajax()) {
             try {
                 $instrumen = Instrumen::with(['jenjang', 'prodi', 'level', 'jabatan.unit'])
-                    ->select(['id', 'kode', 'pernyataan', 'level_id'])
-                    ->orderBy('level_id', 'asc')
-                    ->orderBy('standar_id', 'asc')
-                    ->orderBy('kategori_id', 'asc')
-                    ->orderByRaw("REGEXP_REPLACE(kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(kode, '[0-9]', '', 'g') ASC");
+                    ->select(['id', 'kode', 'pernyataan', 'level_id']);
+                // ->orderBy('level_id', 'asc');
+                // ->orderBy('standar_id', 'asc')
+                // ->orderBy('kategori_id', 'asc')
+                // ->orderByRaw("REGEXP_REPLACE(kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(kode, '[0-9]', '', 'g') ASC");
+                
+                $total = $instrumen->count();
+
+                if ($searchValue = $request->input('search.value')) {
+                    $instrumen->where(function ($query) use ($searchValue) {
+                        $query->where('pernyataan', 'ilike', "%{$searchValue}%")
+                            ->orWhere('kode', 'ilike', "%{$searchValue}%")
+                            ->orWhereHas('jenjang', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            })
+                            ->orWhereHas('prodi', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            })
+                            ->orWhereHas('jabatan', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            })
+                            ->orWhereHas('level', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            })
+                            ->orWhereHas('jabatan.unit', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            });
+                    });
+                }
 
                 return DataTables::of($instrumen)
                     ->addColumn('checkbox', function ($item) {
@@ -87,30 +111,8 @@ class JadwalAuditController extends Controller
                         }
                     })
                     ->rawColumns(['jenjang', 'unit', 'level', 'checkbox'])
-                    ->filter(function ($query) use ($request) {
-                        if ($request->has('search.value')) {
-                            $searchValue = $request->input('search.value');
-                            $query->where(function ($query) use ($searchValue) {
-                                $query->where('pernyataan', 'ilike', "%{$searchValue}%")
-                                    ->orWhere('kode', 'ilike', "%{$searchValue}%")
-                                    ->orWhereHas('jenjang', function ($query) use ($searchValue) {
-                                        $query->where('nama', 'ilike', "%{$searchValue}%");
-                                    })
-                                    ->orWhereHas('prodi', function ($query) use ($searchValue) {
-                                        $query->where('nama', 'ilike', "%{$searchValue}%");
-                                    })
-                                    ->orWhereHas('jabatan', function ($query) use ($searchValue) {
-                                        $query->where('nama', 'ilike', "%{$searchValue}%");
-                                    })
-                                    ->orWhereHas('level', function ($query) use ($searchValue) {
-                                        $query->where('nama', 'ilike', "%{$searchValue}%");
-                                    })
-                                    ->orWhereHas('jabatan.unit', function ($query) use ($searchValue) {
-                                        $query->where('nama', 'ilike', "%{$searchValue}%");
-                                    });
-                            });
-                        }
-                    })
+                    ->setTotalRecords($total)
+                    ->setFilteredRecords($total)
                     ->make(true);
             } catch (\Exception $e) {
                 return response()->json([
