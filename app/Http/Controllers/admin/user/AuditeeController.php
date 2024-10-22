@@ -7,6 +7,7 @@ use App\Http\Requests\AuditeeStoreUpdateRequest;
 use App\Models\Auditee;
 use App\Models\Fakultas;
 use App\Models\JadwalAudit;
+use App\Models\Jenjang;
 use App\Models\Prodi;
 use App\Models\Unit;
 use App\Models\User;
@@ -44,12 +45,25 @@ class AuditeeController extends Controller
             })->get()->unique();
             $route = 'ps';
         } else if ($type === 'fakultas') {
-            $prodi = Prodi::where('fakultas_id', $unit)->pluck('id')->toArray();
-            $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
-                $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
-            })->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'auditor');
-            })->get()->unique();
+            $pascasarjana = Fakultas::where('nama', 'Pasca Sarjana')->first();
+            if ($pascasarjana) {
+                $jenjangPascaSarjana = Jenjang::whereIn('nama', ['S2', 'S3'])->pluck('id')->toArray();
+
+                $prodi = Prodi::whereIn('jenjang_id', $jenjangPascaSarjana)->pluck('id')->toArray();
+
+                $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
+                    $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
+                })->whereDoesntHave('roles', function ($query) {
+                    $query->where('name', 'auditor');
+                })->get()->unique();
+            } else {
+                $prodi = Prodi::where('fakultas_id', $unit)->pluck('id')->toArray();
+                $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
+                    $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
+                })->whereDoesntHave('roles', function ($query) {
+                    $query->where('name', 'auditor');
+                })->get()->unique();
+            }
             $route = 'upps';
         } else if ($type === 'universitas') {
             $user = User::whereHas('jabatan', function ($query) use ($unit) {
@@ -184,12 +198,25 @@ class AuditeeController extends Controller
             $route = 'ps';
             $auditee = Auditee::where('prodi_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->pluck('user_id');
         } else if ($type === 'fakultas') {
-            $prodi = Prodi::where('fakultas_id', $unit)->pluck('id')->toArray();
-            $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
-                $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
-            })->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'auditor');
-            })->get()->unique();
+            $pascasarjana = Fakultas::where('nama', 'Pasca Sarjana')->first();
+            if ($pascasarjana) {
+                $jenjangPascaSarjana = Jenjang::whereIn('nama', ['S2', 'S3'])->pluck('id')->toArray();
+
+                $prodi = Prodi::whereIn('jenjang_id', $jenjangPascaSarjana)->pluck('id')->toArray();
+
+                $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
+                    $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
+                })->whereDoesntHave('roles', function ($query) {
+                    $query->where('name', 'auditor');
+                })->get()->unique();
+            } else {
+                $prodi = Prodi::where('fakultas_id', $unit)->pluck('id')->toArray();
+                $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
+                    $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
+                })->whereDoesntHave('roles', function ($query) {
+                    $query->where('name', 'auditor');
+                })->get()->unique();
+            }
             $route = 'upps';
             $auditee = Auditee::where('fakultas_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->pluck('user_id');
         } else if ($type === 'universitas') {
