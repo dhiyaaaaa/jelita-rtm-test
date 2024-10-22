@@ -110,6 +110,9 @@
                     "url": "{{ route('jadwal_audit.get_instrumen') }}",
                     "data": function(d) {
                         d.instrumenSelected = instrumenSelected;
+                    },
+                    "error": function(xhr, status, error) {
+                        console.log('Error:', error);
                     }
                 },
                 'drawCallback': function() {
