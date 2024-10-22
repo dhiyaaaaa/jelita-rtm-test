@@ -194,16 +194,6 @@ class UserController extends Controller
             return redirect()->route('user')->with('error', $jabatan->nama . ' dengan ' . ($jabatan->type == 'prodi' ? 'prodi' : ($jabatan->type == 'fakultas' ? 'fakultas' : 'unit')) . ' yang sama sudah ada.');
         }
 
-        if ($jabatan->unik) {
-            $jabatan_unik = User::whereHas('jabatan', function ($query) use ($jabatan) {
-                $query->where('jabatan_id', $jabatan->id);
-            })->first();
-
-            if ($jabatan_unik) {
-                return redirect()->route('user')->with('error', $jabatan->nama . ' sudah dipegang oleh orang lain.');
-            }
-        }
-
         $user->jabatan()->attach($jabatan->id, [
             'fakultas_id' => $jabatan->type === 'fakultas' ? $request->fakultas : null,
             'prodi_id' => $jabatan->type === 'prodi' ? $request->prodi : null,
