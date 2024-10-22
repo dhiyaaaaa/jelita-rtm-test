@@ -56,8 +56,8 @@
                                 <th></th>
                                 <th class="text-center">Kode</th>
                                 <th class="text-center">Pernyataan</th>
-                                <th class="text-center">Jenjang/Auditee</th>
-                                <th class="text-center">Unit/Lembaga</th>
+                                {{-- <th class="text-center">Jenjang/Auditee</th>
+                                <th class="text-center">Unit/Lembaga</th> --}}
                                 <th class="text-center">Level</th>
                             </tr>
                         </thead>
@@ -132,14 +132,14 @@
                         "data": "pernyataan",
                         "className": "text-center"
                     },
-                    {
-                        "data": "jenjang",
-                        "className": "text-center"
-                    },
-                    {
-                        "data": "unit",
-                        "className": "text-center"
-                    },
+                    // {
+                    //     "data": "jenjang",
+                    //     "className": "text-center"
+                    // },
+                    // {
+                    //     "data": "unit",
+                    //     "className": "text-center"
+                    // },
                     {
                         "data": "level",
                         "className": "text-center"
@@ -150,7 +150,7 @@
                 "autoWidth": false,
                 "columnDefs": [{
                         "width": "20%",
-                        "targets": [2]
+                        "targets": [1]
                     },
                     {
                         "width": "15%",
