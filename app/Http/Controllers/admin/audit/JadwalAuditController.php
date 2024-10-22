@@ -35,7 +35,7 @@ class JadwalAuditController extends Controller
                 // ->orderBy('kategori_id', 'asc')
                 // ->orderByRaw("REGEXP_REPLACE(kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(kode, '[0-9]', '', 'g') ASC");
                 
-                $total = $instrumen->count();
+                // $total = $instrumen->count();
 
                 // if ($searchValue = $request->input('search.value')) {
                 //     $instrumen->where(function ($query) use ($searchValue) {
@@ -111,8 +111,8 @@ class JadwalAuditController extends Controller
                         }
                     })
                     ->rawColumns(['level', 'checkbox'])
-                    ->setTotalRecords($total)
-                    ->setFilteredRecords($total)
+                    // ->setTotalRecords($total)
+                    // ->setFilteredRecords($total)
                     ->make(true);
             } catch (\Exception $e) {
                 return response()->json([

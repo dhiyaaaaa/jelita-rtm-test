@@ -176,7 +176,7 @@
                 'select': {
                     'style': 'multi'
                 },
-                'paging': false,
+                'paging': true,
                 'scrollCollapse': true,
                 'scrollX': true,
                 'scrollY': 300,
