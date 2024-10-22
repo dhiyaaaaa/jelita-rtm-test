@@ -46,7 +46,7 @@ class AuditeeController extends Controller
             $route = 'ps';
         } else if ($type === 'fakultas') {
             $pascasarjana = Fakultas::where('nama', 'Pasca Sarjana')->first();
-            if ($pascasarjana) {
+            if ($pascasarjana->id == $unit) {
                 $jenjangPascaSarjana = Jenjang::whereIn('nama', ['S2', 'S3'])->pluck('id')->toArray();
 
                 $prodi = Prodi::whereIn('jenjang_id', $jenjangPascaSarjana)->pluck('id')->toArray();
@@ -199,7 +199,7 @@ class AuditeeController extends Controller
             $auditee = Auditee::where('prodi_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->pluck('user_id');
         } else if ($type === 'fakultas') {
             $pascasarjana = Fakultas::where('nama', 'Pasca Sarjana')->first();
-            if ($pascasarjana) {
+            if ($pascasarjana->id == $unit) {
                 $jenjangPascaSarjana = Jenjang::whereIn('nama', ['S2', 'S3'])->pluck('id')->toArray();
 
                 $prodi = Prodi::whereIn('jenjang_id', $jenjangPascaSarjana)->pluck('id')->toArray();
