@@ -8,7 +8,7 @@
             <div class="card card-primary card-outline">
                 <div class="card-body box-profile">
                     <div class="text-center">
-                        <img class="profile-user-img img-fluid" src="{{ asset('dist/img/user2-160x160.jpg') }}"
+                        <img class="profile-user-img img-fluid" src="{{ asset('dist/img/logo_unsoed.png') }}"
                             alt="User profile picture" style="width: auto; height: 180px;">
                     </div>
                 </div>
