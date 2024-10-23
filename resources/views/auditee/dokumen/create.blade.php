@@ -445,6 +445,10 @@
                         icon: 'success',
                         title: 'Berhasil',
                         text: response.message,
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            location.reload();
+                        }
                     });
 
                     document.getElementById('save-button').classList.remove('d-none');
