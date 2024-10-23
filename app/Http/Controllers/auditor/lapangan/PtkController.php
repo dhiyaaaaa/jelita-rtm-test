@@ -495,10 +495,10 @@ class PtkController extends Controller
             $response = [];
 
             try {
-                $ptk = Ptk::findOrFail($ptk);
-                $unit = get_type_model($ptk);
+                $temuan_negatif = Ptk::findOrFail($ptk);
+                $unit = get_type_model($temuan_negatif);
 
-                $jawaban = JawabanAuditor::where('jadwal_audit_id', $ptk->jadwal_audit_id)
+                $jawaban = JawabanAuditor::where('jadwal_audit_id', $temuan_negatif->jadwal_audit_id)
                     ->where($unit['kolom'], $unit['value'])
                     ->where('form_id', $form)
                     ->first();
@@ -506,11 +506,11 @@ class PtkController extends Controller
                 if ($jawaban) {
                     $jawaban->update(['ptk' => 0]);
 
-                    PtkForm::where(['ptk_id' => $ptk, 'form_id' => $form])->delete();
+                    PtkForm::where(['ptk_id' => $temuan_negatif->id, 'form_id' => $form])->delete();
 
-                    PtkFormDeskripsi::where(['ptk_id' => $ptk, 'form_id' => $form])->delete();
+                    PtkFormDeskripsi::where(['ptk_id' => $temuan_negatif->id, 'form_id' => $form])->delete();
 
-                    PtkFormRencana::where(['ptk_id' => $ptk, 'form_id' => $form])->delete();
+                    PtkFormRencana::where(['ptk_id' => $temuan_negatif->id, 'form_id' => $form])->delete();
                 } else {
                     throw new \Exception('PTK tidak ditemukan');
                 }
