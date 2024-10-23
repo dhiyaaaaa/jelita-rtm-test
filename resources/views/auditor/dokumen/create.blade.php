@@ -35,15 +35,21 @@
 
                                 // Jawaban Auditor
                                 $jawabanAuditor = $jawabanAuditors->where('form_id', $item['form']->id)->first();
+                                
                                 $sessionKriteria =
-                                    $sessionFormData['kriteria_' . $item['form']->id] ??
-                                    ($jawabanAuditor ? $jawabanAuditor->kriteria_id : '');
+                                    $jawabanAuditor && $jawabanAuditor->kriteria_id
+                                        ? $jawabanAuditor->kriteria_id
+                                        : $sessionFormData['kriteria_' . $item['form']->id] ?? '';
+
                                 $sessionCatatan =
-                                    $sessionFormData['catatan_' . $item['form']->id] ??
-                                    ($jawabanAuditor ? $jawabanAuditor->catatan : '');
+                                    $jawabanAuditor && $jawabanAuditor->catatan
+                                        ? $jawabanAuditor->catatan
+                                        : $sessionFormData['catatan_' . $item['form']->id] ?? '';
+
                                 $sessionDaftarTilik =
-                                    $sessionFormData['daftar-tilik_' . $item['form']->id] ??
-                                    ($jawabanAuditor ? $jawabanAuditor->daftar_tilik : '');
+                                    $jawabanAuditor && $jawabanAuditor->daftar_tilik
+                                        ? $jawabanAuditor->daftar_tilik
+                                        : $sessionFormData['daftar-tilik_' . $item['form']->id] ?? '';
 
                                 // isDisabled
                                 $isDisabled = true;

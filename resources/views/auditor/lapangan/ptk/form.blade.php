@@ -26,16 +26,26 @@
 
                                 // Jawaban Auditor
                                 $deskripsiCollection = $jawabanPtkDeskripsi->where('form_id', $item->form->id);
+
                                 $sessionDeskripsi =
-                                    $sessionFormData['deskripsi_' . $item->form->id] ?? $deskripsiCollection->all();
+                                    $deskripsiCollection && $deskripsiCollection->isNotEmpty()
+                                        ? $deskripsiCollection->all()
+                                        : $sessionFormData['deskripsi_' . $item->form->id] ?? [];
+
                                 $sessionAnalisis =
-                                    $sessionFormData['analisis_' . $item->form->id] ??
-                                    ($jawaban ? $jawaban->analisis : '');
+                                    $jawaban && $jawaban->analisis
+                                        ? $jawaban->analisis
+                                        : $sessionFormData['analisis_' . $item->form->id] ?? '';
+
                                 $sessionAkibat =
-                                    $sessionFormData['akibat_' . $item->form->id] ?? ($jawaban ? $jawaban->akibat : '');
+                                    $jawaban && $jawaban->akibat
+                                        ? $jawaban->akibat
+                                        : $sessionFormData['akibat_' . $item->form->id] ?? '';
+
                                 $sessionKategori =
-                                    $sessionFormData['kategori_' . $item->form->id] ??
-                                    ($jawaban ? $jawaban->kategori_temuan : '');
+                                    $jawaban && $jawaban->kategori_temuan
+                                        ? $jawaban->kategori_temuan
+                                        : $sessionFormData['kategori_' . $item->form->id] ?? '';
 
                                 // isDisabled
                                 $isDisabled = true;

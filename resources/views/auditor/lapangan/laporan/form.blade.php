@@ -23,12 +23,16 @@
                             @php
                                 // Jawaban
                                 $jawaban = $jawabanLaporan->where('form_id', $item->form->id)->first();
+
                                 $sessionKelebihan =
-                                    $sessionFormData['kelebihan_' . $item->form->id] ??
-                                    ($jawaban ? $jawaban->kelebihan : '');
+                                    $jawaban && $jawaban->kelebihan
+                                        ? $jawaban->kelebihan
+                                        : $sessionFormData['kelebihan_' . $item->form->id] ?? '';
+
                                 $sessionRuang =
-                                    $sessionFormData['ruang_' . $item->form->id] ??
-                                    ($jawaban ? $jawaban->ruang_peningkatan : '');
+                                    $jawaban && $jawaban->ruang_peningkatan
+                                        ? $jawaban->ruang_peningkatan
+                                        : $sessionFormData['ruang_' . $item->form->id] ?? '';
 
                                 // isDisabled
                                 $isDisabled = true;

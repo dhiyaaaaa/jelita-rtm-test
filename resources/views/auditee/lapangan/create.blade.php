@@ -26,12 +26,21 @@
                                 // Jawaban
                                 $rencanaCollection = $jawabanPtkRencana->where('form_id', $item->form->id);
                                 $deskripsiCollection = $jawabanPtkDeskripsi->where('form_id', $item->form->id);
+
                                 $sessionRencana =
-                                    $sessionFormData['rencana_' . $item->form->id] ?? $rencanaCollection->all();
+                                    $rencanaCollection && $rencanaCollection->isNotEmpty()
+                                        ? $rencanaCollection->all()
+                                        : $sessionFormData['rencana_' . $item->form->id] ?? [];
+
                                 $sessionTarget =
-                                    $sessionFormData['target_' . $item->form->id] ?? ($jawaban ? $jawaban->target : '');
+                                    $jawaban && $jawaban->target
+                                        ? $jawaban->target
+                                        : $sessionFormData['target_' . $item->form->id] ?? '';
+
                                 $sessionPic =
-                                    $sessionFormData['pic_' . $item->form->id] ?? ($jawaban ? $jawaban->pic : '');
+                                    $jawaban && $jawaban->pic
+                                        ? $jawaban->pic
+                                        : $sessionFormData['pic_' . $item->form->id] ?? '';
 
                                 $isDisabled = true;
                                 if (isset($status) && $status->status !== 'completed') {

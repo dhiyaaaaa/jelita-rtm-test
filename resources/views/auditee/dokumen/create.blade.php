@@ -33,9 +33,14 @@
                                     ->where('status', 'terkirim');
 
                                 $sessionJawaban =
-                                    $sessionFormData['instrumen_' . $item['form']->id] ??
-                                    ($jawaban ? $jawaban->jawaban : '');
-                                $sessionLinks = $sessionFormData['link_' . $item['form']->id] ?? $linkCollection->all();
+                                    $jawaban && $jawaban->jawaban
+                                        ? $jawaban->jawaban
+                                        : $sessionFormData['instrumen_' . $item['form']->id] ?? '';
+
+                                $sessionLinks =
+                                    $linkCollection && $linkCollection->isNotEmpty()
+                                        ? $linkCollection->all()
+                                        : $sessionFormData['link_' . $item['form']->id] ?? [];
 
                                 $isDisabled = true;
                                 if (!$expired) {
@@ -108,7 +113,7 @@
                                                     @foreach ($sessionLinks as $index => $link)
                                                         <div class="input-group mb-2">
                                                             <input type="text" name="link_{{ $item['form']->id }}[]"
-                                                                class="form-control @if($errors->has('link_' . $item['form']->id . '.*')) is-invalid @endif"
+                                                                class="form-control @if ($errors->has('link_' . $item['form']->id . '.*')) is-invalid @endif"
                                                                 value="{{ $link->link ?? $link }}"
                                                                 data-link-id="{{ $link->id ?? '' }}"
                                                                 {{ $isDisabled ? 'disabled' : '' }}>
@@ -123,7 +128,8 @@
                                                 @else
                                                     <div class="input-group mb-2">
                                                         <input type="text" name="link_{{ $item['form']->id }}[]"
-                                                            class="form-control @if($errors->has('link_' . $item['form']->id . '.*')) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>
+                                                            class="form-control @if ($errors->has('link_' . $item['form']->id . '.*')) is-invalid @endif"
+                                                            {{ $isDisabled ? 'disabled' : '' }}>
                                                     </div>
                                                 @endif
                                             </div>
