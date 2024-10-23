@@ -54,7 +54,9 @@
                     <table id="instrumen" class="table table-bordered table-striped">
                         <thead>
                             <tr>
-                                <th></th>
+                                <th>
+                                    <input type="checkbox" id="select-all">
+                                </th>
                                 <th class="text-center">Kode</th>
                                 <th class="text-center">Pernyataan</th>
                                 {{-- <th class="text-center">Jenjang/Auditee</th> --}}
@@ -63,7 +65,27 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Rows will be loaded by DataTables -->
+                            @forelse ($instrumen as $item)
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="instrumen[]" value="{{ $item->id }}"
+                                            {{ in_array($item->id, $instrumenSelected) ? 'checked' : '' }}>
+                                    </td>
+                                    <td>{{ $item->kode }}</td>
+                                    <td>{{ $item->pernyataan }}</td>
+                                    <td>
+                                        @if ($item->level->slug === 'prodi')
+                                            <span class="badge" style="background-color: #f012be;color: #fff; ">PS</span>
+                                        @else
+                                            <span class="badge" style="background-color: #ff851b;color: #fff; ">UPPS</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4">Kosong</td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
 
@@ -101,98 +123,34 @@
 
     <script>
         $(document).ready(function() {
-            var instrumenSelected = @json($instrumenSelected);
-
             var table = $('#instrumen').DataTable({
-                "processing": true,
-                "serverSide": true,
-                "ajax": {
-                    "url": "{{ route('jadwal_audit.get_instrumen') }}",
-                    "data": function(d) {
-                        d.instrumenSelected = instrumenSelected;
-                    },
-                    "error": function(xhr, status, error) {
-                        console.log('Error:', error);
-                    }
-                },
-                'drawCallback': function() {
-                    $('input[type="checkbox"]').iCheck({
-                        "checkboxClass": 'icheckbox_flat-blue'
-                    });
-
-                    table.rows().every(function(rowIdx, tableLoop, rowLoop) {
-                        var data = this.data();
-                        if (instrumenSelected.includes(data.id)) {
-                            this.nodes().to$().find('input[type="checkbox"]').iCheck('check');
-                        }
-                    });
-                },
-                "columns": [{
-                        'data': "checkbox",
-                        'orderable': false,
-                        'searchable': false,
-                        'checkboxes': {
-                            'selectRow': true,
-                            'selectCallback': function(nodes, selected) {
-                                $('input[type="checkbox"]', nodes).iCheck('update');
-                            },
-                            'selectAllCallback': function(nodes, selected, indeterminate) {
-                                $('input[type="checkbox"]', nodes).iCheck('update');
-                            }
-                        },
-                    },
-                    {
-                        "data": "kode",
-                        "className": "text-center"
-                    },
-                    {
-                        "data": "pernyataan",
-                        "className": "text-center"
-                    },
-                    // {
-                    //     "data": "jenjang",
-                    //     "className": "text-center"
-                    // },
-                    // {
-                    //     "data": "unit",
-                    //     "className": "text-center"
-                    // },
-                    {
-                        "data": "level",
-                        "className": "text-center"
-                    },
-                ],
                 "responsive": true,
                 "autoWidth": false,
-                "columnDefs": [{
-                        "width": "20%",
-                        "targets": [1]
-                    },
-                    {
-                        "width": "15%",
-                        "targets": [3]
-                    },
-                ],
-                'select': {
-                    'style': 'multi'
-                },
-                'paging': true,
+                'paging': false,
                 'scrollCollapse': true,
                 'scrollX': true,
                 'scrollY': 300,
+                "initComplete": function(settings, json) {
+                    selectAll();
+                }
             });
 
-            $(table.table().container()).on('ifChanged', '.dt-checkboxes-select-all input[type="checkbox"]',
-                function(event) {
-                    var col = table.column($(this).closest('th'), {
-                        filter: 'applied'
-                    });
-                    col.checkboxes.select(this.checked);
-                });
+            function selectAll() {
+                if ($('input[name="instrumen[]"]').length === $('input[name="instrumen[]"]:checked')
+                    .length) {
+                    $('#select-all').prop('checked', true);
+                } else {
+                    $('#select-all').prop('checked', false);
+                }
+            }
 
-            $(table.table().container()).on('ifChanged', '.dt-checkboxes', function(event) {
-                var cell = table.cell($(this).closest('td'));
-                cell.checkboxes.select(this.checked);
+            $('#select-all').on('click', function() {
+                var isChecked = $(this).is(':checked');
+                $('input[name="instrumen[]"]').prop('checked', isChecked);
+            });
+
+            $('#instrumen tbody').on('change', 'input[name="instrumen[]"]', function() {
+                selectAll();
             });
 
             $('#create-form').on('submit', function(e) {
