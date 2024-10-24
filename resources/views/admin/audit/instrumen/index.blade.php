@@ -7,7 +7,18 @@
         </div>
         <!-- /.card-header -->
         <div class="card-body">
-            <a href="{{ route('instrumen.create') }}" class="btn btn-outline-primary mb-3">+ Tambah Instrumen</a>
+            <div class="d-flex">
+                <a href="{{ route('instrumen.create') }}" class="btn btn-outline-primary mb-3">+ Tambah Instrumen</a>
+                {{-- Download Instrumen --}}
+                <div class="ml-3">
+                    <form action="{{ route('download.instrumen') }}" method="post">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-dark">
+                            <i class="fas fa-download mr-2"></i> Instrumen
+                        </button>
+                    </form>
+                </div>
+            </div>
 
             {{-- Filter --}}
             <div class="row">
