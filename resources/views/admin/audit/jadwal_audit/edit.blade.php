@@ -59,8 +59,8 @@
                                 </th>
                                 <th class="text-center">Kode</th>
                                 <th class="text-center">Pernyataan</th>
-                                {{-- <th class="text-center">Jenjang/Auditee</th> --}}
-                                {{-- <th class="text-center">Unit/Lembaga</th> --}}
+                                <th class="text-center">Jenjang/Auditee</th>
+                                <th class="text-center">Unit/Lembaga</th>
                                 <th class="text-center">Level</th>
                             </tr>
                         </thead>
@@ -71,9 +71,54 @@
                                         <input type="checkbox" name="instrumen[]" value="{{ $item->id }}"
                                             {{ in_array($item->id, $instrumenSelected) ? 'checked' : '' }}>
                                     </td>
-                                    <td>{{ $item->kode }}</td>
+                                    <td class="text-center">{{ $item->kode }}</td>
                                     <td>{{ $item->pernyataan }}</td>
-                                    <td>
+
+                                    <td class="text-center">
+                                        @if ($item->jenjang->isNotEmpty() && $item->prodi->isNotEmpty())
+                                            @foreach ($item->jenjang->pluck('nama') as $nama)
+                                                <span class="badge bg-secondary mb-2">{{ $nama }}</span>
+                                            @endforeach
+                                            @foreach ($item->prodi->pluck('nama') as $nama)
+                                                <span class="badge bg-info mb-2">{{ $nama }}</span>
+                                            @endforeach
+                                        @elseif ($item->jenjang->isNotEmpty())
+                                            @foreach ($item->jenjang->pluck('nama') as $nama)
+                                                <span class="badge bg-secondary mb-2">{{ $nama }}</span>
+                                            @endforeach
+                                        @elseif ($item->prodi->isNotEmpty())
+                                            @foreach ($item->prodi->pluck('nama') as $nama)
+                                                <span class="badge bg-info mb-2">{{ $nama }}</span>
+                                            @endforeach
+                                        @elseif ($item->jabatan->isNotEmpty())
+                                            @foreach ($item->jabatan->pluck('nama') as $nama)
+                                                <span class="badge bg-secondary mb-2">{{ $nama }}</span>
+                                            @endforeach
+                                        @else
+                                            <span class="badge">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if (in_array($item->level->slug, ['prodi', 'fakultas']))
+                                            -
+                                        @else
+                                            @foreach ($item->jabatan as $jab)
+                                                @php
+                                                    $units = $jab->unit->pluck('nama')->unique();
+                                                @endphp
+
+                                                @if ($units->isNotEmpty())
+                                                    @foreach ($units as $nama)
+                                                        <span class="badge bg-info mb-2">{{ $nama }}</span>
+                                                    @endforeach
+                                                @else
+                                                    -
+                                                @endif
+                                            @endforeach
+                                        @endif
+                                    </td>
+
+                                    <td class="text-center">
                                         @if ($item->level->slug === 'prodi')
                                             <span class="badge" style="background-color: #f012be;color: #fff; ">PS</span>
                                         @else

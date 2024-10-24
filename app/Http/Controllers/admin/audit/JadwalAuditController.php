@@ -28,81 +28,79 @@ class JadwalAuditController extends Controller
     {
         if ($request->ajax()) {
             try {
-                $instrumen = Instrumen::with(['level'])
-                    ->select(['id', 'kode', 'pernyataan', 'level_id']);
-                // ->orderBy('level_id', 'asc');
-                // ->orderBy('standar_id', 'asc')
-                // ->orderBy('kategori_id', 'asc')
-                // ->orderByRaw("REGEXP_REPLACE(kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(kode, '[0-9]', '', 'g') ASC");
-                
-                // $total = $instrumen->count();
+                $instrumen = Instrumen::with(['jenjang', 'prodi', 'level', 'jabatan.unit'])
+                    ->select(['id', 'kode', 'pernyataan', 'level_id'])
+                ->orderBy('level_id', 'asc')
+                ->orderBy('standar_id', 'asc')
+                ->orderBy('kategori_id', 'asc')
+                ->orderByRaw("REGEXP_REPLACE(kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(kode, '[0-9]', '', 'g') ASC");
 
-                // if ($searchValue = $request->input('search.value')) {
-                //     $instrumen->where(function ($query) use ($searchValue) {
-                //         $query->where('pernyataan', 'ilike', "%{$searchValue}%")
-                //             ->orWhere('kode', 'ilike', "%{$searchValue}%")
-                //             ->orWhereHas('jenjang', function ($query) use ($searchValue) {
-                //                 $query->where('nama', 'ilike', "%{$searchValue}%");
-                //             })
-                //             ->orWhereHas('prodi', function ($query) use ($searchValue) {
-                //                 $query->where('nama', 'ilike', "%{$searchValue}%");
-                //             })
-                //             ->orWhereHas('jabatan', function ($query) use ($searchValue) {
-                //                 $query->where('nama', 'ilike', "%{$searchValue}%");
-                //             })
-                //             ->orWhereHas('level', function ($query) use ($searchValue) {
-                //                 $query->where('nama', 'ilike', "%{$searchValue}%");
-                //             })
-                //             ->orWhereHas('jabatan.unit', function ($query) use ($searchValue) {
-                //                 $query->where('nama', 'ilike', "%{$searchValue}%");
-                //             });
-                //     });
-                // }
+                if ($searchValue = $request->input('search.value')) {
+                    $instrumen->where(function ($query) use ($searchValue) {
+                        $query->where('pernyataan', 'ilike', "%{$searchValue}%")
+                            ->orWhere('kode', 'ilike', "%{$searchValue}%")
+                            ->orWhereHas('jenjang', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            })
+                            ->orWhereHas('prodi', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            })
+                            ->orWhereHas('jabatan', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            })
+                            ->orWhereHas('level', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            })
+                            ->orWhereHas('jabatan.unit', function ($query) use ($searchValue) {
+                                $query->where('nama', 'ilike', "%{$searchValue}%");
+                            });
+                    });
+                }
 
                 return DataTables::of($instrumen)
                     ->addColumn('checkbox', function ($item) {
                         return $item->id;
                     })
-                    // ->addColumn('jenjang', function ($row) {
-                    //     if ($row->jenjang->isNotEmpty() && $row->prodi->isNotEmpty()) {
-                    //         $jenjang = $row->jenjang->pluck('nama')->map(function ($nama) {
-                    //             return '<span class="badge bg-secondary mb-2">' . $nama . '</span>';
-                    //         })->implode(' ');
+                    ->addColumn('jenjang', function ($row) {
+                        if ($row->jenjang->isNotEmpty() && $row->prodi->isNotEmpty()) {
+                            $jenjang = $row->jenjang->pluck('nama')->map(function ($nama) {
+                                return '<span class="badge bg-secondary mb-2">' . $nama . '</span>';
+                            })->implode(' ');
 
-                    //         $prodi = $row->prodi->pluck('nama')->map(function ($nama) {
-                    //             return '<span class="badge bg-info mb-2">' . $nama . '</span>';
-                    //         })->implode(' ');
+                            $prodi = $row->prodi->pluck('nama')->map(function ($nama) {
+                                return '<span class="badge bg-info mb-2">' . $nama . '</span>';
+                            })->implode(' ');
 
-                    //         return $jenjang . ' ' . $prodi;
-                    //     } elseif ($row->jenjang->isNotEmpty()) {
-                    //         return $row->jenjang->pluck('nama')->map(function ($nama) {
-                    //             return '<span class="badge bg-secondary mb-2">' . $nama . '</span>';
-                    //         })->implode(' ');
-                    //     } elseif ($row->prodi->isNotEmpty()) {
-                    //         return $row->prodi->pluck('nama')->map(function ($nama) {
-                    //             return '<span class="badge bg-info mb-2">' . $nama . '</span>';
-                    //         })->implode(' ');
-                    //     } elseif ($row->jabatan->isNotEmpty()) {
-                    //         return $row->jabatan->pluck('nama')->map(function ($nama) {
-                    //             return '<span class="badge bg-secondary mb-2">' . $nama . '</span>';
-                    //         })->implode(' ');
-                    //     } else {
-                    //         return '<span class="badge">-</span>';
-                    //     }
-                    // })
-                    // ->addColumn('unit', function ($row) {
-                    //     if (in_array($row->level->slug, ['prodi', 'fakultas'])) {
-                    //         return '-';
-                    //     } else {
-                    //         foreach ($row->jabatan as $jab) {
-                    //             $units = $jab->unit->pluck('nama')->unique()->map(function ($nama) {
-                    //                 return '<span class="badge bg-info mb-2">' . $nama . '</span>';
-                    //             })->implode(' ');
+                            return $jenjang . ' ' . $prodi;
+                        } elseif ($row->jenjang->isNotEmpty()) {
+                            return $row->jenjang->pluck('nama')->map(function ($nama) {
+                                return '<span class="badge bg-secondary mb-2">' . $nama . '</span>';
+                            })->implode(' ');
+                        } elseif ($row->prodi->isNotEmpty()) {
+                            return $row->prodi->pluck('nama')->map(function ($nama) {
+                                return '<span class="badge bg-info mb-2">' . $nama . '</span>';
+                            })->implode(' ');
+                        } elseif ($row->jabatan->isNotEmpty()) {
+                            return $row->jabatan->pluck('nama')->map(function ($nama) {
+                                return '<span class="badge bg-secondary mb-2">' . $nama . '</span>';
+                            })->implode(' ');
+                        } else {
+                            return '<span class="badge">-</span>';
+                        }
+                    })
+                    ->addColumn('unit', function ($row) {
+                        if (in_array($row->level->slug, ['prodi', 'fakultas'])) {
+                            return '-';
+                        } else {
+                            foreach ($row->jabatan as $jab) {
+                                $units = $jab->unit->pluck('nama')->unique()->map(function ($nama) {
+                                    return '<span class="badge bg-info mb-2">' . $nama . '</span>';
+                                })->implode(' ');
 
-                    //             return $units ?: '-';
-                    //         }
-                    //     }
-                    // })
+                                return $units ?: '-';
+                            }
+                        }
+                    })
                     ->addColumn('level', function ($row) {
                         if ($row->level->slug === 'prodi') {
                             return '<span class="badge" style="background-color: #f012be;color: #fff; ">PS</span>';
@@ -110,9 +108,7 @@ class JadwalAuditController extends Controller
                             return '<span class="badge" style="background-color: #ff851b;color: #fff; ">UPPS</span>';
                         }
                     })
-                    ->rawColumns(['level', 'checkbox'])
-                    // ->setTotalRecords($total)
-                    // ->setFilteredRecords($total)
+                    ->rawColumns(['jenjang', 'unit', 'level', 'checkbox'])
                     ->make(true);
             } catch (\Exception $e) {
                 return response()->json([
@@ -234,8 +230,6 @@ class JadwalAuditController extends Controller
             'error' => 'Invalid request.'
         ], 400);
     }
-
-
 
     /**
      * Display a listing of the resource.
@@ -381,7 +375,7 @@ class JadwalAuditController extends Controller
      */
     public function edit(JadwalAudit $jadwalAudit): View
     {
-        $instrumen = Instrumen::with(['level'])->get();
+        $instrumen = Instrumen::with(['jenjang', 'prodi', 'level', 'jabatan.unit'])->get();
         $instrumenSelected = Form::where('jadwal_id', $jadwalAudit->id)->pluck('instrumen_id')->toArray();
 
         $data = [
