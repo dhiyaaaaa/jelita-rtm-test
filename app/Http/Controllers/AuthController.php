@@ -7,7 +7,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
@@ -100,37 +102,51 @@ class AuthController extends Controller
         try {
             $user = Socialite::driver('google')->user();
 
-            // Cek hanya email unsoed
-            $domain = ['@unsoed.ac.id', '@mhs.unsoed.ac.id'];
-            $email_domain = substr($user->email, strpos($user->email, '@'));
+            // API
+            $time = now()->format('Y-m-d H:i:s');
+            $kunci = base64_encode("$time~WEQklmhZuWmOhPZAiU");
 
-            if (!in_array($email_domain, $domain)) {
-                return redirect()->route('login')->with('error', 'Email tidak valid.');
+            $request = Http::asForm()->post('https://kurikulum.akademik.unsoed.ac.id/lazarus/peg_api_new', [
+                'kunci' => $kunci,
+                'email' => $user->email,
+            ]);
+
+            $response = json_decode($request->body(), true);
+
+            if (!isset($response['bmFtYQ==']) || !isset($response['ZW1haWw='])) {
+                return redirect()->route('login')->with('error', 'User tidak terdaftar.');
             }
 
-            $finduser = User::where('email', $user->email)->first();
+            $nama = base64_decode($response['bmFtYQ==']);
+            $email = base64_decode($response['ZW1haWw=']);
 
-            if ($finduser) {
-                $finduser->update([
+            $find = User::where('email', $user->email)->first();
+
+            if ($find) {
+                $find->update([
                     'gauth_id' => $user->id,
                     'gauth_type' => 'google',
                 ]);
-            } else {
-                $finduser = User::create([
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'gauth_id' => $user->id,
-                    'gauth_type' => 'google',
-                    'password' => Hash::make('123123')
-                ]);
+
+                Auth::login($find);
+
+                return redirect()->route('dashboard')->with('success', 'Login Berhasil!');
             }
 
-            Auth::login($finduser);
-            
-            return redirect()->route('dashboard')->with('success', 'Login Berhasil');
+            $newUser = User::create([
+                'name' => $nama,
+                'email' => $email,
+                'gauth_id' => $user->id,
+                'gauth_type' => 'google',
+                'password' => Hash::make(Str::random(6))
+            ]);
+
+            Auth::login($newUser);
+
+            return redirect()->route('dashboard')->with('success', 'Login Berhasil!');
         } catch (\Exception $e) {
 
-            return redirect()->route('login')->with('error', 'Error.');
+            return redirect()->route('login')->with('error', $e->getMessage());
         }
     }
 }

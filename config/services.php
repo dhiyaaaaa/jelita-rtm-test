@@ -36,9 +36,9 @@ return [
     ],
 
     'google' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
-        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'client_id' => '252224466642-i8v1tmepjgrk5a5kkhm3js7to42dt4b1.apps.googleusercontent.com',
+        'client_secret' => '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',
+        'redirect' => "https://jelita.unsoed.ac.id/oauth/google/callback",
     ],
 
 ];
