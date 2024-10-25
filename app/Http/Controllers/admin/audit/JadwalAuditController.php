@@ -284,9 +284,9 @@ class JadwalAuditController extends Controller
         }
 
         // Tambah Auditee
-        $settingProdi = Setting::where('nama_setting', 'prodi')->pluck('jabatan_id')->first();
+        $settingProdi = Setting::where('nama_setting', 'prodi')->pluck('jabatan_id')->toArray();
         $userKaprodi = Prodi::whereHas('user.jabatan', function ($query) use ($settingProdi) {
-            $query->where('jabatan_id', $settingProdi);
+            $query->whereIn('jabatan_id', $settingProdi);
         })->with(['user.jabatan'])->get();
 
         foreach ($userKaprodi as $prodi) {
