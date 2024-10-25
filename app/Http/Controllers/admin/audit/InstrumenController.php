@@ -46,15 +46,20 @@ class InstrumenController extends Controller
                         $query->whereIn('nama', $request->jenjangAuditee);
                     });
 
-                    if ($request->level === 'ps') {
+                    if ($request->level === 'prodi') {
                         $instrumen->whereHas('level', function ($query) {
                             $query->where('slug', 'prodi');
                         });
-                    } else {
+                    } elseif ($request->level === 'fakultas') {
                         $instrumen->whereHas('level', function ($query) {
-                            $query->where('slug', 'fakultas')->orWhere('slug', 'universitas');
+                            $query->where('slug', 'fakultas');
+                        });
+                    } elseif ($request->level === 'universitas') {
+                        $instrumen->whereHas('level', function ($query) {
+                            $query->where('slug', 'universitas');
                         });
                     }
+
 
                     $instrumen->whereHas('unit', function ($query) use ($request) {
                         $query->where('nama', 'ilike', "%{$request->unit}%");
@@ -66,13 +71,17 @@ class InstrumenController extends Controller
                         $query->whereIn('nama', $request->jenjangAuditee);
                     });
 
-                    if ($request->level === 'ps') {
+                    if ($request->level === 'prodi') {
                         $instrumen->whereHas('level', function ($query) {
                             $query->where('slug', 'prodi');
                         });
-                    } else {
+                    } elseif ($request->level === 'fakultas') {
                         $instrumen->whereHas('level', function ($query) {
-                            $query->where('slug', 'fakultas')->orWhere('slug', 'universitas');
+                            $query->where('slug', 'fakultas');
+                        });
+                    } elseif ($request->level === 'universitas') {
+                        $instrumen->whereHas('level', function ($query) {
+                            $query->where('slug', 'universitas');
                         });
                     }
                 } else if (!empty($request->jenjangAuditee) && $request->unit && $request->unit !== 'all') {
@@ -86,13 +95,17 @@ class InstrumenController extends Controller
                         $query->where('nama', 'ilike', "%{$request->unit}%");
                     });
                 } else if ($request->level && $request->level !== 'all' && $request->unit && $request->unit !== 'all') {
-                    if ($request->level === 'ps') {
+                    if ($request->level === 'prodi') {
                         $instrumen->whereHas('level', function ($query) {
                             $query->where('slug', 'prodi');
                         });
-                    } else {
+                    } elseif ($request->level === 'fakultas') {
                         $instrumen->whereHas('level', function ($query) {
-                            $query->where('slug', 'fakultas')->orWhere('slug', 'universitas');
+                            $query->where('slug', 'fakultas');
+                        });
+                    } elseif ($request->level === 'universitas') {
+                        $instrumen->whereHas('level', function ($query) {
+                            $query->where('slug', 'universitas');
                         });
                     }
 
@@ -110,21 +123,22 @@ class InstrumenController extends Controller
                 }
 
                 if ($request->level && $request->level !== 'all') {
-                    if ($request->level === 'ps') {
+                    if ($request->level === 'prodi') {
                         $instrumen->whereHas('level', function ($query) {
                             $query->where('slug', 'prodi');
                         });
-                    } else {
+                    } elseif ($request->level === 'fakultas') {
                         $instrumen->whereHas('level', function ($query) {
-                            $query->where('slug', 'fakultas')->orWhere('slug', 'universitas');
+                            $query->where('slug', 'fakultas');
+                        });
+                    } elseif ($request->level === 'universitas') {
+                        $instrumen->whereHas('level', function ($query) {
+                            $query->where('slug', 'universitas');
                         });
                     }
                 }
 
                 if ($request->unit && $request->unit !== 'all') {
-                    // $instrumen->whereHas('jabatan.unit', function ($query) use ($request) {
-                    //     $query->where('nama', 'ilike', "%{$request->unit}%");
-                    // });
                     $instrumen->whereHas('unit', function ($query) use ($request) {
                         $query->where('nama', 'ilike', "%{$request->unit}%");
                     });
@@ -176,8 +190,10 @@ class InstrumenController extends Controller
                     ->addColumn('level', function ($row) {
                         if ($row->level->slug == 'prodi') {
                             return '<span class="badge" style="background-color: #f012be;color: #fff; ">PS</span>';
-                        } else {
-                            return '<span class="badge" style="background-color: #ff851b;color: #fff; ">UPPS</span>';
+                        } elseif ($row->level->slug == 'fakultas') {
+                            return '<span class="badge" style="background-color: #39cccc;color: #fff; ">UPPS</span>';
+                        } elseif ($row->level->slug == 'universitas') {
+                            return '<span class="badge" style="background-color: #ff851b;color: #fff; ">' . $row->level->nama . '</span>';
                         }
                     })
                     ->addColumn('action', function ($row) {

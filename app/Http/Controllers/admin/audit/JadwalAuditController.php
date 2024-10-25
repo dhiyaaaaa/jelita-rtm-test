@@ -30,10 +30,10 @@ class JadwalAuditController extends Controller
             try {
                 $instrumen = Instrumen::with(['jenjang', 'prodi', 'level', 'jabatan.unit'])
                     ->select(['id', 'kode', 'pernyataan', 'level_id'])
-                ->orderBy('level_id', 'asc')
-                ->orderBy('standar_id', 'asc')
-                ->orderBy('kategori_id', 'asc')
-                ->orderByRaw("REGEXP_REPLACE(kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(kode, '[0-9]', '', 'g') ASC");
+                    ->orderBy('level_id', 'asc')
+                    ->orderBy('standar_id', 'asc')
+                    ->orderBy('kategori_id', 'asc')
+                    ->orderByRaw("REGEXP_REPLACE(kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(kode, '[0-9]', '', 'g') ASC");
 
                 if ($searchValue = $request->input('search.value')) {
                     $instrumen->where(function ($query) use ($searchValue) {
@@ -102,10 +102,12 @@ class JadwalAuditController extends Controller
                         }
                     })
                     ->addColumn('level', function ($row) {
-                        if ($row->level->slug === 'prodi') {
+                        if ($row->level->slug == 'prodi') {
                             return '<span class="badge" style="background-color: #f012be;color: #fff; ">PS</span>';
-                        } else {
-                            return '<span class="badge" style="background-color: #ff851b;color: #fff; ">UPPS</span>';
+                        } elseif ($row->level->slug == 'fakultas') {
+                            return '<span class="badge" style="background-color: #39cccc;color: #fff; ">UPPS</span>';
+                        } elseif ($row->level->slug == 'universitas') {
+                            return '<span class="badge" style="background-color: #ff851b;color: #fff; ">' . $row->level->nama . '</span>';
                         }
                     })
                     ->rawColumns(['jenjang', 'unit', 'level', 'checkbox'])

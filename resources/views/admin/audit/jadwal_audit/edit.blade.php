@@ -121,8 +121,11 @@
                                     <td class="text-center">
                                         @if ($item->level->slug === 'prodi')
                                             <span class="badge" style="background-color: #f012be;color: #fff; ">PS</span>
-                                        @else
-                                            <span class="badge" style="background-color: #ff851b;color: #fff; ">UPPS</span>
+                                        @elseif ($item->level->slug === 'fakultas')
+                                            <span class="badge" style="background-color: #39cccc;color: #fff; ">UPPS</span>
+                                        @elseif ($item->level->slug === 'universitas')
+                                            <span class="badge"
+                                                style="background-color: #ff851b;color: #fff; ">{{ $item->level->nama }}</span>
                                         @endif
                                     </td>
                                 </tr>

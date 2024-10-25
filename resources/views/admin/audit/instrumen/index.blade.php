@@ -56,14 +56,7 @@
                                 $hasUpps = false;
                             @endphp
                             @foreach ($level as $item)
-                                @if ($item->slug === 'prodi')
-                                    <option value="ps">PS</option>
-                                @elseif (($item->slug === 'fakultas' || $item->slug === 'universitas') && !$hasUpps)
-                                    <option value="upps">UPPS</option>
-                                    @php
-                                        $hasUpps = true;
-                                    @endphp
-                                @endif
+                                <option value="{{ $item->slug }}">{{ $item->nama }}</option>
                             @endforeach
 
                         </select>

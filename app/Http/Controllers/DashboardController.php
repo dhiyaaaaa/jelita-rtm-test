@@ -107,9 +107,14 @@ class DashboardController extends Controller
                         'color' => 'info'
                     ],
                     'Unit Pengelola Program Studi' => [
-                        'count' => Fakultas::count() + Unit::count(),
+                        'count' => Fakultas::count(),
                         'route' => 'fakultas',
                         'color' => 'success'
+                    ],
+                    'Pimpinan PT' => [
+                        'count' => Unit::count(),
+                        'route' => 'unit',
+                        'color' => 'purple'
                     ],
                     'Auditan' => [
                         'count' => Auditee::distinct('user_id')->count(),
