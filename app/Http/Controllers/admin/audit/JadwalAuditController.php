@@ -292,7 +292,7 @@ class JadwalAuditController extends Controller
         foreach ($userKaprodi as $prodi) {
             foreach ($prodi->user as $user) {
                 foreach ($user->jabatan as $jabatan) {
-                    if ($jabatan->id === $settingProdi) {
+                    if (in_array($jabatan->id, $settingProdi)) {
                         Auditee::create([
                             'user_id' => $user->id,
                             'jabatan_id' => $jabatan->id,
