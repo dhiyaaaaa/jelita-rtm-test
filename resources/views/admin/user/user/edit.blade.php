@@ -46,12 +46,12 @@
                 <div class="form-group">
                     <label>Role</label>
                     <span class="text-danger">&#42;</span>
-                    <select class="select2" data-placeholder="Pilih Role" style="width: 100%;" name="role" id="role">
-                        <option disabled selected></option>
+                    <select class="select2" data-placeholder="Pilih Role" style="width: 100%;" name="role[]" id="role"
+                        multiple>
                         @foreach ($roles as $role)
                             @if ($user->roles->isNotEmpty())
                                 <option value="{{ $role->id }}"
-                                    {{ $user->roles[0]->id == $role->id ? 'selected' : '' }}>
+                                    {{ in_array($role->id, $user->roles->pluck('id')->toArray()) ? 'selected' : '' }}>
                                     {{ strtoupper($role->name) }}</option>
                             @else
                                 <option value="{{ $role->id }}">

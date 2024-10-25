@@ -31,19 +31,20 @@ class AppServiceProvider extends ServiceProvider
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
-        
+
         View::composer('components.layout.partials.sidebar', function ($view) {
             $user = Auth::user();
-            $currentRole = $user->roles->first();
+            $roles = $user->roles;
 
-            if ($currentRole) {
-                $menus = Menu::whereHas('role', function ($query) use ($currentRole) {
-                    $query->where('id', $currentRole->id);
+            if ($roles->isNotEmpty()) {
+                $roleId = $roles->pluck('id')->toArray();
+                $menus = Menu::whereHas('role', function ($query) use ($roleId) {
+                    $query->whereIn('id', $roleId);
                 })
                     ->where('status', 1)
                     ->get();
-                $submenus = Submenu::whereHas('role', function ($query) use ($currentRole) {
-                    $query->where('id', $currentRole->id);
+                $submenus = Submenu::whereHas('role', function ($query) use ($roleId) {
+                    $query->whereIn('id', $roleId);
                 })
                     ->where('status', 1)
                     ->get();
@@ -60,30 +61,39 @@ class AppServiceProvider extends ServiceProvider
             $notificationCount = 0;
 
             if ($user) {
-                $currentRole = $user->roles->first()->name ?? null;
-                $status = ($currentRole === 'auditor') ? 'diterima' : 'terkirim';
+                $roles = $user->roles;
+                $all = collect();
 
-                if (in_array($currentRole, ['auditor', 'pj_universitas', 'pj_fakultas', 'pj_prodi'])) {
-                    $idKey = $currentRole === 'auditor' ? 'auditor_id' : 'auditee_id';
-                    $model = $currentRole === 'auditor' ? Auditor::class : Auditee::class;
+                foreach ($roles as $role) {
+                    $currentRole = $role->name;
+                    $status = ($currentRole === 'auditor') ? 'diterima' : 'terkirim';
 
-                    $id = $model::where('user_id', $user->id)->pluck('id');
-                    $auditeeAuditor = AuditeeAuditor::whereIn($idKey, $id)->get();
+                    if (in_array($currentRole, ['auditor', 'pj_universitas', 'pj_fakultas', 'pj_prodi'])) {
+                        $idKey = $currentRole === 'auditor' ? 'auditor_id' : 'auditee_id';
+                        $model = $currentRole === 'auditor' ? Auditor::class : Auditee::class;
 
-                    $jadwalAudit = $auditeeAuditor->pluck('jadwal_audit_id');
-                    $prodi = $auditeeAuditor->pluck('prodi_id');
-                    $fakultas = $auditeeAuditor->pluck('fakultas_id');
-                    $unit = $auditeeAuditor->pluck('unit_id');
+                        $id = $model::where('user_id', $user->id)->pluck('id');
+                        $auditeeAuditor = AuditeeAuditor::whereIn($idKey, $id)->get();
 
-                    $notificationCount = Notifikasi::whereIn('jadwal_audit_id', $jadwalAudit)
-                        ->where(function ($query) use ($prodi, $fakultas, $unit) {
-                            $query->whereIn('prodi_id', $prodi)
-                                ->orWhereIn('fakultas_id', $fakultas)
-                                ->orWhereIn('unit_id', $unit);
-                        })
-                        ->where('status', $status)
-                        ->count();
+                        $jadwalAudit = $auditeeAuditor->pluck('jadwal_audit_id');
+                        $prodi = $auditeeAuditor->pluck('prodi_id');
+                        $fakultas = $auditeeAuditor->pluck('fakultas_id');
+                        $unit = $auditeeAuditor->pluck('unit_id');
+
+                        $notifications = Notifikasi::whereIn('jadwal_audit_id', $jadwalAudit)
+                            ->where(function ($query) use ($prodi, $fakultas, $unit) {
+                                $query->whereIn('prodi_id', $prodi)
+                                    ->orWhereIn('fakultas_id', $fakultas)
+                                    ->orWhereIn('unit_id', $unit);
+                            })
+                            ->where('status', $status)
+                            ->get();
+
+                        $all = $all->merge($notifications);
+                    }
                 }
+
+                $notificationCount = $all->unique('id')->count();
             }
 
             $view->with('notificationCount', $notificationCount);

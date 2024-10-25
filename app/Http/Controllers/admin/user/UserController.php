@@ -35,11 +35,9 @@ class UserController extends Controller
                     ->addColumn('prodi_fakultas_unit', function ($row) {
                         if ($row->prodi->isNotEmpty()) {
                             return "Prodi " . $row->prodi->pluck('nama')->implode(', ') . ' ' . $row->prodi->first()->jenjang->nama;
-                        }
-                        elseif ($row->fakultas->isNotEmpty()) {
+                        } elseif ($row->fakultas->isNotEmpty()) {
                             return "Fakultas " . $row->fakultas->pluck('nama')->implode(', ');
-                        }
-                        elseif ($row->unit->isNotEmpty()) {
+                        } elseif ($row->unit->isNotEmpty()) {
                             return $row->unit->pluck('nama')->implode(', ');
                         }
                         return '';
@@ -174,8 +172,11 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $role = Role::findById($request->role);
-        $user->assignRole($role);
+        foreach ($request->role as $item) {
+            $role = Role::findById($item);
+
+            $user->assignRole($role);
+        }
 
         $jabatan = Jabatan::findOrFail($request->jabatan);
 
@@ -232,8 +233,13 @@ class UserController extends Controller
             'password' => $request->password ? Hash::make($request->password) : $user->password,
         ]);
 
-        $role = Role::findById($request->role);
-        $user->syncRoles($role);
+        $roles = [];
+        
+        foreach ($request->role as $item) {
+            $roles[] = Role::findById($item);
+        }
+
+        $user->syncRoles($roles);
 
         $jabatan = Jabatan::findOrFail($request->jabatan);
 

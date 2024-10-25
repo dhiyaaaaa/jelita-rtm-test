@@ -40,8 +40,6 @@ class AuditeeController extends Controller
         if ($type === 'prodi') {
             $user = User::whereHas('jabatan', function ($query) use ($unit) {
                 $query->where('prodi_id', $unit);
-            })->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'auditor');
             })->get()->unique();
             $route = 'ps';
         } else if ($type === 'fakultas') {
@@ -57,23 +55,17 @@ class AuditeeController extends Controller
                         ['fakultas_id', null],
                         ['unit_id', null],
                     ]);
-                })->whereDoesntHave('roles', function ($query) {
-                    $query->where('name', 'auditor');
                 })->get()->unique();
             } else {
                 $prodi = Prodi::where('fakultas_id', $unit)->pluck('id')->toArray();
                 $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
                     $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
-                })->whereDoesntHave('roles', function ($query) {
-                    $query->where('name', 'auditor');
                 })->get()->unique();
             }
             $route = 'upps';
         } else if ($type === 'universitas') {
             $user = User::whereHas('jabatan', function ($query) use ($unit) {
                 $query->where('unit_id', $unit);
-            })->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'auditor');
             })->get()->unique();
             $route = 'upps';
         } else {
@@ -196,8 +188,6 @@ class AuditeeController extends Controller
         if ($type === 'prodi') {
             $user = User::whereHas('jabatan', function ($query) use ($unit) {
                 $query->where('prodi_id', $unit);
-            })->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'auditor');
             })->get()->unique();
             $route = 'ps';
             $auditee = Auditee::where('prodi_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->pluck('user_id');
@@ -214,15 +204,11 @@ class AuditeeController extends Controller
                         ['fakultas_id', null],
                         ['unit_id', null],
                     ]);
-                })->whereDoesntHave('roles', function ($query) {
-                    $query->where('name', 'auditor');
                 })->get()->unique();
             } else {
                 $prodi = Prodi::where('fakultas_id', $unit)->pluck('id')->toArray();
                 $user = User::whereHas('jabatan', function ($query) use ($prodi, $unit) {
                     $query->whereIn('prodi_id', $prodi)->orWhere('fakultas_id', $unit);
-                })->whereDoesntHave('roles', function ($query) {
-                    $query->where('name', 'auditor');
                 })->get()->unique();
             }
             $route = 'upps';
@@ -230,8 +216,6 @@ class AuditeeController extends Controller
         } else if ($type === 'universitas') {
             $user = User::whereHas('jabatan', function ($query) use ($unit) {
                 $query->where('unit_id', $unit);
-            })->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'auditor');
             })->get()->unique();
             $route = 'upps';
             $auditee = Auditee::where('unit_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->pluck('user_id');

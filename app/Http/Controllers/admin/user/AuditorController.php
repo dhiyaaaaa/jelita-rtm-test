@@ -81,22 +81,29 @@ class AuditorController extends Controller
      */
     public function store(AuditorStoreRequest $request, JadwalAudit $jadwalAudit): RedirectResponse
     {
-        foreach ($request->auditor as $auditor) {
-            $user = User::findOrFail($auditor);
-            $roleAuditor = Role::where('name', 'auditor')->first();
+        foreach ($request->auditor as $auditorId) {
+            $user = User::findOrFail($auditorId);
 
-            $user->roles()->detach();
+            if (!$user->hasRole('auditor')) {
+                $roleAuditor = Role::where('name', 'auditor')->first();
+                $user->roles()->attach($roleAuditor);
+            }
 
-            $user->roles()->attach($roleAuditor->id);
+            $exist = Auditor::where('user_id', $auditorId)
+                ->where('jadwal_audit_id', $jadwalAudit->id)
+                ->first();
 
-            Auditor::create([
-                'user_id' => $auditor,
-                'jadwal_audit_id' => $jadwalAudit->id,
-            ]);
+            if (!$exist) {
+                Auditor::create([
+                    'user_id' => $auditorId,
+                    'jadwal_audit_id' => $jadwalAudit->id,
+                ]);
+            }
         }
 
         return redirect()->route('auditor')->with('success', 'Auditor berhasil ditambah!');
     }
+
 
     /**
      * Display the specified resource.

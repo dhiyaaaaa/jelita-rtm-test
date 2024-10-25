@@ -16,13 +16,21 @@
                 <div class="form-group">
                     <label>Auditor 1</label>
                     <span class="text-danger">&#42;</span>
-                    <select class="select2 auditor-select" data-placeholder="Pilih Auditor 1" style="width: 100%;" name="auditor_1">
+                    <select class="select2 auditor-select" data-placeholder="Pilih Auditor 1" style="width: 100%;"
+                        name="auditor_1">
                         <option value="" selected>Pilih Auditor 1</option>
                         @foreach ($auditors as $item)
-                            <option value="{{ $item->id }}"
-                                {{ isset($auditor[0]) && $item->id == $auditor[0] ? 'selected' : '' }}>
-                                {{ $item->user->name }}
-                            </option>
+                            @if ($item->user->prodi->isNotEmpty())
+                                <option value="{{ $item->id }}"
+                                    {{ isset($auditor[0]) && $item->id == $auditor[0] ? 'selected' : '' }}>
+                                    {{ $item->user->name . ' - ' . $item->user->prodi->first()->nama . ' ' . $item->user->prodi->first()->jenjang->nama }}
+                                </option>
+                            @else
+                                <option value="{{ $item->id }}"
+                                    {{ isset($auditor[0]) && $item->id == $auditor[0] ? 'selected' : '' }}>
+                                    {{ $item->user->name }}
+                                </option>
+                            @endif
                         @endforeach
                     </select>
                     @if ($errors->has('auditor_1'))
@@ -32,13 +40,21 @@
                 <div class="form-group">
                     <label>Auditor 2</label>
                     <span class="text-danger">&#42;</span>
-                    <select class="select2 auditor-select" data-placeholder="Pilih Auditor 2" style="width: 100%;" name="auditor_2">
+                    <select class="select2 auditor-select" data-placeholder="Pilih Auditor 2" style="width: 100%;"
+                        name="auditor_2">
                         <option value="" selected>Pilih Auditor 2</option>
                         @foreach ($auditors as $item)
-                            <option value="{{ $item->id }}"
-                                {{ isset($auditor[1]) && $item->id == $auditor[1] ? 'selected' : '' }}>
-                                {{ $item->user->name }}
-                            </option>
+                            @if ($item->user->prodi->isNotEmpty())
+                                <option value="{{ $item->id }}"
+                                    {{ isset($auditor[1]) && $item->id == $auditor[1] ? 'selected' : '' }}>
+                                    {{ $item->user->name . ' - ' . $item->user->prodi->first()->nama . ' ' . $item->user->prodi->first()->jenjang->nama }}
+                                </option>
+                            @else
+                                <option value="{{ $item->id }}"
+                                    {{ isset($auditor[1]) && $item->id == $auditor[1] ? 'selected' : '' }}>
+                                    {{ $item->user->name }}
+                                </option>
+                            @endif
                         @endforeach
                     </select>
                     @if ($errors->has('auditor_2'))
@@ -48,13 +64,21 @@
                 <div class="form-group">
                     <label>Auditor 3</label>
                     <span class="text-danger">&#42;</span>
-                    <select class="select2 auditor-select" data-placeholder="Pilih Auditor 3" style="width: 100%;" name="auditor_3">
+                    <select class="select2 auditor-select" data-placeholder="Pilih Auditor 3" style="width: 100%;"
+                        name="auditor_3">
                         <option value="" selected>Pilih Auditor 3</option>
                         @foreach ($auditors as $item)
-                            <option value="{{ $item->id }}"
-                                {{ isset($auditor[2]) && $item->id == $auditor[2] ? 'selected' : '' }}>
-                                {{ $item->user->name }}
-                            </option>
+                            @if ($item->user->prodi->isNotEmpty())
+                                <option value="{{ $item->id }}"
+                                    {{ isset($auditor[2]) && $item->id == $auditor[2] ? 'selected' : '' }}>
+                                    {{ $item->user->name . ' - ' . $item->user->prodi->first()->nama . ' ' . $item->user->prodi->first()->jenjang->nama }}
+                                </option>
+                            @else
+                                <option value="{{ $item->id }}"
+                                    {{ isset($auditor[2]) && $item->id == $auditor[2] ? 'selected' : '' }}>
+                                    {{ $item->user->name }}
+                                </option>
+                            @endif
                         @endforeach
                     </select>
                     @if ($errors->has('auditor_3'))
@@ -63,7 +87,7 @@
                 </div>
                 <!-- /.form-group -->
                 <div>
-                    <a href="{{ route('auditee.show', ['jadwalAudit' => $jadwalAudit->id, 'type' => ($type === 'prodi') ? 'ps' : ($type === 'fakultas' || $type === 'universitas' ? 'upps' : '')]) }}"
+                    <a href="{{ route('auditee.show', ['jadwalAudit' => $jadwalAudit->id, 'type' => $type === 'prodi' ? 'ps' : ($type === 'fakultas' || $type === 'universitas' ? 'upps' : '')]) }}"
                         class="btn btn-outline-secondary">Kembali</a>
                     <x-button-submit text="Ubah Auditor" formId="create-form" />
                 </div>

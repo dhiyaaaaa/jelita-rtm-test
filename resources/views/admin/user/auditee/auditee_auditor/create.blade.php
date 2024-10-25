@@ -20,7 +20,7 @@
                         @foreach ($auditor as $item)
                             @if ($item->user->prodi->isNotEmpty())
                                 <option value="{{ $item->id }}">
-                                    {{ $item->user->name . ' - ' . $item->user->prodi[0]->nama }}
+                                    {{ $item->user->name . ' - ' . $item->user->prodi->first()->nama . ' ' .  $item->user->prodi->first()->jenjang->nama  }}
                                 </option>
                             @else
                                 <option value="{{ $item->id }}">{{ $item->user->name }}</option>
@@ -38,7 +38,7 @@
                         @foreach ($auditor as $item)
                             @if ($item->user->prodi->isNotEmpty())
                                 <option value="{{ $item->id }}">
-                                    {{ $item->user->name . ' - ' . $item->user->prodi[0]->nama }}
+                                    {{ $item->user->name . ' - ' . $item->user->prodi->first()->nama . ' ' .  $item->user->prodi->first()->jenjang->nama }}
                                 </option>
                             @else
                                 <option value="{{ $item->id }}">{{ $item->user->name }}</option>
@@ -56,7 +56,7 @@
                         @foreach ($auditor as $item)
                             @if ($item->user->prodi->isNotEmpty())
                                 <option value="{{ $item->id }}">
-                                    {{ $item->user->name . ' - ' . $item->user->prodi[0]->nama }}
+                                    {{ $item->user->name . ' - ' . $item->user->prodi->first()->nama . ' ' .  $item->user->prodi->first()->jenjang->nama }}
                                 </option>
                             @else
                                 <option value="{{ $item->id }}">{{ $item->user->name }}</option>

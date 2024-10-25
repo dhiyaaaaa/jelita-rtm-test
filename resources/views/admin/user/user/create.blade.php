@@ -45,8 +45,7 @@
                 <div class="form-group">
                     <label>Role</label>
                     <span class="text-danger">&#42;</span>
-                    <select class="select2" data-placeholder="Pilih Role" style="width: 100%;" name="role" id="role">
-                        <option disabled selected></option>
+                    <select class="select2" data-placeholder="Pilih Role" style="width: 100%;" name="role[]" id="role" multiple>
                         @foreach ($roles as $role)
                             <option value="{{ $role->id }}" {{ old('role') == $role->id ? 'selected' : '' }}>
                                 {{ strtoupper($role->name) }}</option>
@@ -126,7 +125,7 @@
                 <!-- /.form-group -->
                 <div>
                     <a href="{{ route('user') }}" class="btn btn-outline-secondary">Kembali</a>
-                    <x-button-submit text="Tambah user" formId="create-form" />
+                    <x-button-submit text="Tambah User" formId="create-form" />
                 </div>
             </div>
         </form>

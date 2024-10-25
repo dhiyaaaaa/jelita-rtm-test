@@ -1,6 +1,6 @@
 <ul class="navbar-nav ml-auto">
     <!-- Navbar Notification -->
-    @role('auditor')
+    {{-- @role('auditor')
         <li class="nav-item">
             <a class="nav-link" href="{{ route('notifikasi') }}">
                 <i class="far fa-bell"></i>
@@ -9,9 +9,9 @@
                 @endif
             </a>
         </li>
-    @endrole
+    @endrole --}}
 
-    @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm', 'gpm'])
+    @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm', 'gpm', 'auditor'])
         <li class="nav-item">
             <a class="nav-link" href="{{ route('notifikasi') }}">
                 <i class="far fa-bell"></i>

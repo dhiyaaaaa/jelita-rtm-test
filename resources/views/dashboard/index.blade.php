@@ -32,7 +32,7 @@
                                     </thead>
                                     <tbody>
 
-                                        @foreach ($jadwal as $item)
+                                        @forelse ($jadwal as $item)
                                             <tr>
                                                 <td class="text-center">{{ $loop->iteration }}</td>
                                                 <td class="text-center">{{ $item->jadwal }}</td>
@@ -53,7 +53,11 @@
                                                         UPPS</a>
                                                 </td>
                                             </tr>
-                                        @endforeach
+                                        @empty
+                                            <tr>
+                                                <td class="text-center" colspan="5">Tidak Tersedia</td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -120,50 +124,52 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @if (!is_null($jadwal) && $jadwal->count() > 0)
-                                    @foreach ($jadwal as $item)
-                                        <tr>
-                                            <td class="text-center">{{ $loop->iteration }}</td>
-                                            <td class="text-center">{{ $item['jadwal'] }}</td>
-                                            <td class="text-center">
-                                                {{ \Carbon\Carbon::parse($item['tgl_mulai'])->translatedFormat('j F Y') }}
-                                                -
-                                                {{ \Carbon\Carbon::parse($item['tgl_selesai'])->translatedFormat('j F Y') }}
-                                            </td>
-                                            <td class="align-middle">
-                                                @if (!empty($item['units']) && count($item['units']) > 0)
-                                                    @foreach ($item['units'] as $unit)
-                                                        <div class="mb-3">
-                                                            <p class="list">
-                                                                {{ $loop->iteration }}. {{ $unit['unitType'] }}
-                                                                {{ $unit['unitName'] }}
-                                                            </p>
-                                                            @foreach ($unit['auditees'] as $aud)
-                                                                Auditor {{ $loop->iteration }}&nbsp;:&nbsp; {{ $aud->name }}
-                                                                {{ '(' . $aud->no_telepon . ')' }}
-                                                                <br>
-                                                            @endforeach
-                                                        </div>
-                                                    @endforeach
-                                                @else
-                                                    <div class="text-center">
-                                                        <a class="btn disabled">Belum Ada</a>
+                                @forelse ($jadwalAuditor as $item)
+                                    <tr>
+                                        <td class="text-center">{{ $loop->iteration }}</td>
+                                        <td class="text-center">{{ $item['jadwal'] }}</td>
+                                        <td class="text-center">
+                                            {{ \Carbon\Carbon::parse($item['tgl_mulai'])->translatedFormat('j F Y') }}
+                                            -
+                                            {{ \Carbon\Carbon::parse($item['tgl_selesai'])->translatedFormat('j F Y') }}
+                                        </td>
+                                        <td class="align-middle">
+                                            @if (!empty($item['units']) && count($item['units']) > 0)
+                                                @foreach ($item['units'] as $unit)
+                                                    <div class="mb-3">
+                                                        <p class="list">
+                                                            {{ $loop->iteration }}. {{ $unit['unitType'] }}
+                                                            {{ $unit['unitName'] }}
+                                                        </p>
+                                                        @foreach ($unit['auditees'] as $aud)
+                                                            Auditor {{ $loop->iteration }}&nbsp;:&nbsp; {{ $aud->name }}
+                                                            {{ '(' . $aud->no_telepon . ')' }}
+                                                            <br>
+                                                        @endforeach
                                                     </div>
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                @if ($item['fitur_auditor'])
-                                                    <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'prodi']) }}"
-                                                        class="btn btn-outline-info">Pilih Prodi</a>
-                                                    <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'upps']) }}"
-                                                        class="btn btn-outline-primary">Pilih Fakultas/Unit</a>
-                                                @else
-                                                    <a class="btn disabled">Tidak Tersedia</a>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                @endif
+                                                @endforeach
+                                            @else
+                                                <div class="text-center">
+                                                    <a class="btn disabled">Belum Ada</a>
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if ($item['fitur_auditor'])
+                                                <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'prodi']) }}"
+                                                    class="btn btn-outline-info">Pilih Prodi</a>
+                                                <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'upps']) }}"
+                                                    class="btn btn-outline-primary">Pilih Fakultas/Unit</a>
+                                            @else
+                                                <a class="btn disabled">Tidak Tersedia</a>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td class="text-center" colspan="5">Tidak Tersedia</td>
+                                    </tr>
+                                @endforelse
 
                             </tbody>
                         </table>
@@ -197,46 +203,48 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @if (!is_null($jadwal) && $jadwal->count() > 0)
-                                    @foreach ($jadwal as $item)
-                                        <tr>
-                                            <td class="text-center align-middle">{{ $loop->iteration }}</td>
-                                            <td class="text-center align-middle">{{ $item->jadwal }}</td>
-                                            <td class="text-center align-middle">
-                                                {{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }} -
-                                                {{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                @if (!$item->expired)
-                                                    <span class="badge badge-success">Terbuka</span>
-                                                @else
-                                                    <span class="badge badge-danger">Tertutup</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if ($item->auditee->isNotEmpty())
-                                                    @foreach ($item->auditee as $auditee)
-                                                        @if ($auditee->auditor->isNotEmpty())
-                                                            @foreach ($auditee->auditor as $auditor)
-                                                                <p style="margin:0; padding:0;">{{ $loop->iteration }}.
-                                                                    {{ $auditor->user->name }}
-                                                                    {{ '(' . $auditor->user->no_telepon . ')' }}</p>
-                                                            @endforeach
-                                                        @else
-                                                            <div class="text-center">
-                                                                <a class="btn disabled">Belum ada auditor</a>
-                                                            </div>
-                                                        @endif
-                                                    @endforeach
-                                                @else
-                                                    <div class="text-center">
-                                                        <a class="btn disabled">Belum ada auditor</a>
-                                                    </div>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                @endif
+                                @forelse ($jadwalAuditan as $item)
+                                    <tr>
+                                        <td class="text-center align-middle">{{ $loop->iteration }}</td>
+                                        <td class="text-center align-middle">{{ $item->jadwal }}</td>
+                                        <td class="text-center align-middle">
+                                            {{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }} -
+                                            {{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            @if (!$item->expired)
+                                                <span class="badge badge-success">Terbuka</span>
+                                            @else
+                                                <span class="badge badge-danger">Tertutup</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($item->auditee->isNotEmpty())
+                                                @foreach ($item->auditee as $auditee)
+                                                    @if ($auditee->auditor->isNotEmpty())
+                                                        @foreach ($auditee->auditor as $auditor)
+                                                            <p style="margin:0; padding:0;">{{ $loop->iteration }}.
+                                                                {{ $auditor->user->name }}
+                                                                {{ '(' . $auditor->user->no_telepon . ')' }}</p>
+                                                        @endforeach
+                                                    @else
+                                                        <div class="text-center">
+                                                            <a class="btn disabled">Belum ada auditor</a>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            @else
+                                                <div class="text-center">
+                                                    <a class="btn disabled">Belum ada auditor</a>
+                                                </div>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td class="text-center" colspan="5">Tidak Tersedia</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>

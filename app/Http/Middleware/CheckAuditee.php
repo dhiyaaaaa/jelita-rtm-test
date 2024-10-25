@@ -23,7 +23,10 @@ class CheckAuditee
                 abort(403);
             }
 
-            if ($user->roles->first()->name === 'pusjamu' || $user->auditee && in_array($user->roles->first()->name, ['pj_prodi', 'pj_fakultas', 'pj_universitas', 'gkm', 'gpm'])) {
+            $userRole = $user->roles->pluck('name')->toArray();
+            $roles = ['pusjamu', 'pj_prodi', 'pj_fakultas', 'pj_universitas', 'gkm', 'gpm'];
+
+            if (in_array('pusjamu', $roles) || ($user->auditee && array_intersect($userRole, $roles))) {
                 return $next($request);
             }
         }

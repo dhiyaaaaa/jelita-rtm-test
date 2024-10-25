@@ -23,7 +23,9 @@ class CheckAuditor
                 abort(403);
             }
 
-            if ($user->roles->first()->name === 'pusjamu' || $user->auditor && in_array($user->roles->first()->name, ['auditor'])) {
+            $userRole = $user->roles->pluck('name')->toArray();
+
+            if (in_array('pusjamu', $userRole) || (in_array('auditor', $userRole) && $user->auditor)) {
                 return $next($request);
             }
         }
