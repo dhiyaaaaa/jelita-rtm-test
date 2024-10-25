@@ -29,8 +29,7 @@
             <div class="tab-content" id="notificationTabsContent">
                 {{-- Auditor --}}
                 @hasrole('auditor')
-                    <div class="tab-pane fade show active" id="auditor"
-                        role="tabpanel" aria-labelledby="auditor-tab">
+                    <div class="tab-pane fade show active" id="auditor" role="tabpanel" aria-labelledby="auditor-tab">
                         @if ($notifikasiAuditor->isNotEmpty())
                             <div class="timeline">
                                 @foreach ($notifikasiAuditor as $date => $items)
@@ -120,6 +119,9 @@
                                                 <div class="timeline-body">
                                                     <p>{{ $item->pesan }}</p>
                                                 </div>
+                                                <p style="margin: 0; padding: 0;">
+                                                    <span class="badge badge-success">{{ $item->form->instrumen->kode }}</span>
+                                                </p>
                                                 <div class="timeline-footer" style="margin-top:-10px;">
                                                     <a href="{{ $auditeeId && $item->status == 'terkirim' ? route('auditee.dokumen.create', ['jadwalAudit' => $item->jadwal_audit_id, 'unit' => $unitId, 'type' => $type]) : '#' }}"
                                                         class="btn btn-success btn-sm {{ $auditeeId && $item->status == 'terkirim' ? '' : 'disabled' }}">

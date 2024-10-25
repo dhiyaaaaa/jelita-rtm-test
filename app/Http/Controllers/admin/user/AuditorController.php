@@ -226,16 +226,16 @@ class AuditorController extends Controller
     public function edit_auditee_auditor(JadwalAudit $jadwalAudit, string $unit, string $type): View
     {
         if ($type === 'prodi') {
-            $auditor = AuditeeAuditor::where('prodi_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->pluck('auditor_id');
+            $auditor = AuditeeAuditor::where('prodi_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->distinct('auditor_id')->pluck('auditor_id');
         } else if ($type === 'fakultas') {
-            $auditor = AuditeeAuditor::where('fakultas_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->pluck('auditor_id');
+            $auditor = AuditeeAuditor::where('fakultas_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->distinct('auditor_id')->pluck('auditor_id');
         } else if ($type === 'universitas') {
-            $auditor = AuditeeAuditor::where('unit_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->pluck('auditor_id');
+            $auditor = AuditeeAuditor::where('unit_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->distinct('auditor_id')->pluck('auditor_id');
         } else {
             abort(404);
         }
 
-        $auditors = Auditor::with('user')->where('jadwal_audit_id', $jadwalAudit->id)->get();
+        $auditors = Auditor::with('user')->where('jadwal_audit_id', $jadwalAudit->id)->distinct('id')->get();
 
         $data = [
             'title' => 'Edit Auditor',
