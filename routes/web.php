@@ -40,7 +40,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\SessionController;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'guest'], function () {
@@ -69,12 +68,6 @@ Route::group(['middleware' => 'auth'], function () {
 
     // Middleware Role Pusjamu/Admin
     Route::group(['middleware' => 'role:pusjamu'], function () {
-        Route::get('artisan', function () {
-            Artisan::call('route:clear');
-            Artisan::call('config:clear');
-            return 'Test!';
-        });
-
         // Audit
         Route::prefix('audit')->group(function () {
             // Instrumen

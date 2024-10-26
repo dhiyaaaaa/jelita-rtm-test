@@ -8,7 +8,6 @@ use App\Models\Auditor;
 use App\Models\Menu;
 use App\Models\Notifikasi;
 use App\Models\Submenu;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -31,12 +30,6 @@ class AppServiceProvider extends ServiceProvider
     {
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
-        }
-
-        // Cache
-        if (app()->environment('production') && request()->has('run_cache_clear')) {
-            Artisan::call('route:clear');
-            Artisan::call('config:clear');
         }
 
         View::composer('components.layout.partials.sidebar', function ($view) {
