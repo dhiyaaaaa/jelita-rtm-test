@@ -39,6 +39,22 @@
         .title-size {
             font-size: 24px;
         }
+
+        /* Badge */
+        .badge-custom-purple {
+            background-color: #6610f2;
+            color: white;
+        }
+
+        .badge-custom-fuchsia {
+            background-color: #f012be;
+            color: white;
+        }
+
+        .badge-custom-orange {
+            background-color: #ff851b;
+            color: white;
+        }
     </style>
 </head>
 

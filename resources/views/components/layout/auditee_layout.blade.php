@@ -25,10 +25,11 @@
 
     <!-- jQuery -->
     <script src="{{ asset('plugins/jquery/jquery.min.js') }}"></script>
-    
+
     @yield('style')
 
     <style>
+        /* Notifikasi */
         .blink {
             animation: blinker 1s linear infinite;
         }
@@ -37,6 +38,22 @@
             50% {
                 opacity: 0;
             }
+        }
+
+        /* Badge */
+        .badge-custom-purple {
+            background-color: #6610f2;
+            color: white;
+        }
+
+        .badge-custom-fuchsia {
+            background-color: #f012be;
+            color: white;
+        }
+
+        .badge-custom-orange {
+            background-color: #ff851b;
+            color: white;
         }
     </style>
 </head>
@@ -136,7 +153,7 @@
             }
         });
     </script>
-    
+
     @yield('script')
 </body>
 

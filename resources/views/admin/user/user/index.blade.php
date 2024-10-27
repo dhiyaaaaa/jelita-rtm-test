@@ -7,7 +7,10 @@
         </div>
         <!-- /.card-header -->
         <div class="card-body">
-            <a href="{{ route('user.create') }}" class="btn btn-outline-primary mb-3">+ Tambah User</a>
+            <div>
+                <a href="{{ route('user.create') }}" class="btn btn-outline-primary mb-3">+ Tambah User</a>
+                <a href="{{ route('user.create_user_role') }}" class="btn btn-outline-primary mb-3">+ Tambah Role Untuk User</a>
+            </div>
             <table id="user" class="table table-bordered table-striped">
                 <thead>
                     <tr>
@@ -88,9 +91,8 @@
                 ],
                 "responsive": true,
                 "autoWidth": false,
-                "pageLength": 25,
-                "columnDefs": [
-                    {
+                "pageLength": 50,
+                "columnDefs": [{
                         "width": "5%",
                         "targets": [0]
                     },
