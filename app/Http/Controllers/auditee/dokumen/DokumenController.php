@@ -69,7 +69,16 @@ class DokumenController extends Controller
                     $query->where('unit_id', $unit->id);
                 }
             },
-        ])->orderBy('created_at', 'DESC')->get();
+        ])
+            ->with(['auditee_auditor' => function ($q) use ($prodi, $fakultas, $unit) {
+                if ($prodi) {
+                    $q->where('prodi_id', $prodi->id)->with(['auditor.user'])->distinct('auditor_id');
+                } elseif ($fakultas) {
+                    $q->where('fakultas_id', $fakultas->id)->with(['auditor.user'])->distinct('auditor_id');
+                } elseif ($unit) {
+                    $q->where('unit_id', $unit->id)->with(['auditor.user'])->distinct('auditor_id');
+                }
+            }])->orderBy('created_at', 'DESC')->get();
 
         $data = [
             'title' => 'Audit Dokumen',

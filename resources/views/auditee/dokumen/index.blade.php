@@ -124,28 +124,19 @@
                             </td>
 
                             {{-- Kontak Auditor --}}
-                            <td></td>
-                            {{-- <td>
-                                @if ($item->auditee->isNotEmpty())
-                                    @foreach ($item->auditee as $auditee)
-                                        @if ($auditee->auditor->isNotEmpty())
-                                            @foreach ($auditee->auditor as $auditor)
-                                                <p style="margin:0; padding:0;">{{ $loop->iteration }}.
-                                                    {{ $auditor->user->name }}
-                                                    {{ '(' . $auditor->user->no_telepon . ')' }}</p>
-                                            @endforeach
-                                        @else
-                                            <div class="text-center">
-                                                <a class="btn disabled">Belum ada auditor</a>
-                                            </div>
-                                        @endif
+                            <td>
+                                @if ($item->auditee_auditor->isNotEmpty())
+                                    @foreach ($item->auditee_auditor as $auditeeAuditor)
+                                        <p style="margin: 0; padding: 0;">{{ $loop->iteration }}.
+                                            {{ $auditeeAuditor->auditor->user->name }}
+                                            {{ '(' . $auditeeAuditor->auditor->user->no_telepon . ')' }}</p>
                                     @endforeach
                                 @else
                                     <div class="text-center">
                                         <a class="btn disabled">Belum ada auditor</a>
                                     </div>
                                 @endif
-                            </td> --}}
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
