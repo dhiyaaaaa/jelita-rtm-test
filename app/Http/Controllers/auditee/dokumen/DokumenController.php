@@ -38,48 +38,50 @@ class DokumenController extends Controller
      */
     public function index(): View
     {
-        $auditees = Auditee::where('user_id', $this->user->id)->with(['prodi', 'fakultas', 'unit'])->get();
-        $auditeeids = $auditees->pluck('id')->toArray();
+        $prodi = $this->user->prodi->first();
+        $fakultas = $this->user->fakultas->first();
+        $unit = $this->user->unit->first();
 
-        $jabatanUser = $this->jabatanUser;
+        if (!$prodi && !$fakultas && !$unit) {
+            abort(403);
+        }
 
-        $jadwal = JadwalAudit::whereHas('form.instrumen', function ($query) use ($auditees, $jabatanUser) {
-            $query->where(function ($query) use ($auditees) {
-                foreach ($auditees as $auditee) {
-                    $query->orWhereHas('jenjang', function ($query) use ($auditee) {
-                        if ($auditee->prodi_id) {
-                            $query->where('prodi_id', $auditee->prodi_id)
-                                ->orWhere('jenjang_id', $auditee->prodi->jenjang_id);
-                        } elseif ($auditee->unit_id) {
-                            $query->where('unit_id', $auditee->unit_id);
-                        }
-                    });
-                }
-            })->orWhereHas('jabatan', function ($query) use ($jabatanUser) {
-                $query->where('jabatan_id', $jabatanUser);
+        $jadwal = JadwalAudit::whereHas('form.instrumen', function ($query) use ($prodi, $unit) {
+            $query->where(function ($query) use ($prodi, $unit) {
+                $query->orWhereHas('jenjang', function ($query) use ($prodi, $unit) {
+                    if ($prodi) {
+                        $query->where('prodi_id', $prodi->id)
+                            ->orWhere('jenjang_id', $prodi->jenjang->id);
+                    } elseif ($unit) {
+                        $query->where('unit_id', $unit->id);
+                    }
+                });
+            })->orWhereHas('jabatan', function ($query) {
+                $query->where('jabatan_id', $this->jabatanUser);
             });
-        })->with('auditee', function ($query) use ($auditeeids) {
-            $query->whereIn('id', $auditeeids)->with(['auditor.user']);
-        })->whereHas('auditee', function ($query) use ($auditeeids) {
-            $query->whereIn('id', $auditeeids)->with(['auditor.user']);
         })->with([
-            'status_audit_auditee' => function ($query) use ($auditees) {
-                foreach ($auditees as $auditee) {
-                    $unit = get_type_model($auditee);
-                    $query->where($unit['kolom'], $unit['value']);
+            'status_audit_auditee' => function ($query) use ($prodi, $fakultas, $unit) {
+                if ($prodi) {
+                    $query->where('prodi_id', $prodi->id);
+                } elseif ($fakultas) {
+                    $query->where('fakultas_id', $fakultas->id);
+                } elseif ($unit) {
+                    $query->where('unit_id', $unit->id);
                 }
             },
-        ])->orderBy('created_at', 'DESC')
-            ->get();
+        ])->orderBy('created_at', 'DESC')->get();
 
         $data = [
             'title' => 'Audit Dokumen',
             'jadwal' => $jadwal,
-
+            'prodi' => $prodi,
+            'fakultas' => $fakultas,
+            'unit' => $unit,
         ];
 
         return view('auditee.dokumen.index', $data);
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -110,12 +112,19 @@ class DokumenController extends Controller
             }
         }
 
+        if (!$this->user->roles->contains(function ($role) {
+            return in_array($role->name, ['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm']);
+        })) {
+            abort(403);
+        }
+
+
         $status = StatusAuditAuditee::where(['jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->first();
 
         $auditee = Auditee::where(['user_id' => $this->user->id, 'jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->first();
 
         if (!$auditee) {
-            abort(403);
+            $auditee = null;
         }
 
         $jabatanUser = $this->jabatanUser;
@@ -233,7 +242,9 @@ class DokumenController extends Controller
 
         $links = Link::where(['jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->get();
 
-        $sessionFormData = session()->get('form_data-page_' . $currentPage . '-jadwalId_' . $jadwalAudit->id . '-unitId_' . $unit . '-auditeeId_' . $auditee->id, []);
+        $sessionFormData = $auditee
+            ? session()->get('form_data-page_' . $currentPage . '-jadwalId_' . $jadwalAudit->id . '-unitId_' . $unit . '-auditeeId_' . $auditee->id, [])
+            : [];
 
         $jawabanAuditors = JawabanAuditor::where(['jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->get();
 
@@ -265,6 +276,10 @@ class DokumenController extends Controller
         if ($request->ajax()) {
             try {
                 $auditee = Auditee::where(['user_id' => $this->user->id, 'jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->first();
+
+                if (!$auditee) {
+                    return response()->json(['success' => false, 'message' => 'Anda belum ditambahkan sebagai auditan sehingga tidak bisa mengisi form'], 403);
+                }
 
                 $rules = [];
                 $messages = [];
@@ -365,6 +380,10 @@ class DokumenController extends Controller
     public function store(Request $request, JadwalAudit $jadwalAudit, string $unit, string $type): RedirectResponse
     {
         $auditee = Auditee::where(['user_id' => $this->user->id, 'jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->first();
+
+        if (!$auditee) {
+            return redirect()->route('auditee.dokumen.create', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $unit, 'type' => $type])->with('error_message', 'Anda belum ditambahkan sebagai auditan sehingga tidak bisa mengisi form.');
+        }
 
         $totalPages = $request->input('totalPage');
         $sessionFormData = [];
@@ -564,11 +583,29 @@ class DokumenController extends Controller
             $auditee = Auditee::where(['user_id' => $this->user->id, 'jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->first();
 
             $forms = collect();
+            $currentForms = collect();
 
             if ($type === 'prodi') {
                 $prodi = Prodi::findOrFail($unit);
                 $forms = $forms->merge(
                     Form::where('jadwal_id', $validated['jadwal'])
+                        ->whereHas('instrumen', function ($query) {
+                            $query->where('level_id', 1);
+                        })
+                        ->where(function ($query) use ($unit, $prodi) {
+                            $query->whereHas('instrumen.jenjang', function ($query) use ($prodi) {
+                                $query->where('jenjang_id', $prodi->jenjang->id);
+                            });
+                            $query->orWhereHas('instrumen.prodi', function ($query) use ($unit) {
+                                $query->where('prodi_id', $unit);
+                            });
+                        })
+                        ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
+                        ->get()
+                        ->pluck('instrumen.id')
+                );
+                $currentForms = $currentForms->merge(
+                    Form::where('jadwal_id', $jadwalAudit->id)
                         ->whereHas('instrumen', function ($query) {
                             $query->where('level_id', 1);
                         })
@@ -595,9 +632,35 @@ class DokumenController extends Controller
                         ->get()
                         ->pluck('instrumen.id')
                 );
+                $currentForms = $currentForms->merge(
+                    Form::where('jadwal_id', $jadwalAudit->id)
+                        ->whereHas('instrumen', function ($query) {
+                            $query->where('level_id', 2);
+                        })
+                        ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
+                        ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
+                        ->get()
+                        ->pluck('instrumen.id')
+                );
             } elseif ($type === 'universitas') {
                 $forms = $forms->merge(
                     Form::where('jadwal_id', $validated['jadwal'])
+                        ->whereHas('instrumen', function ($query) {
+                            $query->where('level_id', 3);
+                        })
+                        ->where(function ($query) use ($unit) {
+                            $query->whereDoesntHave('instrumen.unit')
+                                ->orWhereHas('instrumen.unit', function ($query) use ($unit) {
+                                    $query->where('unit_id', $unit);
+                                });
+                        })
+                        ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
+                        ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
+                        ->get()
+                        ->pluck('instrumen.id')
+                );
+                $currentForms = $currentForms->merge(
+                    Form::where('jadwal_id', $jadwalAudit->id)
                         ->whereHas('instrumen', function ($query) {
                             $query->where('level_id', 3);
                         })
@@ -616,9 +679,11 @@ class DokumenController extends Controller
                 abort(404);
             }
 
+            $intersect = $forms->intersect($currentForms);
+
             $jawabanAuditee = JawabanAuditee::where(['jadwal_audit_id' => $validated['jadwal'], get_type($type) => $unit])
-                ->whereHas('form.instrumen', function ($query) use ($forms) {
-                    $query->whereIn('id', $forms);
+                ->whereHas('form.instrumen', function ($query) use ($intersect) {
+                    $query->whereIn('id', $intersect);
                 })
                 ->with(['form.instrumen'])->get();
 
@@ -647,12 +712,10 @@ class DokumenController extends Controller
             Link::where(['jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->delete();
 
             $links = Link::where(['jadwal_audit_id' => $validated['jadwal'], get_type($type) => $unit])
-                ->whereHas('form.instrumen', function ($query) use ($forms) {
-                    $query->whereIn('id', $forms);
+                ->whereHas('form.instrumen', function ($query) use ($intersect) {
+                    $query->whereIn('id', $intersect);
                 })
                 ->with(['form.instrumen'])->get();
-
-
 
             foreach ($links as $link) {
                 $formid = Form::where(['instrumen_id' => $link->form->instrumen->id, 'jadwal_id' => $jadwalAudit->id])->firstOrFail()->id;

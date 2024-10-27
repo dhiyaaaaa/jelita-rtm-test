@@ -59,17 +59,12 @@
 
                             {{-- Audit --}}
                             <td class="text-center align-middle">
-                                @if ($item->auditee->isNotEmpty())
-                                    @php
-                                        $auditee = $item->auditee->first();
-                                        $type = $auditee->prodi_id
-                                            ? 'prodi'
-                                            : ($auditee->fakultas_id
-                                                ? 'fakultas'
-                                                : 'universitas');
-                                        $unitId = $auditee->prodi_id ?? ($auditee->fakultas_id ?? $auditee->unit_id);
-                                    @endphp
+                                @php
+                                    $unitId = $prodi->id ?? ($fakultas->id ?? ($unit->id ?? 'null'));
+                                    $type = $prodi ? 'prodi' : ($fakultas ? 'fakultas' : ($unit ? 'universitas' : ''));
+                                @endphp
 
+                                @if ($item->auditee->isNotEmpty())
                                     @if ($unitId)
                                         @if (!$item->expired)
                                             @if ($item->status_audit_auditee->isNotEmpty())
@@ -129,7 +124,8 @@
                             </td>
 
                             {{-- Kontak Auditor --}}
-                            <td>
+                            <td></td>
+                            {{-- <td>
                                 @if ($item->auditee->isNotEmpty())
                                     @foreach ($item->auditee as $auditee)
                                         @if ($auditee->auditor->isNotEmpty())
@@ -149,7 +145,7 @@
                                         <a class="btn disabled">Belum ada auditor</a>
                                     </div>
                                 @endif
-                            </td>
+                            </td> --}}
                         </tr>
                     @endforeach
                 </tbody>

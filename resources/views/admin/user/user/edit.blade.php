@@ -34,7 +34,7 @@
                 {{-- Password --}}
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <span class="text-danger">&#42;</span>
+                    {{-- <span class="text-danger">&#42;</span> --}}
                     <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
                         value="" id="password" placeholder="Masukkan Password">
                     @if ($errors->has('password'))
@@ -45,7 +45,7 @@
                 {{-- Role --}}
                 <div class="form-group">
                     <label>Role</label>
-                    <span class="text-danger">&#42;</span>
+                    {{-- <span class="text-danger">&#42;</span> --}}
                     <select class="select2" data-placeholder="Pilih Role" style="width: 100%;" name="role[]" id="role"
                         multiple>
                         @foreach ($roles as $role)

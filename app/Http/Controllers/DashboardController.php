@@ -18,198 +18,174 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    protected $user;
+    protected $jabatanUser;
+
+    public function __construct()
+    {
+        $this->user = Auth::user();
+        $this->jabatanUser = Auth::user()->jabatan->isNotEmpty() ? Auth::user()->jabatan->first() : null;
+    }
+
+    private function dashboard_admin()
+    {
+        $jadwal = $box = null;
+
+        if ($this->jabatanUser && $this->jabatanUser->slug === 'rektor') {
+            $jadwal = JadwalAudit::orderBy('created_at', 'desc')->get();
+        }
+
+        $box = [
+            'Program Studi' => [
+                'count' => Prodi::count(),
+                'route' => 'prodi',
+                'color' => 'info'
+            ],
+            'Unit Pengelola Program Studi' => [
+                'count' => Fakultas::count(),
+                'route' => 'fakultas',
+                'color' => 'success'
+            ],
+            'Pimpinan PT' => [
+                'count' => Unit::count(),
+                'route' => 'unit',
+                'color' => 'purple'
+            ],
+            'Auditan' => [
+                'count' => Auditee::distinct('user_id')->count(),
+                'route' => 'auditee',
+                'color' => 'warning'
+            ],
+            'Auditor' => [
+                'count' => Auditor::distinct('user_id')->count(),
+                'route' => 'auditor',
+                'color' => 'danger'
+            ],
+            'Instrumen' => [
+                'count' => Instrumen::count(),
+                'route' => 'instrumen',
+                'color' => 'secondary'
+            ],
+            'Hasil Audit' => [
+                'count' => JadwalAudit::count(),
+                'route' => 'hasil_audit',
+                'color' => 'lightblue'
+            ],
+        ];
+
+        return compact('box', 'jadwal');
+    }
+
+    private function dashboard_auditan()
+    {
+        $prodi = $this->user->prodi->first();
+        $fakultas = $this->user->fakultas->first();
+        $unit = $this->user->unit->first();
+
+        $jadwalAuditan = JadwalAudit::whereHas('form.instrumen', function ($query) {
+            $query->where(function ($query) {
+                $query->orWhereHas('jenjang', function ($query) {
+                    if ($this->user->prodi->first()) {
+                        $query->where('prodi_id', $this->user->prodi->first()->id)
+                            ->orWhere('jenjang_id', $this->user->prodi->first()->jenjang->id);
+                    } elseif ($this->user->unit->first()) {
+                        $query->where('unit_id', $this->user->unit->first()->id);
+                    }
+                });
+            })->orWhereHas('jabatan', function ($query) {
+                $query->where('jabatan_id', $this->jabatanUser->id);
+            });
+        })->with(['auditee_auditor' => function ($q) use ($prodi, $fakultas, $unit) {
+            if ($prodi) {
+                $q->where('prodi_id', $prodi->id)->with(['auditor.user'])->distinct('auditor_id');
+            } elseif ($fakultas) {
+                $q->where('fakultas_id', $fakultas->id)->with(['auditor.user'])->distinct('auditor_id');
+            } elseif ($unit) {
+                $q->where('unit_id', $unit->id)->with(['auditor.user'])->distinct('auditor_id');
+            }
+        }])
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        return $jadwalAuditan;
+    }
+
+    private function dashboard_auditor()
+    {
+        $auditors = Auditor::where('user_id', $this->user->id)->get();
+        $auditorid = $auditors->pluck('id')->toArray();
+
+        $jadwalAuditor = JadwalAudit::with(['auditee_auditor', 'auditee_auditor.auditor.user', 'auditee_auditor.prodi', 'auditee_auditor.fakultas', 'auditee_auditor.unit'])->whereHas('auditor', function ($query) use ($auditorid) {
+            $query->whereIn('id', $auditorid);
+        })->with(['auditor.user'])->orderBy('created_at', 'DESC')->get()->map(function ($item) use ($auditorid) {
+            $units = $item->auditee_auditor->whereIn('auditor_id', $auditorid)
+                ->map(function ($auditee_auditor) {
+                    return $auditee_auditor->prodi_id
+                        ? $auditee_auditor->prodi
+                        : ($auditee_auditor->fakultas_id
+                            ? $auditee_auditor->fakultas
+                            : $auditee_auditor->unit);
+                })
+                ->filter()
+                ->unique();
+
+            $unitData = $units->map(function ($unit) use ($item) {
+                $unitType = $unit->type === 'prodi'
+                    ? 'Prodi'
+                    : ($unit->type === 'fakultas'
+                        ? 'Fakultas'
+                        : 'Unit');
+
+                $relatedAuditees = $item->auditee_auditor->where(
+                    $unit->type === 'prodi'
+                        ? 'prodi_id'
+                        : ($unit->type === 'fakultas'
+                            ? 'fakultas_id'
+                            : 'unit_id'),
+                    $unit->id
+                )->unique('auditor_id');
+
+                return [
+                    'unitType' => $unitType,
+                    'unitName' => $unit->nama,
+                    'auditees' => $relatedAuditees->map(function ($aud) {
+                        return $aud->auditor->user;
+                    })
+                ];
+            });
+
+            return [
+                'id' => $item->id,
+                'jadwal' => $item->jadwal,
+                'tgl_mulai' => $item->tgl_mulai,
+                'tgl_selesai' => $item->tgl_selesai,
+                'fitur_auditor' => $item->fitur_auditor,
+                'expired' => $item->expired,
+                'units' => $unitData
+            ];
+        });
+
+        return $jadwalAuditor;
+    }
+
     public function index(): View
     {
-        $user = Auth::user();
         $rolesAuditee = ['pj_prodi', 'pj_fakultas', 'pj_universitas', 'gkm', 'gpm'];
 
-        $jadwalAuditor = null;
-        $jadwalAuditan = null;
-        $jadwal = null;
-        $box = null;
+        $jadwalAuditor = $jadwalAuditan = $jadwal = $box = collect();
         $auditorid = null;
 
-        if ($user->roles->pluck('name')->contains('auditor') && $user->roles->pluck('name')->intersect($rolesAuditee)->isNotEmpty()) {
-            $auditors = Auditor::where('user_id', $user->id)->get();
-            $auditorid = $auditors->pluck('id')->toArray();
-
-            $jadwalAuditor = JadwalAudit::with(['auditee_auditor', 'auditee_auditor.auditor.user', 'auditee_auditor.prodi', 'auditee_auditor.fakultas', 'auditee_auditor.unit'])->whereHas('auditor', function ($query) use ($auditorid) {
-                $query->whereIn('id', $auditorid);
-            })->with(['auditor.user'])->orderBy('created_at', 'DESC')->get()->map(function ($item) use ($auditorid) {
-                $units = $item->auditee_auditor->whereIn('auditor_id', $auditorid)
-                    ->map(function ($auditee_auditor) {
-                        return $auditee_auditor->prodi_id
-                            ? $auditee_auditor->prodi
-                            : ($auditee_auditor->fakultas_id
-                                ? $auditee_auditor->fakultas
-                                : $auditee_auditor->unit);
-                    })
-                    ->filter()
-                    ->unique();
-
-                $unitData = $units->map(function ($unit) use ($item) {
-                    $unitType = $unit->type === 'prodi'
-                        ? 'Prodi'
-                        : ($unit->type === 'fakultas'
-                            ? 'Fakultas'
-                            : 'Unit');
-
-                    $relatedAuditees = $item->auditee_auditor->where(
-                        $unit->type === 'prodi'
-                            ? 'prodi_id'
-                            : ($unit->type === 'fakultas'
-                                ? 'fakultas_id'
-                                : 'unit_id'),
-                        $unit->id
-                    )->unique('auditor_id');
-
-                    return [
-                        'unitType' => $unitType,
-                        'unitName' => $unit->nama,
-                        'auditees' => $relatedAuditees->map(function ($aud) {
-                            return $aud->auditor->user;
-                        })
-                    ];
-                });
-
-                return [
-                    'id' => $item->id,
-                    'jadwal' => $item->jadwal,
-                    'tgl_mulai' => $item->tgl_mulai,
-                    'tgl_selesai' => $item->tgl_selesai,
-                    'fitur_auditor' => $item->fitur_auditor,
-                    'units' => $unitData
-                ];
-            });
-            $auditees = Auditee::where('user_id', $user->id)->get();
-            $id = $auditees->pluck('id')->toArray();
-            $jadwalAuditan = JadwalAudit::with(['auditee' => function ($query) use ($user, $auditees) {
-                $query->where('user_id', $user->id)
-                    ->with('auditor', function ($query) use ($auditees) {
-                        foreach ($auditees as $auditee) {
-                            $unit = get_type_model($auditee);
-                            $query->where($unit['kolom'], $unit['value'])->with(['user']);
-                        }
-                    });
-            }])
-                ->whereHas('auditee', function ($query) use ($id) {
-                    $query->whereIn('id', $id);
-                })->orderBy('created_at', 'DESC')
-                ->get();
-        } else if ($user->roles->pluck('name')->contains('pusjamu')) {
-            if ($user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'rektor') {
-                $jadwal = JadwalAudit::orderBy('created_at', 'desc')->get();
-            } else {
-                $box = [
-                    'Program Studi' => [
-                        'count' => Prodi::count(),
-                        'route' => 'prodi',
-                        'color' => 'info'
-                    ],
-                    'Unit Pengelola Program Studi' => [
-                        'count' => Fakultas::count(),
-                        'route' => 'fakultas',
-                        'color' => 'success'
-                    ],
-                    'Pimpinan PT' => [
-                        'count' => Unit::count(),
-                        'route' => 'unit',
-                        'color' => 'purple'
-                    ],
-                    'Auditan' => [
-                        'count' => Auditee::distinct('user_id')->count(),
-                        'route' => 'auditee',
-                        'color' => 'warning'
-                    ],
-                    'Auditor' => [
-                        'count' => Auditor::distinct('user_id')->count(),
-                        'route' => 'auditor',
-                        'color' => 'danger'
-                    ],
-                    'Instrumen' => [
-                        'count' => Instrumen::count(),
-                        'route' => 'instrumen',
-                        'color' => 'secondary'
-                    ],
-                    'Hasil Audit' => [
-                        'count' => JadwalAudit::count(),
-                        'route' => 'hasil_audit',
-                        'color' => 'lightblue'
-                    ],
-                ];
-            }
-        } else if ($user->roles->pluck('name')->contains('auditor')) {
-            $auditors = Auditor::where('user_id', $user->id)->get();
-            $auditorid = $auditors->pluck('id')->toArray();
-
-            $jadwalAuditor = JadwalAudit::with(['auditee_auditor', 'auditee_auditor.auditor.user', 'auditee_auditor.prodi', 'auditee_auditor.fakultas', 'auditee_auditor.unit'])->whereHas('auditor', function ($query) use ($auditorid) {
-                $query->whereIn('id', $auditorid);
-            })->with(['auditor.user'])->orderBy('created_at', 'DESC')->get()->map(function ($item) use ($auditorid) {
-                $units = $item->auditee_auditor->whereIn('auditor_id', $auditorid)
-                    ->map(function ($auditee_auditor) {
-                        return $auditee_auditor->prodi_id
-                            ? $auditee_auditor->prodi
-                            : ($auditee_auditor->fakultas_id
-                                ? $auditee_auditor->fakultas
-                                : $auditee_auditor->unit);
-                    })
-                    ->filter()
-                    ->unique();
-
-                $unitData = $units->map(function ($unit) use ($item) {
-                    $unitType = $unit->type === 'prodi'
-                        ? 'Prodi'
-                        : ($unit->type === 'fakultas'
-                            ? 'Fakultas'
-                            : 'Unit');
-
-                    $relatedAuditees = $item->auditee_auditor->where(
-                        $unit->type === 'prodi'
-                            ? 'prodi_id'
-                            : ($unit->type === 'fakultas'
-                                ? 'fakultas_id'
-                                : 'unit_id'),
-                        $unit->id
-                    )->unique('auditor_id');
-
-                    return [
-                        'unitType' => $unitType,
-                        'unitName' => $unit->nama,
-                        'auditees' => $relatedAuditees->map(function ($aud) {
-                            return $aud->auditor->user;
-                        })
-                    ];
-                });
-
-                return [
-                    'id' => $item->id,
-                    'jadwal' => $item->jadwal,
-                    'tgl_mulai' => $item->tgl_mulai,
-                    'tgl_selesai' => $item->tgl_selesai,
-                    'fitur_auditor' => $item->fitur_auditor,
-                    'units' => $unitData
-                ];
-            });
-        } else if ($user->roles->pluck('name')->intersect($rolesAuditee)->isNotEmpty()) {
-            if ($user->jabatan->first()->slug === 'rektor') {
-                $jadwalAuditan = JadwalAudit::orderBy('created_at', 'desc')->get();
-            } else {
-                $auditees = Auditee::where('user_id', $user->id)->get();
-                $id = $auditees->pluck('id')->toArray();
-                $jadwalAuditan = JadwalAudit::with(['auditee' => function ($query) use ($user, $auditees) {
-                    $query->where('user_id', $user->id)
-                        ->with('auditor', function ($query) use ($auditees) {
-                            foreach ($auditees as $auditee) {
-                                $unit = get_type_model($auditee);
-                                $query->where($unit['kolom'], $unit['value'])->with(['user']);
-                            }
-                        });
-                }])
-                    ->whereHas('auditee', function ($query) use ($id) {
-                        $query->whereIn('id', $id);
-                    })->orderBy('created_at', 'DESC')
-                    ->get();
-            }
+        if ($this->user->roles->pluck('name')->contains('auditor') && $this->user->roles->pluck('name')->intersect($rolesAuditee)->isNotEmpty()) {
+            $jadwalAuditan = $this->dashboard_auditan();
+            $jadwalAuditor = $this->dashboard_auditor();
+        } else if ($this->user->roles->pluck('name')->contains('pusjamu')) {
+            $adminData = $this->dashboard_admin();
+            $box = $adminData['box'];
+            $jadwal = $adminData['jadwal'];
+        } else if ($this->user->roles->pluck('name')->contains('auditor')) {
+            $jadwalAuditor = $this->dashboard_auditor();
+        } else if ($this->user->roles->pluck('name')->intersect($rolesAuditee)->isNotEmpty()) {
+            $jadwalAuditan = $this->dashboard_auditan();
         }
 
         $data = [
@@ -218,7 +194,7 @@ class DashboardController extends Controller
             'jadwal' => $jadwal,
             'jadwalAuditan' => $jadwalAuditan,
             'jadwalAuditor' => $jadwalAuditor,
-            'user' => $user,
+            'user' => $this->user,
             'auditorid' => $auditorid,
         ];
 
@@ -230,7 +206,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         $rolesAuditee = ['pj_prodi', 'pj_fakultas', 'pj_universitas', 'gkm', 'gpm'];
 
-        $auditors = Auditor::where('user_id', $user->id)->pluck('id');
+        $auditors = Auditor::where('user_id', $user->id)->pluck('id')->toArray();
         $auditees = Auditee::where('user_id', $user->id)->get();
         $auditeesUuid = $auditees->pluck('id')->toArray();
 
@@ -250,7 +226,7 @@ class DashboardController extends Controller
                     ->orWhereIn('fakultas_id', $fakultasUuids)
                     ->orWhereIn('unit_id', $unitUuids);
             })
-            ->with(['auditor.user', 'auditee.user', 'form.instrumen', 'jadwal_audit', 'prodi', 'fakultas', 'unit'])
+            ->with(['auditor', 'auditor.user', 'auditee.user', 'form.instrumen', 'jadwal_audit', 'prodi', 'fakultas', 'unit'])
             ->get();
 
         $notifikasiAuditor = $notifikasi->filter(function ($item) use ($user) {

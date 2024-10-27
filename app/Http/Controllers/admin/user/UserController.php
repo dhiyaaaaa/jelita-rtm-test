@@ -172,10 +172,12 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        foreach ($request->role as $item) {
-            $role = Role::findById($item);
-
-            $user->assignRole($role);
+        if($request->role){
+            foreach ($request->role as $item) {
+                $role = Role::findById($item);
+                
+                $user->assignRole($role);
+            }
         }
 
         $jabatan = Jabatan::findOrFail($request->jabatan);
@@ -235,8 +237,10 @@ class UserController extends Controller
 
         $roles = [];
         
-        foreach ($request->role as $item) {
-            $roles[] = Role::findById($item);
+        if($request->role) {
+            foreach ($request->role as $item) {
+                $roles[] = Role::findById($item);
+            }
         }
 
         $user->syncRoles($roles);

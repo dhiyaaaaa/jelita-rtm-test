@@ -65,26 +65,16 @@
                                             <label for="">Jawab</label>
                                             <span class="text-danger">&#42;</span>
                                             @if ($item['form']->instrumen->jenis_pertanyaan->nama == 'text')
-                                                @role(['pj_universitas', 'pj_fakultas', 'pj_prodi'])
+                                                @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
                                                     <textarea name="instrumen_{{ $item['form']->id }}" cols="10" rows="5"
                                                         class="form-control @if ($errors->has('instrumen_' . $item['form']->id)) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}</textarea>
                                                 @endrole
-                                                @role(['gkm', 'gpm'])
-                                                    <textarea cols="10" rows="5" class="form-control @if ($errors->has('instrumen_' . $item['form']->id)) is-invalid @endif"
-                                                        disabled>{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}</textarea>
-                                                @endrole
                                             @elseif($item['form']->instrumen->jenis_pertanyaan->nama == 'number')
-                                                @role(['pj_universitas', 'pj_fakultas', 'pj_prodi'])
+                                                @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
                                                     <input type="number" name="instrumen_{{ $item['form']->id }}"
                                                         {{ $isDisabled ? 'disabled' : '' }}
                                                         class="form-control @if ($errors->has('instrumen_' . $item['form']->id)) is-invalid @endif"
                                                         value="{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}">
-                                                @endrole
-                                                @role(['gkm', 'gpm'])
-                                                    <input type="number"
-                                                        class="form-control @if ($errors->has('instrumen_' . $item['form']->id)) is-invalid @endif"
-                                                        value="{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}"
-                                                        disabled>
                                                 @endrole
                                             @endif
                                             @if ($errors->has('instrumen_' . $item['form']->id))
@@ -99,38 +89,44 @@
                                             <span class="text-danger">&#42;</span>
                                             <small class="form-text text-muted" style="margin: -10px 0 8px 0">Untuk akses
                                                 Google Drive harap diubah menjadi <i>viewer</i></small>
-                                            <div class="mb-3 {{ $isDisabled ? 'd-none' : '' }}">
-                                                <button type="button" class="btn btn-secondary btn-sm"
-                                                    onclick="addLinkInput('{{ $item['form']->id }}')">Tambah
-                                                    Link</button>
-                                                <button type="button" id="remove-link-btn-{{ $item['form']->id }}"
-                                                    class="btn btn-danger btn-sm d-none"
-                                                    onclick="removeLinkInput('{{ $item['form']->id }}')">Hapus
-                                                    Link</button>
-                                            </div>
+                                            @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
+                                                <div class="mb-3 {{ $isDisabled ? 'd-none' : '' }}">
+                                                    <button type="button" class="btn btn-secondary btn-sm"
+                                                        onclick="addLinkInput('{{ $item['form']->id }}')">Tambah
+                                                        Link</button>
+                                                    <button type="button" id="remove-link-btn-{{ $item['form']->id }}"
+                                                        class="btn btn-danger btn-sm d-none"
+                                                        onclick="removeLinkInput('{{ $item['form']->id }}')">Hapus
+                                                        Link</button>
+                                                </div>
+                                            @endrole
                                             <div id="link-inputs-{{ $item['form']->id }}">
                                                 @if (!empty($sessionLinks))
                                                     @foreach ($sessionLinks as $index => $link)
+                                                        @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
+                                                            <div class="input-group mb-2">
+                                                                <input type="text" name="link_{{ $item['form']->id }}[]"
+                                                                    class="form-control @if ($errors->has('link_' . $item['form']->id . '.*')) is-invalid @endif"
+                                                                    value="{{ $link->link ?? $link }}"
+                                                                    data-link-id="{{ $link->id ?? '' }}"
+                                                                    {{ $isDisabled ? 'disabled' : '' }}>
+                                                                @if (!empty($link->id))
+                                                                    <input type="hidden"
+                                                                        name="link-id-{{ $item['form']->id }}[]"
+                                                                        value="{{ $link->id }}"
+                                                                        {{ $isDisabled ? 'disabled' : '' }}>
+                                                                @endif
+                                                            </div>
+                                                        @endrole
+                                                    @endforeach
+                                                @else
+                                                    @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
                                                         <div class="input-group mb-2">
                                                             <input type="text" name="link_{{ $item['form']->id }}[]"
                                                                 class="form-control @if ($errors->has('link_' . $item['form']->id . '.*')) is-invalid @endif"
-                                                                value="{{ $link->link ?? $link }}"
-                                                                data-link-id="{{ $link->id ?? '' }}"
                                                                 {{ $isDisabled ? 'disabled' : '' }}>
-                                                            @if (!empty($link->id))
-                                                                <input type="hidden"
-                                                                    name="link-id-{{ $item['form']->id }}[]"
-                                                                    value="{{ $link->id }}"
-                                                                    {{ $isDisabled ? 'disabled' : '' }}>
-                                                            @endif
                                                         </div>
-                                                    @endforeach
-                                                @else
-                                                    <div class="input-group mb-2">
-                                                        <input type="text" name="link_{{ $item['form']->id }}[]"
-                                                            class="form-control @if ($errors->has('link_' . $item['form']->id . '.*')) is-invalid @endif"
-                                                            {{ $isDisabled ? 'disabled' : '' }}>
-                                                    </div>
+                                                    @endrole
                                                 @endif
                                             </div>
 
@@ -200,7 +196,7 @@
                                 <div>
                                     @if (isset($status) && $status->status !== 'completed' && !$expired)
                                         <input type="hidden" name="final" value="final">
-                                        @role(['pj_universitas', 'pj_fakultas', 'pj_prodi'])
+                                        @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
                                             <button type="submit" id="button-submit" class="btn btn-primary">Submit</button>
                                         @endrole
                                         <button id="button-submit-loading" class="btn btn-primary d-none" type="button"
@@ -249,7 +245,7 @@
                                 </div>
                             @endif
 
-                            @role(['pj_universitas', 'pj_fakultas', 'pj_prodi'])
+                            @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
                                 @if (isset($status) && $status->status === 'completed' && !$expired)
                                     <div>
                                         <button type="button" class="btn btn-warning" id="edit-button">Ubah</button>
@@ -488,7 +484,7 @@
             const formData = new FormData(document.getElementById('create-form'));
 
             $.ajax({
-                url: "{{ route('auditee.dokumen.session', ['jadwalAudit' => $jadwal->id, 'unit' => $unitId, 'auditee' => $auditee->id]) }}",
+                url: "{{ route('auditee.dokumen.session', ['jadwalAudit' => $jadwal->id, 'unit' => $unitId, 'auditee' => $auditee ? $auditee->id : 'null']) }}",
                 type: 'POST',
                 data: formData,
                 processData: false,
@@ -508,7 +504,7 @@
         function update_notifikasi(id) {
 
             $.ajax({
-                url: "{{ route('auditee.notifikasi', ['notifikasi' => ':id', 'auditee' => $auditee->id]) }}"
+                url: "{{ route('auditee.notifikasi', ['notifikasi' => ':id', 'auditee' => $auditee ? $auditee->id : 'null']) }}"
                     .replace(':id', id),
                 type: 'POST',
                 processData: false,

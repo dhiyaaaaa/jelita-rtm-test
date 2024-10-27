@@ -44,8 +44,9 @@
                 {{-- Role --}}
                 <div class="form-group">
                     <label>Role</label>
-                    <span class="text-danger">&#42;</span>
-                    <select class="select2" data-placeholder="Pilih Role" style="width: 100%;" name="role[]" id="role" multiple>
+                    {{-- <span class="text-danger">&#42;</span> --}}
+                    <select class="select2" data-placeholder="Pilih Role" style="width: 100%;" name="role[]" id="role"
+                        multiple>
                         @foreach ($roles as $role)
                             <option value="{{ $role->id }}" {{ old('role') == $role->id ? 'selected' : '' }}>
                                 {{ strtoupper($role->name) }}</option>
@@ -65,7 +66,8 @@
                         id="jabatan">
                         <option disabled selected></option>
                         @foreach ($jabatans as $jabatan)
-                            <option value="{{ $jabatan->id }}" data-type="{{ $jabatan->type }}" {{ old('jabatan') == $jabatan->id ? 'selected' : '' }}>
+                            <option value="{{ $jabatan->id }}" data-type="{{ $jabatan->type }}"
+                                {{ old('jabatan') == $jabatan->id ? 'selected' : '' }}>
                                 {{ $jabatan->nama }}</option>
                         @endforeach
                     </select>
@@ -111,9 +113,9 @@
                 <div class="form-group" id="unit-group" style="display: none;">
                     <label>Unit</label>
                     <span class="text-danger">&#42;</span>
-                    <div id="loading-spinner" style="display: none;">
+                    <span id="loading-spinner" style="display: none;">
                         <span>Loading...</span>
-                    </div>
+                    </span>
                     <select class="select2" data-placeholder="Pilih Unit" style="width: 100%;" name="unit"
                         id="unit">
                     </select>
@@ -157,13 +159,19 @@
 
     <script>
         $(document).ready(function() {
-            $('#jabatan').change(function() {
-                var jabatanType = $(this).find('option:selected').data('type');
-                var jabatanId = $(this).val();
-                var fakultasGroup = $('#fakultas-group');
-                var prodiGroup = $('#prodi-group');
-                var unitGroup = $('#unit-group');
+            var fakultasGroup = $('#fakultas-group');
+            var prodiGroup = $('#prodi-group');
+            var unitGroup = $('#unit-group');
 
+            // Old Jabatan
+            var oldJabatan = "{{ old('jabatan') }}";
+
+            if (oldJabatan) {
+                var jabatanType = $(this).find('option:selected').data('type');
+                loadUnit(jabatanType, oldJabatan);
+            }
+
+            function loadUnit(jabatanType, jabatanId) {
                 if (jabatanType === 'prodi') {
                     prodiGroup.show();
                     fakultasGroup.hide();
@@ -203,6 +211,13 @@
                     prodiGroup.hide();
                     unitGroup.hide();
                 }
+            }
+
+            $('#jabatan').change(function() {
+                var jabatanType = $(this).find('option:selected').data('type');
+                var jabatanId = $(this).val();
+
+                loadUnit(jabatanType, jabatanId);
             });
         });
 

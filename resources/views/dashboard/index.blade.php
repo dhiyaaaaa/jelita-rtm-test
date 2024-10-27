@@ -155,11 +155,15 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            @if ($item['fitur_auditor'])
-                                                <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'prodi']) }}"
-                                                    class="btn btn-outline-info">Pilih Prodi</a>
-                                                <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'upps']) }}"
-                                                    class="btn btn-outline-primary">Pilih Fakultas/Unit</a>
+                                            @if (!$item['expired'])
+                                                @if ($item['fitur_auditor'])
+                                                    <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'prodi']) }}"
+                                                        class="btn btn-outline-info">Pilih Prodi</a>
+                                                    <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'upps']) }}"
+                                                        class="btn btn-outline-primary">Pilih Fakultas/Unit</a>
+                                                @else
+                                                    <a class="btn disabled">Tidak Tersedia</a>
+                                                @endif
                                             @else
                                                 <a class="btn disabled">Tidak Tersedia</a>
                                             @endif
@@ -219,19 +223,11 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if ($item->auditee->isNotEmpty())
-                                                @foreach ($item->auditee as $auditee)
-                                                    @if ($auditee->auditor->isNotEmpty())
-                                                        @foreach ($auditee->auditor as $auditor)
-                                                            <p style="margin:0; padding:0;">{{ $loop->iteration }}.
-                                                                {{ $auditor->user->name }}
-                                                                {{ '(' . $auditor->user->no_telepon . ')' }}</p>
-                                                        @endforeach
-                                                    @else
-                                                        <div class="text-center">
-                                                            <a class="btn disabled">Belum ada auditor</a>
-                                                        </div>
-                                                    @endif
+                                            @if ($item->auditee_auditor->isNotEmpty())
+                                                @foreach ($item->auditee_auditor as $auditeeAuditor)
+                                                    <p style="margin: 0; padding: 0;">{{ $loop->iteration }}.
+                                                        {{ $auditeeAuditor->auditor->user->name }}
+                                                        {{ '(' . $auditeeAuditor->auditor->user->no_telepon . ')' }}</p>
                                                 @endforeach
                                             @else
                                                 <div class="text-center">
@@ -273,8 +269,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-
-                                        @foreach ($jadwal as $item)
+                                        @forelse ($jadwal as $item)
                                             <tr>
                                                 <td class="text-center">{{ $loop->iteration }}</td>
                                                 <td class="text-center">{{ $item->jadwal }}</td>
@@ -295,7 +290,11 @@
                                                         UPPS</a>
                                                 </td>
                                             </tr>
-                                        @endforeach
+                                        @empty
+                                            <tr>
+                                                <td class="text-center" colspan="5">Tidak Tersedia</td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -343,19 +342,11 @@
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    @if ($item->auditee->isNotEmpty())
-                                                        @foreach ($item->auditee as $auditee)
-                                                            @if ($auditee->auditor->isNotEmpty())
-                                                                @foreach ($auditee->auditor as $auditor)
-                                                                    <p style="margin:0; padding:0;">{{ $loop->iteration }}.
-                                                                        {{ $auditor->user->name }}
-                                                                        {{ '(' . $auditor->user->no_telepon . ')' }}</p>
-                                                                @endforeach
-                                                            @else
-                                                                <div class="text-center">
-                                                                    <a class="btn disabled">Belum ada auditor</a>
-                                                                </div>
-                                                            @endif
+                                                    @if ($item->auditee_auditor->isNotEmpty())
+                                                        @foreach ($item->auditee_auditor as $auditeeAuditor)
+                                                            <p style="margin: 0; padding: 0;">{{ $loop->iteration }}.
+                                                                {{ $auditeeAuditor->auditor->user->name }}
+                                                                {{ '(' . $auditeeAuditor->auditor->user->no_telepon . ')' }}</p>
                                                         @endforeach
                                                     @else
                                                         <div class="text-center">
@@ -375,20 +366,21 @@
         @else
             <section class="content">
                 <div class="error-page">
-                    <h2 class="headline text-danger">500</h2>
+                    <h2 class="headline text-warning"> 403</h2>
 
                     <div class="error-content">
-                        <h3><i class="fas fa-exclamation-triangle text-danger"></i> Oops! Terjadi kesalahan.</h3>
+                        <h3><i class="fas fa-exclamation-triangle text-warning"></i> Oops! Anda tidak punya akses ke dalam
+                            sistem.</h3>
 
                         <p class="error" style="font-size: 18px;">
-                            Anda tidak mempunyai hak akses ke dalam sistem.
-                            Untuk sementara, Anda dapat menghubungi Admin.</a>
+                            Silahkan hubungi Admin atau
+                            untuk sementara, Anda dapat <a href="{{ route('dashboard') }}">kembali ke dashboard.</a>
                         </p>
 
                     </div>
+                    <!-- /.error-content -->
                 </div>
                 <!-- /.error-page -->
-
             </section>
         @endhasanyrole
 
