@@ -14,6 +14,7 @@ use App\Models\JadwalAudit;
 use App\Models\Prodi;
 use App\Models\Setting;
 use App\Models\Unit;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -287,9 +288,14 @@ class JadwalAuditController extends Controller
 
         // Tambah Auditee
         $settingProdi = Setting::where('nama_setting', 'prodi')->pluck('jabatan_id')->toArray();
-        $userKaprodi = Prodi::whereHas('user.jabatan', function ($query) use ($settingProdi) {
-            $query->whereIn('jabatan_id', $settingProdi);
-        })->with(['user.jabatan'])->get();
+        $userKaprodi = Prodi::with(['user' => function ($query) use ($settingProdi) {
+            $query->whereHas('roles', function ($q) {
+                $q->whereIn('name', ['pj_prodi', 'gkm']);
+            });
+            $query->whereHas('jabatan', function ($q) use ($settingProdi) {
+                $q->whereIn('jabatan_id', $settingProdi);
+            });
+        }])->get();
 
         foreach ($userKaprodi as $prodi) {
             foreach ($prodi->user as $user) {
@@ -308,9 +314,22 @@ class JadwalAuditController extends Controller
 
         // Auditee Fakultas (Dekan WD)
         $settingFakultas = Setting::where('nama_setting', 'fakultas')->pluck('jabatan_id')->toArray();
-        $userFakultas = Fakultas::whereHas('user.jabatan', function ($query) use ($settingFakultas) {
-            $query->whereIn('jabatan_id', $settingFakultas);
-        })->with(['user.jabatan'])->get();
+        $userGpm = Prodi::with(['user' => function ($query) use ($settingProdi) {
+            $query->whereHas('roles', function ($q) {
+                $q->whereIn('name', ['gpm']);
+            });
+            $query->whereHas('jabatan', function ($q) use ($settingProdi) {
+                $q->whereIn('jabatan_id', $settingProdi);
+            });
+        }, 'fakultas'])->get();
+        $userFakultas = Fakultas::with(['user' => function ($query) use ($settingFakultas) {
+            $query->whereHas('roles', function ($q) {
+                $q->whereIn('name', ['pj_fakultas', 'gpm']);
+            });
+            $query->whereHas('jabatan', function ($q) use ($settingFakultas) {
+                $q->whereIn('jabatan_id', $settingFakultas);
+            });
+        }])->get();
 
         foreach ($userFakultas as $fakultas) {
             foreach ($fakultas->user as $user) {
@@ -320,6 +339,22 @@ class JadwalAuditController extends Controller
                             'user_id' => $user->id,
                             'jabatan_id' => $jabatan->id,
                             'fakultas_id' => $fakultas->id,
+                            'jadwal_audit_id' => $jadwal->id,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // User GPM
+        foreach ($userGpm as $prodi) {
+            foreach ($prodi->user as $user) {
+                foreach ($user->jabatan as $jabatan) {
+                    if (in_array($jabatan->id, $settingProdi)) {
+                        Auditee::create([
+                            'user_id' => $user->id,
+                            'jabatan_id' => $jabatan->id,
+                            'fakultas_id' => $prodi->fakultas->id,
                             'jadwal_audit_id' => $jadwal->id,
                         ]);
                     }
@@ -480,11 +515,15 @@ class JadwalAuditController extends Controller
 
     public function update_setting(SettingUpdateRequest $request): RedirectResponse
     {
-        $all = array_merge($request->prodi, $request->fakultas, $request->universitas);
+        $prodi = $request->prodi ?? [];
+        $fakultas = $request->fakultas ?? [];
+        $universitas = $request->universitas ?? [];
+
+        $all = array_merge($prodi, $fakultas, $universitas);
 
         $lama = Setting::pluck('jabatan_id')->toArray();
-        $hapus = array_diff($lama, $all);
-        $tambah = array_diff($all, $lama);
+        $hapus = array_diff($lama, $all);  
+        $tambah = array_diff($all, $lama); 
 
         Setting::whereIn('jabatan_id', $hapus)->delete();
 

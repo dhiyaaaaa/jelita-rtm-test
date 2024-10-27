@@ -22,14 +22,14 @@ class SettingUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'prodi' => 'required|array',
-            'prodi.*' => 'exists:jabatan,id',
+            // 'prodi' => 'required|array',
+            // 'prodi.*' => 'exists:jabatan,id',
 
-            'fakultas' => 'required|array',
-            'fakultas.*' => 'exists:jabatan,id',
+            // 'fakultas' => 'required|array',
+            // 'fakultas.*' => 'exists:jabatan,id',
 
-            'universitas' => 'required|array',
-            'universitas.*' => 'exists:jabatan,id',
+            // 'universitas' => 'required|array',
+            // 'universitas.*' => 'exists:jabatan,id',
         ];
     }
 }
