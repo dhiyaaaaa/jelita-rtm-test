@@ -38,6 +38,9 @@ class SessionController extends Controller
         ], 400);
     }
 
+    // Session Auditee per Nomor (backup)
+    public function session_auditee_per_nomor(Request $request, string $jadwalAudit, string $unit, string $auditee, string $formId) {}
+
     public function session_auditor(Request $request, string $jadwalAudit, string $unit, string $auditor): JsonResponse
     {
         if ($request->ajax()) {
@@ -67,6 +70,9 @@ class SessionController extends Controller
             'error' => 'Invalid Request.'
         ], 400);
     }
+
+    // Session Auditor per Nomor (backup)
+    public function session_auditor_per_nomor(Request $request, string $jadwalAudit, string $unit, string $auditee, string $formId) {}
 
     public function session_ptk_auditor(Request $request, string $ptk, string $auditor): JsonResponse
     {
@@ -99,6 +105,9 @@ class SessionController extends Controller
         ], 400);
     }
 
+    // Session PTK Auditor per Nomor (backup)
+    public function session_ptk_auditor_per_nomor(Request $request, string $ptk, string $auditor, string $formId) {}
+
     public function session_ptk_auditee(Request $request, string $ptk, string $auditeeId): JsonResponse
     {
         if ($request->ajax()) {
@@ -129,6 +138,9 @@ class SessionController extends Controller
             'error' => 'Invalid Request.'
         ], 400);
     }
+
+    // Session PTK Auditee per Nomor (backup)
+    public function session_ptk_auditee_per_nomor(Request $request, string $ptk, string $auditeeId, string $formId) {}
 
     public function session_laporan_auditor(Request $request, string $laporan, string $auditor): JsonResponse
     {
@@ -161,6 +173,9 @@ class SessionController extends Controller
             'error' => 'Invalid Request.'
         ], 400);
     }
+
+    // Session Laporan Auditor per Nomor (backup)
+    public function session_laporan_auditor_per_nomor(Request $request, string $laporan, string $auditor, string $formId) {}
 
     public function session_peer_assessment(Request $request, string $auditor, string $jadwalAudit, string $unit): JsonResponse
     {

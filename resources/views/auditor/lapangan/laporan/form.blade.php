@@ -76,11 +76,11 @@
                                         </div>
                                     </div>
 
-                                    {{-- Analisis --}}
+                                    {{-- Kelebihan --}}
                                     <div class="form-group">
                                         <label for="">Kelebihan</label>
                                         <span class="text-danger">&#42;</span>
-                                        <textarea name="kelebihan_{{ $item->form->id }}" cols="10" rows="5" class="form-control"
+                                        <textarea name="kelebihan_{{ $item->form->id }}" cols="10" rows="5" class="form-control @if ($errors->has('kelebihan_' . $item->form->id)) is-invalid @endif"
                                             {{ $isDisabled ? 'disabled' : '' }}>{{ old('kelebihan_' . $item->form->id, $sessionKelebihan) }}</textarea>
 
                                         @if ($errors->has('kelebihan_' . $item->form->id))
@@ -89,11 +89,11 @@
                                         @endif
                                     </div>
 
-                                    {{-- Penyebab --}}
+                                    {{-- Ruang Peningkatan --}}
                                     <div class="form-group">
                                         <label for="">Ruang Peningkatan</label>
                                         <span class="text-danger">&#42;</span>
-                                        <textarea name="ruang_{{ $item->form->id }}" cols="10" rows="5" class="form-control"
+                                        <textarea name="ruang_{{ $item->form->id }}" cols="10" rows="5" class="form-control @if ($errors->has('ruang_' . $item->form->id)) is-invalid @endif"
                                             {{ $isDisabled ? 'disabled' : '' }}>{{ old('ruang_' . $item->form->id, $sessionRuang) }}</textarea>
 
                                         @if ($errors->has('ruang_' . $item->form->id))
@@ -101,6 +101,21 @@
                                                 style="font-size: 14px">{{ $errors->first('ruang_' . $item->form->id) }}</span>
                                         @endif
                                     </div>
+
+                                    {{-- Save per Nomor --}}
+                                    @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                        <div class="mt-3 mb-3">
+                                            <button id="simpan_{{ $item->form->id }}" class="btn btn-warning"
+                                                type="button">Simpan</button>
+
+                                            <button id="simpan-button-loading_{{ $item->form->id }}"
+                                                class="btn btn-warning d-none" type="button" disabled>
+                                                <span class="spinner-border spinner-border-sm" role="status"
+                                                    aria-hidden="true"></span>
+                                                Loading...
+                                            </button>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach
@@ -121,8 +136,8 @@
                             </div>
 
                             @if (($paginatedForms->currentPage() == $paginatedForms->lastPage()) == 1)
-                                <div>
-                                    @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                    <div class="mb-3">
                                         <input type="hidden" name="final" value="final">
                                         <button type="submit" id="button-submit" class="btn btn-primary">Submit</button>
                                         <button id="button-submit-loading" class="btn btn-primary d-none" type="button"
@@ -131,48 +146,28 @@
                                                 aria-hidden="true"></span>
                                             Loading...
                                         </button>
-                                        <div class="mt-3">
-                                            <button id="save-button" class="btn btn-warning">Save</button>
-
-                                            <button id="save-button-loading" class="btn btn-warning d-none" type="button"
-                                                disabled>
-                                                <span class="spinner-border spinner-border-sm" role="status"
-                                                    aria-hidden="true"></span>
-                                                Loading...
-                                            </button>
-                                        </div>
-                                    @else
-                                        @if ($paginatedForms->lastPage() !== 1)
+                                    </div>
+                                @else
+                                    @if ($paginatedForms->lastPage() !== 1)
+                                        <div>
                                             <a id="previous" href="{{ $paginatedForms->previousPageUrl() }}"
                                                 class="btn btn-primary mb-3">Previous</a>
-                                        @endif
+                                        </div>
                                     @endif
-                                </div>
+                                @endif
                             @else
-                                <div class="">
+                                <div class="mb-3">
                                     @if ($paginatedForms->currentPage() > 1)
                                         <a id="previous" href="{{ $paginatedForms->previousPageUrl() }}"
                                             class="btn btn-primary">Previous</a>
                                     @endif
                                     <a id="next" href="{{ $paginatedForms->nextPageUrl() }}"
                                         class="btn btn-primary">Next</a>
-                                    <div class="mt-3">
-                                        @if (isset($status) && $status->status !== 'completed' && !$expired)
-                                            <button id="save-button" class="btn btn-warning">Save</button>
-
-                                            <button id="save-button-loading" class="btn btn-warning d-none" type="button"
-                                                disabled>
-                                                <span class="spinner-border spinner-border-sm" role="status"
-                                                    aria-hidden="true"></span>
-                                                Loading...
-                                            </button>
-                                        @endif
-                                    </div>
                                 </div>
                             @endif
 
                             @if (isset($status) && $status->status === 'completed' && !$expired)
-                                <div>
+                                <div class="mb-3">
                                     <button type="button" class="btn btn-warning" id="edit-button">Ubah</button>
                                     <button id="button-edit-loading" class="btn btn-warning d-none" type="button" disabled>
                                         <span class="spinner-border spinner-border-sm" role="status"
@@ -184,7 +179,7 @@
 
                             {{-- Kembali ke halaman jadwal --}}
                             <a href="{{ route('auditor.lapangan.show', $jadwal) }}"
-                                class="btn btn-outline-secondary mt-3">Kembali</a>
+                                class="btn btn-outline-secondary">Kembali</a>
                         </div>
                     </div>
                 </div>
@@ -254,9 +249,27 @@
         $(document).ready(function() {
             var form = $('#create-form');
 
+            // Form Submit
             form.on('submit', function(e) {
-                $('#button-submit').addClass('d-none');
-                $('#button-submit-loading').removeClass('d-none');
+                e.preventDefault();
+
+                Swal.fire({
+                    title: 'Submit Form?',
+                    text: "Pastikan bahwa jawaban sudah terisi semua!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: 'primary',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, submit!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#button-submit').addClass('d-none');
+                        $('#button-submit-loading').removeClass('d-none');
+                        form.off('submit')
+                            .submit();
+                    }
+                });
             });
 
             $('#edit-button').on('click', function() {
@@ -284,12 +297,23 @@
 
             save_session();
 
-            $('#save-button').on('click', save_jawaban);
+            // Save Jawaban
+            $(document).on('click', '[id^=simpan_]', function() {
+                var id = $(this).attr('id').split('_')[1];
+
+                $('[id^=simpan_' + id + ']').addClass('d-none');
+
+                $('#simpan-button-loading_' + id).removeClass('d-none');
+
+                save_jawaban(id);
+
+                save_session();
+            });
 
             $('textarea[name^="kelebihan_"], textarea[name^="ruang_"]').on('input',
                 debounce(function() {
                     save_session();
-                }, 300));
+                }, 1000));
 
             $(document).on('click', '.pagination a', function(event) {
                 event.preventDefault();
@@ -305,13 +329,26 @@
         });
 
         // Save ke DB
-        function save_jawaban(e) {
-            e.preventDefault();
+        function save_jawaban(formId) {
+            event.preventDefault();
 
-            const formData = new FormData(document.getElementById('create-form'));
+            // Kelebihan Selector
+            const kelebihanSelector = document.querySelector(`[name="kelebihan_${formId}"]`);
+            const kelebihan = kelebihanSelector ? kelebihanSelector.value : null;
 
-            document.getElementById('save-button').classList.add('d-none');
-            document.getElementById('save-button-loading').classList.remove('d-none');
+            // Ruang Peningkatan Selector
+            const ruangSelector = document.querySelector(`[name="ruang_${formId}"]`);
+            const ruang = ruangSelector ? ruangSelector.value : null;
+
+            // Loading
+            document.getElementById(`simpan_${formId}`).classList.add('d-none');
+            document.getElementById(`simpan-button-loading_${formId}`).classList.remove('d-none');
+
+            // Form Data
+            const formData = new FormData();
+            formData.append(`kelebihan_${formId}`, kelebihan);
+            formData.append(`ruang_${formId}`, ruang);
+
             $.ajax({
                 url: '{{ route('auditor.lapangan.laporan.save_form', ['laporan' => $laporan->id, 'auditor' => $auditor->id]) }}',
                 type: 'POST',
@@ -323,10 +360,14 @@
                         icon: 'success',
                         title: 'Berhasil',
                         text: response.message,
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            location.reload();
+                        }
                     });
 
-                    document.getElementById('save-button').classList.remove('d-none');
-                    document.getElementById('save-button-loading').classList.add('d-none');
+                    document.getElementById(`simpan_${formId}`).classList.remove('d-none');
+                    document.getElementById(`simpan-button-loading_${formId}`).classList.add('d-none');
                 },
                 error: function(xhr) {
                     var response = JSON.parse(xhr.responseText);
@@ -338,8 +379,8 @@
                         title: 'Error',
                         html: response.message,
                     });
-                    document.getElementById('save-button').classList.remove('d-none');
-                    document.getElementById('save-button-loading').classList.add('d-none');
+                    document.getElementById(`simpan_${formId}`).classList.remove('d-none');
+                    document.getElementById(`simpan-button-loading_${formId}`).classList.add('d-none');
                 }
             });
         }

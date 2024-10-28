@@ -287,7 +287,7 @@ class DokumenController extends Controller
                 $auditee = Auditee::where(['user_id' => $this->user->id, 'jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->first();
 
                 if (!$auditee) {
-                    return response()->json(['success' => false, 'message' => 'Anda belum ditambahkan sebagai auditan sehingga tidak bisa mengisi form'], 403);
+                    return response()->json(['message' => 'Anda belum ditambahkan sebagai auditan sehingga tidak bisa mengisi form'], 422);
                 }
 
                 $rules = [];
@@ -377,7 +377,9 @@ class DokumenController extends Controller
 
                 return response()->json($response);
             } catch (\Exception $e) {
-                return response()->json(['success' => false, 'message' => 'Error.'], 500);
+                return response()->json([
+                    'message' => 'Terjadi kesalahan saat menyimpan jawaban!',
+                ], 500);
             }
         }
 
@@ -385,6 +387,9 @@ class DokumenController extends Controller
             'error' => 'Invalid Request.'
         ], 400);
     }
+
+    // Save Per Nomor (backup)
+    public function save_per_nomor(Request $request, JadwalAudit $jadwalAudit, string $unit, string $type, string $formId) {}
 
     public function store(Request $request, JadwalAudit $jadwalAudit, string $unit, string $type): RedirectResponse
     {

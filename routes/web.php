@@ -488,9 +488,13 @@ Route::group(['middleware' => 'auth'], function () {
 
             // Save Jawaban Sementara
             Route::post('{jadwalAudit}/save/{unit}/{type}', [AuditeeDokumenController::class, 'save'])->name('auditee.dokumen.save');
+            // Save Jawaban Per Nomor
+            Route::post('{jadwalAudit}/save/{unit}/{type}/{formId}', [AuditeeDokumenController::class, 'save_per_nomor'])->name('auditee.dokumen.save_per_nomor');
 
             // Session
             Route::post('{jadwalAudit}/isi-audit-session/{unit}/{auditee}', [SessionController::class, 'session_auditee'])->name('auditee.dokumen.session');
+            // Session Per Nomor
+            Route::post('{jadwalAudit}/isi-audit-session/{unit}/{auditee}/{formId}', [SessionController::class, 'session_auditee_per_nomor'])->name('auditee.dokumen.session_per_nomor');
 
             // Import Jawaban
             Route::get('{jadwalAudit}/import/{unit}/{type}', [AuditeeDokumenController::class, 'import'])->name('auditee.dokumen.import');
@@ -526,9 +530,13 @@ Route::group(['middleware' => 'auth'], function () {
 
             // Save Jawaban Sementara PTK
             Route::post('ptk/{ptk}/save/{auditee}', [AuditeePtkController::class, 'save'])->name('auditee.lapangan.save_ptk');
+            // Save Jawaban per Nomor
+            Route::post('ptk/{ptk}/save/{auditee}/{formId}', [AuditeePtkController::class, 'save_per_nomor'])->name('auditee.lapangan.save_ptk_per_nomor');
 
             // Session PTK Form
             Route::post('ptk/{ptk}/session_ptk_auditee/{auditee}', [SessionController::class, 'session_ptk_auditee'])->name('auditee.lapangan.session_ptk');
+            // Session PTK per nomor
+            Route::post('ptk/{ptk}/session_ptk_auditee/{auditee}/{formId}', [SessionController::class, 'session_ptk_auditee_per_nomor'])->name('auditee.lapangan.session_ptk_per_nomor');
         });
     });
 
@@ -557,9 +565,13 @@ Route::group(['middleware' => 'auth'], function () {
 
             // Save Jawaban Sementara
             Route::post('{jadwalAudit}/save/{unit}/{type}', [AuditorDokumenController::class, 'save'])->name('auditor.dokumen.save');
-
+            // Save Jawaban per Nomor
+            Route::post('{jadwalAudit}/save/{unit}/{type}/{formId}', [AuditorDokumenController::class, 'save_per_nomor'])->name('auditor.dokumen.save_per_nomor');
+            
             // Session
             Route::post('{jadwalAudit}/isi_audit_session/{unit}/{auditorId}', [SessionController::class, 'session_auditor'])->name('auditor.dokumen.session');
+            // Session per Nomor
+            Route::post('{jadwalAudit}/isi_audit_session/{unit}/{auditorId}/{formId}', [SessionController::class, 'session_auditor_per_nomor'])->name('auditor.dokumen.session_per_nomor');
 
             // Kirim Notifikasi
             Route::post('{jadwalAudit}/notifikasi/{unit}/{type}/{instrumenId}/{auditorId}', [NotifikasiController::class, 'kirim_notifikasi_auditor'])->name('auditor.notifikasi');
@@ -631,9 +643,13 @@ Route::group(['middleware' => 'auth'], function () {
 
             // Save Form PTK
             Route::post('ptk/{ptk}/save/{auditor}', [AuditorPtkController::class, 'save_form'])->name('auditor.lapangan.ptk.save_form');
-
+            // Save Form PTK per nomor
+            Route::post('ptk/{ptk}/save/{auditor}/{formId}', [AuditorPtkController::class, 'save_form_per_nomor'])->name('auditor.lapangan.ptk.save_form_per_nomor');
+            
             // Save Session Form PTK 
             Route::post('{ptk}/auditor/{auditor}', [SessionController::class, 'session_ptk_auditor'])->name('auditor.lapangan.ptk.session');
+            // Save Session PTK per nomor
+            Route::post('{ptk}/auditor/{auditor}/{formId}', [SessionController::class, 'session_ptk_auditor_per_nomor'])->name('auditor.lapangan.ptk.session_per_nomor');
 
             // Hapus Instrumen dari PTK
             Route::post('{ptk}/ptk/{form}', [AuditorPtkController::class, 'hapus_instrumen'])->name('auditor.lapangan.ptk.delete_instrumen');
@@ -668,9 +684,13 @@ Route::group(['middleware' => 'auth'], function () {
 
             // Save Form
             Route::post('laporan/{laporan}/save_form/{auditor}', [AuditorLaporanController::class, 'save_form'])->name('auditor.lapangan.laporan.save_form');
+            // Save Form per Nomor
+            Route::post('laporan/{laporan}/save_form/{auditor}/{formId}', [AuditorLaporanController::class, 'save_form_per_nomor'])->name('auditor.lapangan.laporan.save_form_per_nomor');
 
             // Save Session Laporan Form
             Route::post('laporan/{laporan}/session/{auditor}', [SessionController::class, 'session_laporan_auditor'])->name('auditor.lapangan.laporan.session');
+            // Save Session Laporan Form per nomor
+            Route::post('laporan/{laporan}/session/{auditor}/{formId}', [SessionController::class, 'session_laporan_auditor_per_nomor'])->name('auditor.lapangan.laporan.session_per_nomor');
         });
 
         // Peer Assessment

@@ -28,7 +28,7 @@ class PtkController extends Controller
         $this->user = Auth::user();
         $this->jabatanUser = Auth::user()->jabatan->isNotEmpty() ? Auth::user()->jabatan->first()->id : null;
     }
-    
+
     public function isi_ptk(Ptk $ptk): RedirectResponse
     {
         $unit = get_type_model($ptk);
@@ -61,6 +61,10 @@ class PtkController extends Controller
 
         $auditee = Auditee::where(['user_id' => $this->user->id, 'jadwal_audit_id' => $ptk->jadwal_audit_id, $unit['kolom'] => $unit['value']])->first();
 
+        if (!$auditee) {
+            $auditee = null;
+        }
+
 
         $daftarTilik = JawabanAuditor::where(['jadwal_audit_id' => $ptk->jadwal_audit_id, $unit['kolom'] => $unit['value']])
             ->where('ptk', 1)
@@ -89,7 +93,7 @@ class PtkController extends Controller
         $jawabanPtkDeskripsi = PtkFormDeskripsi::where('ptk_id', $ptk->id)->get();
         $jawabanPtkRencana = PtkFormRencana::where('ptk_id', $ptk->id)->get();
 
-        $sessionFormData = session()->get('form_ptk_auditee-page_' . $currentPage . '-ptkId_' . $ptk->id . '-auditeeId_' . $auditee->id, []);
+        $sessionFormData = $auditee ? session()->get('form_ptk_auditee-page_' . $currentPage . '-ptkId_' . $ptk->id . '-auditeeId_' . $auditee->id, []) : [];
 
         $status = StatusPtkAuditee::where('ptk_id', $ptk->id)->first();
 
@@ -112,79 +116,102 @@ class PtkController extends Controller
 
     public function save(Request $request, string $ptk, string $auditee): JsonResponse
     {
-        $response = [];
-
-        foreach ($request->all() as $key => $value) {
-            if (strpos($key, 'target_') === 0) {
-                $id = substr($key, strlen('target_'));
-                $targetKey = 'target_' . $id;
-                $picKey = 'pic_' . $id;
-
-                $data = [
-                    'auditee_id' => $auditee,
-                    'target' => $request->input($targetKey, null),
-                    'pic' => $request->input($picKey, null),
-                ];
-
-                PtkForm::updateOrCreate(
-                    [
-                        'ptk_id' => $ptk,
-                        'form_id' => $id,
-                    ],
-                    $data
-                );
-            }
-
-            if (preg_match('/^rencana_([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)$/', $key, $matches)) {
-                $formId = $matches[1];
-                $existRencana = PtkFormRencana::where('ptk_id', $ptk)
-                    ->where('form_id', $formId)
-                    ->pluck('rencana', 'id')->toArray();
-                // Log::info('ID: ', $existDeskripsi);
-
-                $submittedRencanas = $value;
-                // Log::info('Submitted Deskripsi: ', $submittedRencanas);
-
-                if (!is_array($submittedRencanas)) {
-                    return response()->json(['message' => 'Invalid input data format'], 422);
+        if ($request->ajax()) {
+            try {
+                if ($auditee == 'null') {
+                    return response()->json(['message' => 'Anda belum ditambahkan sebagai auditan sehingga tidak bisa mengisi form'], 403);
                 }
 
-                $submittedRencanas = array_filter($submittedRencanas);
+                $response = [];
 
-                $currentSubmittedRencanas = array_map(function ($deskripsi) {
-                    return $deskripsi;
-                }, $submittedRencanas);
-                // Log::info('ID: ', $currentSubmittedDeskripsis);
+                foreach ($request->all() as $key => $value) {
+                    if (strpos($key, 'target_') === 0) {
+                        $id = substr($key, strlen('target_'));
+                        $targetKey = 'target_' . $id;
+                        $picKey = 'pic_' . $id;
 
-                foreach ($existRencana as $id => $rencana) {
-                    if (!in_array($rencana, $currentSubmittedRencanas)) {
-                        PtkFormRencana::where('id', $id)->delete();
-                    }
-                }
+                        $data = [
+                            'auditee_id' => $auditee,
+                            'target' => $request->input($targetKey, null),
+                            'pic' => $request->input($picKey, null),
+                        ];
 
-                foreach ($submittedRencanas as $rencana) {
-                    if (!in_array($rencana, $existRencana)) {
-                        PtkFormRencana::create(
+                        PtkForm::updateOrCreate(
                             [
                                 'ptk_id' => $ptk,
-                                'form_id' => $formId,
-                                'rencana' => $rencana,
-                                'auditee_id' => $auditee,
-                                'rencana' => $rencana,
-                            ]
+                                'form_id' => $id,
+                            ],
+                            $data
                         );
                     }
+
+                    if (preg_match('/^rencana_([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)$/', $key, $matches)) {
+                        $formId = $matches[1];
+                        $existRencana = PtkFormRencana::where('ptk_id', $ptk)
+                            ->where('form_id', $formId)
+                            ->pluck('rencana', 'id')->toArray();
+                        // Log::info('ID: ', $existDeskripsi);
+
+                        $submittedRencanas = $value;
+                        // Log::info('Submitted Deskripsi: ', $submittedRencanas);
+
+                        if (!is_array($submittedRencanas)) {
+                            return response()->json(['message' => 'Invalid input data format'], 422);
+                        }
+
+                        $submittedRencanas = array_filter($submittedRencanas);
+
+                        $currentSubmittedRencanas = array_map(function ($deskripsi) {
+                            return $deskripsi;
+                        }, $submittedRencanas);
+                        // Log::info('ID: ', $currentSubmittedDeskripsis);
+
+                        foreach ($existRencana as $id => $rencana) {
+                            if (!in_array($rencana, $currentSubmittedRencanas)) {
+                                PtkFormRencana::where('id', $id)->delete();
+                            }
+                        }
+
+                        foreach ($submittedRencanas as $rencana) {
+                            if (!in_array($rencana, $existRencana)) {
+                                PtkFormRencana::create(
+                                    [
+                                        'ptk_id' => $ptk,
+                                        'form_id' => $formId,
+                                        'rencana' => $rencana,
+                                        'auditee_id' => $auditee,
+                                        'rencana' => $rencana,
+                                    ]
+                                );
+                            }
+                        }
+                    }
                 }
+
+                $response['message'] = 'Jawaban berhasil disimpan.';
+
+                return response()->json($response);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => 'Terjadi kesalahan saat menyimpan jawaban!',
+                ], 500);
             }
         }
 
-        $response['message'] = 'Jawaban berhasil disimpan.';
-
-        return response()->json($response);
+        return response()->json([
+            'error' => 'Invalid Request.'
+        ], 400);
     }
+
+    // Save PTK per nomor
+    public function save_per_nomor(Request $request, string $ptk, string $auditee, string $formId) {}
 
     public function store(Request $request, string $ptk, string $auditee): RedirectResponse
     {
+        if ($auditee == 'null') {
+            return redirect()->route('auditee.lapangan.create_ptk', ['ptk' => $ptk])->with('error_message', 'Anda belum ditambahkan sebagai auditan sehingga tidak bisa mengisi form');
+        }
+
         $totalPages = $request->input('totalPage');
         $sessionFormData = [];
         $errorPage = null;

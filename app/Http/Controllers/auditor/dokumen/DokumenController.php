@@ -69,7 +69,9 @@ class DokumenController extends Controller
                 $query->where('jadwal_audit_id', $jadwalAudit->id);
                 $query->where('daftar_tilik', 1);
             },
-            'status_audit_auditor'
+            'status_audit_auditor' => function ($query) use ($jadwalAudit) {
+                $query->where('jadwal_audit_id', $jadwalAudit->id);
+            },
         ])->get();
 
         $fakultas = Fakultas::whereHas('auditee.auditor', function ($query) use ($jadwalAudit, $auditor) {
@@ -84,7 +86,9 @@ class DokumenController extends Controller
                 $query->where('jadwal_audit_id', $jadwalAudit->id);
                 $query->where('daftar_tilik', 1);
             },
-            'status_audit_auditor'
+            'status_audit_auditor' => function ($query) use ($jadwalAudit) {
+                $query->where('jadwal_audit_id', $jadwalAudit->id);
+            },
         ])->get();
 
         $unit = Unit::whereHas('auditee.auditor', function ($query) use ($jadwalAudit, $auditor) {
@@ -99,7 +103,9 @@ class DokumenController extends Controller
                 $query->where('jadwal_audit_id', $jadwalAudit->id);
                 $query->where('daftar_tilik', 1);
             },
-            'status_audit_auditor'
+            'status_audit_auditor' => function ($query) use ($jadwalAudit) {
+                $query->where('jadwal_audit_id', $jadwalAudit->id);
+            },
         ])->get();
 
         $auditee = $prodi->merge($fakultas)->merge($unit);
@@ -346,7 +352,9 @@ class DokumenController extends Controller
 
                 return response()->json($response);
             } catch (\Exception $e) {
-                return response()->json(['success' => false, 'message' => 'Error.'], 500);
+                return response()->json([
+                    'message' => 'Terjadi kesalahan saat menyimpan jawaban!',
+                ], 500);
             }
         }
 
@@ -354,6 +362,9 @@ class DokumenController extends Controller
             'error' => 'Invalid Request.'
         ], 400);
     }
+
+    // Save per nomor (backup)
+    public function save_per_nomor(Request $request, string $jadwalAudit, string $unit, string $type, string $formId) {}
 
     public function store(Request $request, string $jadwalAudit, string $unit, string $type): RedirectResponse
     {
@@ -480,6 +491,7 @@ class DokumenController extends Controller
             $status = StatusAuditAuditor::where('jadwal_audit_id', $jadwalAudit)
                 ->where(get_type($type), $unit)
                 ->first();
+            // dd($status);
 
             if ($status && $status->status == 'in_progress') {
                 $status->status = 'completed';

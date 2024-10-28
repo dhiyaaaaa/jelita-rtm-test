@@ -35,7 +35,7 @@
 
                                 // Jawaban Auditor
                                 $jawabanAuditor = $jawabanAuditors->where('form_id', $item['form']->id)->first();
-                                
+
                                 $sessionKriteria =
                                     $jawabanAuditor && $jawabanAuditor->kriteria_id
                                         ? $jawabanAuditor->kriteria_id
@@ -104,7 +104,9 @@
                                             <span class="text-danger">&#42;</span>
                                             @foreach ($item['form']->instrumen->kriteria as $index => $kriteria)
                                                 <div class="custom-control custom-radio">
-                                                    <input class="custom-control-input jawaban-auditor" type="radio"
+                                                    <input
+                                                        class="custom-control-input jawaban-auditor @if ($errors->has('kriteria_' . $item['form']->id)) is-invalid @endif"
+                                                        type="radio"
                                                         id="customRadio{{ $item['form']->id }}-{{ $index }}"
                                                         name="kriteria_{{ $item['form']->id }}"
                                                         value="{{ $kriteria->id }}"
@@ -133,8 +135,9 @@
                                             <label for="">Daftar Tilik</label>
                                             <span class="text-danger">&#42;</span>
                                             <div class="custom-control custom-radio">
-                                                <input class="custom-control-input daftar-tilik" type="radio"
-                                                    id="daftarTilikYa-{{ $item['form']->id }}"
+                                                <input
+                                                    class="custom-control-input daftar-tilik @if ($errors->has('daftar-tilik_' . $item['form']->id)) is-invalid @endif"
+                                                    type="radio" id="daftarTilikYa-{{ $item['form']->id }}"
                                                     name="daftar-tilik_{{ $item['form']->id }}" value="1"
                                                     {{ old('daftar-tilik_' . $item['form']->id, $sessionDaftarTilik) == '1' ? 'checked' : '' }}
                                                     {{ $isDisabled ? 'disabled' : '' }}>
@@ -145,8 +148,9 @@
                                                 <br>
                                             </div>
                                             <div class="custom-control custom-radio">
-                                                <input class="custom-control-input daftar-tilik" type="radio"
-                                                    id="daftarTilikTidak-{{ $item['form']->id }}"
+                                                <input
+                                                    class="custom-control-input daftar-tilik @if ($errors->has('daftar-tilik_' . $item['form']->id)) is-invalid @endif"
+                                                    type="radio" id="daftarTilikTidak-{{ $item['form']->id }}"
                                                     name="daftar-tilik_{{ $item['form']->id }}" value="0"
                                                     {{ old('daftar-tilik_' . $item['form']->id, $sessionDaftarTilik) == '0' ? 'checked' : '' }}
                                                     {{ $isDisabled ? 'disabled' : '' }}>
@@ -169,6 +173,20 @@
                                             <textarea name="catatan_{{ $item['form']->id }}" cols="10" rows="5" class="form-control"
                                                 {{ $isDisabled ? 'disabled' : '' }}>{{ old('catatan_' . $item['form']->id, $sessionCatatan) }}</textarea>
                                         </div>
+
+                                        @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                            <div class="mb-3">
+                                                <button id="simpan_{{ $item['form']->id }}" class="btn btn-warning"
+                                                    type="button">Simpan</button>
+
+                                                <button id="simpan-button-loading_{{ $item['form']->id }}"
+                                                    class="btn btn-warning d-none" type="button" disabled>
+                                                    <span class="spinner-border spinner-border-sm" role="status"
+                                                        aria-hidden="true"></span>
+                                                    Loading...
+                                                </button>
+                                            </div>
+                                        @endif
 
                                         {{-- Notifikasi --}}
                                         <div class="{{ $isDisabled ? 'd-none' : '' }}">
@@ -213,8 +231,6 @@
                                                 </div>
                                             @endforeach
                                         @endif
-
-
                                     </div>
                                 </div>
                             </div>
@@ -233,12 +249,13 @@
                         <div class="card-body">
                             <div class="pagination-wrapper">
                                 {{ $paginatedForms->links('pagination::bootstrap-4') }}
+
                             </div>
 
                             @if (($paginatedForms->currentPage() == $paginatedForms->lastPage()) == 1)
-                                <div>
-                                    @if (isset($status) && $status->status !== 'completed' && !$expired)
-                                        <input type="hidden" name="final" value="final">
+                                @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                    <input type="hidden" name="final" value="final">
+                                    <div class="mb-3">
                                         <button type="submit" id="button-submit" class="btn btn-primary">Submit</button>
                                         <button id="button-submit-loading" class="btn btn-primary d-none" type="button"
                                             disabled>
@@ -246,21 +263,8 @@
                                                 aria-hidden="true"></span>
                                             Loading...
                                         </button>
-                                        <div class="mt-3">
-                                            <button id="save-button" class="btn btn-warning">Save</button>
-
-                                            <button id="save-button-loading" class="btn btn-warning d-none"
-                                                type="button" disabled>
-                                                <span class="spinner-border spinner-border-sm" role="status"
-                                                    aria-hidden="true"></span>
-                                                Loading...
-                                            </button>
-                                        </div>
-                                    @else
-                                        <a id="previous" href="{{ $paginatedForms->previousPageUrl() }}"
-                                            class="btn btn-primary">Previous</a>
-                                    @endif
-                                </div>
+                                    </div>
+                                @endif
                             @else
                                 <div class="">
                                     @if ($paginatedForms->currentPage() > 1)
@@ -272,24 +276,12 @@
                                     <a id="next" href="{{ $paginatedForms->nextPageUrl() }}"
                                         class="btn btn-primary">Next</a>
                                     <div class="mt-3">
-                                        @if (isset($status) && $status->status !== 'completed' && !$expired)
-                                            <button id="save-button" class="btn btn-warning">Save</button>
-
-                                            <button id="save-button-loading" class="btn btn-warning d-none"
-                                                type="button" disabled>
-                                                <span class="spinner-border spinner-border-sm" role="status"
-                                                    aria-hidden="true"></span>
-                                                Loading...
-                                            </button>
-                                        @endif
-
-
                                     </div>
                                 </div>
                             @endif
 
                             @if (isset($status) && $status->status === 'completed' && !$expired)
-                                <div>
+                                <div class="mb-3">
                                     <button type="button" class="btn btn-warning" id="edit-button">Ubah</button>
                                     <button id="button-edit-loading" class="btn btn-warning d-none" type="button"
                                         disabled>
@@ -302,7 +294,7 @@
 
                             {{-- Kembali ke halaman jadwal --}}
                             <a href="{{ route('auditor.dokumen.show', $jadwalAudit->id) }}"
-                                class="btn btn-outline-secondary mt-3">Kembali</a>
+                                class="btn btn-outline-secondary">Kembali</a>
                         </div>
                     </div>
                 </div>
@@ -373,9 +365,27 @@
         $(document).ready(function() {
             var form = $('#create-form');
 
+            // Form Submit
             form.on('submit', function(e) {
-                $('#button-submit').addClass('d-none');
-                $('#button-submit-loading').removeClass('d-none');
+                e.preventDefault();
+
+                Swal.fire({
+                    title: 'Submit Form?',
+                    text: "Pastikan bahwa jawaban sudah terisi semua!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: 'primary',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, submit!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#button-submit').addClass('d-none');
+                        $('#button-submit-loading').removeClass('d-none');
+                        form.off('submit')
+                            .submit();
+                    }
+                });
             });
 
             $('#edit-button').on('click', function() {
@@ -403,11 +413,22 @@
 
             save_session();
 
-            $('#save-button').on('click', save_jawaban);
+            // Save Jawaban
+            $(document).on('click', '[id^=simpan_]', function() {
+                var id = $(this).attr('id').split('_')[1];
+
+                $('[id^=simpan_' + id + ']').addClass('d-none');
+
+                $('#simpan-button-loading_' + id).removeClass('d-none');
+
+                save_jawaban(id);
+
+                save_session();
+            });
 
             $('textarea[name^="catatan_"]').on('input', debounce(function() {
                 save_session();
-            }, 500));
+            }, 1000));
 
 
             $('.jawaban-auditor').on('change', function() {
@@ -466,13 +487,30 @@
         });
 
 
-        function save_jawaban(e) {
-            e.preventDefault();
+        function save_jawaban(formId) {
+            event.preventDefault();
 
-            const formData = new FormData(document.getElementById('create-form'));
+            // Kriteria Selector
+            const kriteriaSelector = document.querySelector(`[name="kriteria_${formId}"]:checked`);
+            const kriteria = kriteriaSelector ? kriteriaSelector.value : null;
 
-            document.getElementById('save-button').classList.add('d-none');
-            document.getElementById('save-button-loading').classList.remove('d-none');
+            // Daftar Tilik Selector
+            const daftartilikSelector = document.querySelector(`[name="daftar-tilik_${formId}"]:checked`);
+            const daftartilik = daftartilikSelector ? daftartilikSelector.value : null;
+
+            // Catatan Selector
+            const catatanSelector = document.querySelector(`[name="catatan_${formId}"]`);
+            const catatan = catatanSelector ? catatanSelector.value : null;
+
+            // Loading
+            document.getElementById(`simpan_${formId}`).classList.add('d-none');
+            document.getElementById(`simpan-button-loading_${formId}`).classList.remove('d-none');
+
+            // Form Data
+            const formData = new FormData();
+            formData.append(`kriteria_${formId}`, kriteria);
+            formData.append(`daftar-tilik_${formId}`, daftartilik);
+            formData.append(`catatan_${formId}`, catatan);
 
             $.ajax({
                 url: '{{ route('auditor.dokumen.save', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $unitId, 'type' => $type]) }}',
@@ -485,10 +523,14 @@
                         icon: 'success',
                         title: 'Berhasil',
                         text: response.message,
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            location.reload();
+                        }
                     });
 
-                    document.getElementById('save-button').classList.remove('d-none');
-                    document.getElementById('save-button-loading').classList.add('d-none');
+                    document.getElementById(`simpan_${formId}`).classList.remove('d-none');
+                    document.getElementById(`simpan-button-loading_${formId}`).classList.add('d-none');
                 },
                 error: function(xhr) {
                     var response = JSON.parse(xhr.responseText);
@@ -500,8 +542,8 @@
                         title: 'Error',
                         html: response.message,
                     });
-                    document.getElementById('save-button').classList.remove('d-none');
-                    document.getElementById('save-button-loading').classList.add('d-none');
+                    document.getElementById(`simpan_${formId}`).classList.remove('d-none');
+                    document.getElementById(`simpan-button-loading_${formId}`).classList.add('d-none');
                 }
             });
         }

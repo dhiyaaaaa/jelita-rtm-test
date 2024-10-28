@@ -1,8 +1,9 @@
 @extends('components.layout.auditee_layout')
 
 @section('content')
-    <form action="{{ route('auditee.lapangan.store_ptk', ['ptk' => $ptkId, 'auditee' => $auditee->id]) }}" method="post"
-        id="create-form" enctype="multipart/form-data" class="block">
+    <form
+        action="{{ route('auditee.lapangan.store_ptk', ['ptk' => $ptkId, 'auditee' => $auditee ? $auditee->id : 'null']) }}"
+        method="post" id="create-form" enctype="multipart/form-data" class="block">
         @csrf
         <div class="row">
             <div class="col-md-9 ">
@@ -43,8 +44,10 @@
                                         : $sessionFormData['pic_' . $item->form->id] ?? '';
 
                                 $isDisabled = true;
-                                if (isset($status) && $status->status !== 'completed') {
-                                    $isDisabled = false;
+                                if (!$expired) {
+                                    if (isset($status) && $status->status !== 'completed') {
+                                        $isDisabled = false;
+                                    }
                                 }
                             @endphp
                             <div class="card">
@@ -100,7 +103,8 @@
                                                 @foreach ($sessionRencana as $index => $rencana)
                                                     {{-- {{ $rencana }} --}}
                                                     <div class="input-group mb-2">
-                                                        <textarea name="rencana_{{ $item->form->id }}[]" class="form-control" {{ $isDisabled ? 'disabled' : '' }}
+                                                        <textarea name="rencana_{{ $item->form->id }}[]"
+                                                            class="form-control @if ($errors->has('rencana_' . $item->form->id . '.*')) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}
                                                             data-rencana-id="{{ $rencana->id ?? '' }}" cols="30" rows="3">{{ $rencana->rencana ?? $rencana }}</textarea>
                                                         @if (!empty($rencana->id))
                                                             <input type="hidden" name="rencana-id-{{ $item->form->id }}[]"
@@ -110,7 +114,8 @@
                                                 @endforeach
                                             @else
                                                 <div class="input-group mb-2">
-                                                    <textarea name="rencana_{{ $item->form->id }}[]" class="form-control" cols="30" rows="3"
+                                                    <textarea name="rencana_{{ $item->form->id }}[]"
+                                                        class="form-control @if ($errors->has('rencana_' . $item->form->id . '.*')) is-invalid @endif" cols="30" rows="3"
                                                         {{ $isDisabled ? 'disabled' : '' }}></textarea>
                                                 </div>
                                             @endif
@@ -125,8 +130,8 @@
                                     <div class="form-group">
                                         <label for="">Target Penyelesaian</label>
                                         <span class="text-danger">&#42;</span>
-                                        <textarea name="target_{{ $item->form->id }}" cols="10" rows="5" class="form-control"
-                                            {{ $isDisabled ? 'disabled' : '' }}>{{ old('target_' . $item->form->id, $sessionTarget) }}</textarea>
+                                        <textarea name="target_{{ $item->form->id }}" cols="10" rows="5"
+                                            class="form-control @if ($errors->has('target_' . $item->form->id)) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>{{ old('target_' . $item->form->id, $sessionTarget) }}</textarea>
 
                                         @if ($errors->has('target_' . $item->form->id))
                                             <span class="text-danger d-block"
@@ -137,14 +142,29 @@
                                     <div class="form-group">
                                         <label for="">PIC</label>
                                         <span class="text-danger">&#42;</span>
-                                        <textarea name="pic_{{ $item->form->id }}" cols="10" rows="5" class="form-control"
-                                            {{ $isDisabled ? 'disabled' : '' }}>{{ old('pic_' . $item->form->id, $sessionPic) }}</textarea>
+                                        <textarea name="pic_{{ $item->form->id }}" cols="10" rows="5"
+                                            class="form-control @if ($errors->has('pic_' . $item->form->id)) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>{{ old('pic_' . $item->form->id, $sessionPic) }}</textarea>
 
                                         @if ($errors->has('pic_' . $item->form->id))
                                             <span class="text-danger d-block"
                                                 style="font-size: 14px">{{ $errors->first('pic_' . $item->form->id) }}</span>
                                         @endif
                                     </div>
+
+                                    {{-- Save per Nomor --}}
+                                    @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                        <div class="mt-3 mb-3">
+                                            <button id="simpan_{{ $item->form->id }}" class="btn btn-warning"
+                                                type="button">Simpan</button>
+
+                                            <button id="simpan-button-loading_{{ $item->form->id }}"
+                                                class="btn btn-warning d-none" type="button" disabled>
+                                                <span class="spinner-border spinner-border-sm" role="status"
+                                                    aria-hidden="true"></span>
+                                                Loading...
+                                            </button>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach
@@ -165,8 +185,8 @@
                             </div>
 
                             @if (($daftarTilik->currentPage() == $daftarTilik->lastPage()) == 1)
-                                <div>
-                                    @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                    <div class="mb-3">
                                         <input type="hidden" name="final" value="final">
                                         <button type="submit" id="button-submit" class="btn btn-primary">Submit</button>
                                         <button id="button-submit-loading" class="btn btn-primary d-none" type="button"
@@ -175,48 +195,28 @@
                                                 aria-hidden="true"></span>
                                             Loading...
                                         </button>
-                                        <div class="mt-3">
-                                            <button id="save-button" class="btn btn-warning">Save</button>
-
-                                            <button id="save-button-loading" class="btn btn-warning d-none" type="button"
-                                                disabled>
-                                                <span class="spinner-border spinner-border-sm" role="status"
-                                                    aria-hidden="true"></span>
-                                                Loading...
-                                            </button>
-                                        </div>
-                                    @else
-                                        @if ($daftarTilik->lastPage() !== 1)
+                                    </div>
+                                @else
+                                    @if ($daftarTilik->lastPage() !== 1)
+                                        <div>
                                             <a id="previous" href="{{ $daftarTilik->previousPageUrl() }}"
                                                 class="btn btn-primary mb-3">Previous</a>
-                                        @endif
+                                        </div>
                                     @endif
-                                </div>
+                                @endif
                             @else
-                                <div class="">
+                                <div class="mb-3">
                                     @if ($daftarTilik->currentPage() > 1)
                                         <a id="previous" href="{{ $daftarTilik->previousPageUrl() }}"
                                             class="btn btn-primary">Previous</a>
                                     @endif
                                     <a id="next" href="{{ $daftarTilik->nextPageUrl() }}"
                                         class="btn btn-primary">Next</a>
-                                    <div class="mt-3">
-                                        @if (isset($status) && $status->status !== 'completed' && !$expired)
-                                            <button id="save-button" class="btn btn-warning">Save</button>
-
-                                            <button id="save-button-loading" class="btn btn-warning d-none"
-                                                type="button" disabled>
-                                                <span class="spinner-border spinner-border-sm" role="status"
-                                                    aria-hidden="true"></span>
-                                                Loading...
-                                            </button>
-                                        @endif
-                                    </div>
                                 </div>
                             @endif
 
                             @if (isset($status) && $status->status === 'completed' && !$expired)
-                                <div>
+                                <div class="mb-3">
                                     <button type="button" class="btn btn-warning" id="edit-button">Ubah</button>
                                     <button id="button-edit-loading" class="btn btn-warning d-none" type="button"
                                         disabled>
@@ -228,7 +228,7 @@
                             @endif
 
                             {{-- Kembali ke halaman jadwal --}}
-                            <a href="{{ route('auditee.lapangan') }}" class="btn btn-outline-secondary mt-3">Kembali</a>
+                            <a href="{{ route('auditee.lapangan') }}" class="btn btn-outline-secondary">Kembali</a>
                         </div>
                     </div>
                 </div>
@@ -298,9 +298,27 @@
         $(document).ready(function() {
             var form = $('#create-form');
 
+            // Form Submit
             form.on('submit', function(e) {
-                $('#button-submit').addClass('d-none');
-                $('#button-submit-loading').removeClass('d-none');
+                e.preventDefault();
+
+                Swal.fire({
+                    title: 'Submit Form?',
+                    text: "Pastikan bahwa jawaban sudah terisi semua!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: 'primary',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, submit!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#button-submit').addClass('d-none');
+                        $('#button-submit-loading').removeClass('d-none');
+                        form.off('submit')
+                            .submit();
+                    }
+                });
             });
 
             $('#edit-button').on('click', function() {
@@ -328,12 +346,23 @@
 
             save_session();
 
-            $('#save-button').on('click', save_jawaban);
+            // Save Jawaban
+            $(document).on('click', '[id^=simpan_]', function() {
+                var id = $(this).attr('id').split('_')[1];
+
+                $('[id^=simpan_' + id + ']').addClass('d-none');
+
+                $('#simpan-button-loading_' + id).removeClass('d-none');
+
+                save_jawaban(id);
+
+                save_session();
+            });
 
             $('textarea[name^="rencana_"], textarea[name^="target_"], textarea[name^="pic_"]').on('input',
                 debounce(function() {
                     save_session();
-                }, 500));
+                }, 1000));
 
             @foreach ($daftarTilik as $item)
                 tombol_hapus_rencana('{{ $item->form->id }}');
@@ -352,15 +381,38 @@
 
         });
 
-        function save_jawaban(e) {
-            e.preventDefault();
+        function save_jawaban(formId) {
+            event.preventDefault();
 
-            const formData = new FormData(document.getElementById('create-form'));
+            // Rencana Selector
+            const rencanaSelectors = document.querySelectorAll(`[name="rencana_${formId}[]"]`);
+            let rencanaList = [];
+            rencanaSelectors.forEach((selector) => {
+                rencanaList.push(selector.value);
+            });
 
-            document.getElementById('save-button').classList.add('d-none');
-            document.getElementById('save-button-loading').classList.remove('d-none');
+            // Target Selector
+            const targetSelector = document.querySelector(`[name="target_${formId}"]`);
+            const target = targetSelector ? targetSelector.value : null;
+
+            // PIC Selector
+            const picSelector = document.querySelector(`[name="pic_${formId}"]`);
+            const pic = picSelector ? picSelector.value : null;
+
+            // Loading
+            document.getElementById(`simpan_${formId}`).classList.add('d-none');
+            document.getElementById(`simpan-button-loading_${formId}`).classList.remove('d-none');
+
+            // Form Data
+            const formData = new FormData();
+            rencanaList.forEach((rencana, index) => {
+                formData.append(`rencana_${formId}[]`, rencana);
+            });
+            formData.append(`target_${formId}`, target);
+            formData.append(`pic_${formId}`, pic);
+
             $.ajax({
-                url: '{{ route('auditee.lapangan.save_ptk', ['ptk' => $ptkId, 'auditee' => $auditee->id]) }}',
+                url: '{{ route('auditee.lapangan.save_ptk', ['ptk' => $ptkId, 'auditee' => $auditee ? $auditee->id : 'null']) }}',
                 type: 'POST',
                 data: formData,
                 processData: false,
@@ -370,10 +422,14 @@
                         icon: 'success',
                         title: 'Berhasil',
                         text: response.message,
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            location.reload();
+                        }
                     });
 
-                    document.getElementById('save-button').classList.remove('d-none');
-                    document.getElementById('save-button-loading').classList.add('d-none');
+                    document.getElementById(`simpan_${formId}`).classList.remove('d-none');
+                    document.getElementById(`simpan-button-loading_${formId}`).classList.add('d-none');
                 },
                 error: function(xhr) {
                     var response = JSON.parse(xhr.responseText);
@@ -385,8 +441,8 @@
                         title: 'Error',
                         html: response.message,
                     });
-                    document.getElementById('save-button').classList.remove('d-none');
-                    document.getElementById('save-button-loading').classList.add('d-none');
+                    document.getElementById(`simpan_${formId}`).classList.remove('d-none');
+                    document.getElementById(`simpan-button-loading_${formId}`).classList.add('d-none');
                 }
             });
         }
@@ -396,7 +452,7 @@
             const formData = new FormData(document.getElementById('create-form'));
 
             $.ajax({
-                url: '{{ route('auditee.lapangan.session_ptk', ['ptk' => $ptkId, 'auditee' => $auditee->id]) }}',
+                url: '{{ route('auditee.lapangan.session_ptk', ['ptk' => $ptkId, 'auditee' => $auditee ? $auditee->id : 'null']) }}',
                 type: 'POST',
                 data: formData,
                 processData: false,
@@ -432,7 +488,7 @@
 
             $('#rencana-inputs-' + formid).on('input', debounce(function() {
                 save_session();
-            }, 100));
+            }, 1000));
         }
 
         function removeRencanaInput(formid) {

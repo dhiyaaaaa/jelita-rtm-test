@@ -162,9 +162,10 @@ class LaporanController extends Controller
         $kriteria = [$kriteriaMelampaui, $kriteriaMemenuhi];
 
         // Cek jika kosong
-        $jawaban_auditor = JawabanAuditor::where('jadwal_audit_id', $laporan->jadwal_audit_id)
-            ->whereIn('kriteria_id', $kriteria)
+        $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $laporan->jadwal_audit_id, $unit['kolom'] => $unit['value']])
+            // ->whereIn('kriteria_id', $kriteria)
             ->first();
+
 
         if (!$jawaban_auditor) {
             return back()->with('error', 'Belum ada instrumen yang masuk ke dalam Temuan Positif.');
@@ -250,7 +251,7 @@ class LaporanController extends Controller
             } catch (\Exception $e) {
 
                 return response()->json([
-                    'error' => 'Error.',
+                    'message' => 'Terjadi kesalahan saat menyimpan jawaban!',
                 ], 500);
             }
         }
@@ -259,6 +260,9 @@ class LaporanController extends Controller
             'error' => 'Invalid Request.'
         ], 400);
     }
+
+    // Save per nomor (backup)
+    public function save_form_per_nomor(Request $request, string $laporan, string $auditor, string $formId) {}
 
     public function store_form(Request $request, Laporan $laporan, string $auditor): RedirectResponse
     {

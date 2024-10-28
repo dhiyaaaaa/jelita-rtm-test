@@ -229,10 +229,15 @@ class PtkController extends Controller
                         $analisisKey = 'analisis_' . $id;
                         $akibatKey = 'akibat_' . $id;
                         $kategoriKey = 'kategori_' . $id;
+                        $kategoriTemuan = $request->input($kategoriKey);
+
+                        if (!in_array($kategoriTemuan, ['observasi', 'minor', 'mayor', null], true)) {
+                            return response()->json(['message' => 'Harap isi kategori temuan terlebih dahulu.'], 422);
+                        }
 
                         $data = [
                             'auditor_id' => $auditor,
-                            'kategori_temuan' => $request->input($kategoriKey, null),
+                            'kategori_temuan' => $kategoriTemuan,
                             'analisis' => $request->input($analisisKey, null),
                             'akibat' => $request->input($akibatKey, null),
                         ];
@@ -294,7 +299,7 @@ class PtkController extends Controller
             } catch (\Exception $e) {
 
                 return response()->json([
-                    'error' => 'Error.',
+                    'message' => 'Terjadi kesalahan saat menyimpan jawaban!',
                 ], 500);
             }
         }
@@ -303,6 +308,9 @@ class PtkController extends Controller
             'error' => 'Invalid Request.'
         ], 400);
     }
+
+    // Save Form per Nomor (backup)
+    public function save_form_per_nomor(Request $request, string $ptk, string $auditor, string $formId) {}
 
     public function store_form(Request $request, Ptk $ptk, string $auditor): RedirectResponse
     {
@@ -515,11 +523,11 @@ class PtkController extends Controller
                     throw new \Exception('PTK tidak ditemukan');
                 }
 
-                $response['message'] = 'PTK berhasil dihapus!';
+                $response['message'] = 'Instrumen berhasil dihapus dari Temuan Negatif!';
                 return response()->json($response);
             } catch (\Exception $e) {
 
-                $response['message'] = 'PTK gagal dihapus!';
+                $response['message'] = 'Gagal menghapus Instrumen!';
 
                 return response()->json($response, 500);
             }

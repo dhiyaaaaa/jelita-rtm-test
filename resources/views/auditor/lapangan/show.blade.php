@@ -181,6 +181,9 @@
                                                     class="dropdown-item" data-confirm-delete="true">Hapus</a>
                                             </div>
                                         </div>
+                                    @else
+                                        <a href="{{ route('auditor.lapangan.ptk.form', $ptk->id) }}"
+                                            class="btn btn-outline-primary">Lihat</a>
                                     @endif
 
                                     @if ($ptk && $ptk->auditor->isNotEmpty() && optional($ptk->auditor->first()->pivot)->approve === false)
@@ -262,6 +265,9 @@
                                                     class="dropdown-item" data-confirm-delete="true">Hapus</a>
                                             </div>
                                         </div>
+                                    @else
+                                        <a href="{{ route('auditor.lapangan.laporan.form', $laporan->id) }}"
+                                            class="btn btn-outline-primary">Lihat</a>
                                     @endif
 
                                     @if ($laporan && $laporan->auditor->isNotEmpty() && optional($laporan->auditor->first()->pivot)->approve === false)

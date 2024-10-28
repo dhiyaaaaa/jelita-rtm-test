@@ -136,6 +136,21 @@
                                             @endif
                                         </div>
 
+                                        {{-- Save per Nomor --}}
+                                        @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                            <div class="mt-3 mb-3">
+                                                <button id="simpan_{{ $item['form']->id }}" class="btn btn-warning"
+                                                    type="button">Simpan</button>
+
+                                                <button id="simpan-button-loading_{{ $item['form']->id }}"
+                                                    class="btn btn-warning d-none" type="button" disabled>
+                                                    <span class="spinner-border spinner-border-sm" role="status"
+                                                        aria-hidden="true"></span>
+                                                    Loading...
+                                                </button>
+                                            </div>
+                                        @endif
+
                                         {{-- Catatan Auditor --}}
                                         <div>
                                             <label for="">Catatan Auditor</label>
@@ -167,7 +182,6 @@
                                                     </div>
                                                 @endforeach
                                             @endif
-
                                         </div>
                                     </div>
                                 </div>
@@ -193,8 +207,8 @@
 
 
                             @if ($paginatedForms->currentPage() == $paginatedForms->lastPage())
-                                <div>
-                                    @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                @if (isset($status) && $status->status !== 'completed' && !$expired)
+                                    <div class="mb-3">
                                         <input type="hidden" name="final" value="final">
                                         @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
                                             <button type="submit" id="button-submit" class="btn btn-primary">Submit</button>
@@ -205,49 +219,27 @@
                                                 aria-hidden="true"></span>
                                             Loading...
                                         </button>
-                                        <div class="mt-3 ">
-                                            <button id="save-button" class="btn btn-warning">Save</button>
-
-                                            <button id="save-button-loading" class="btn btn-warning d-none"
-                                                type="button" disabled>
-                                                <span class="spinner-border spinner-border-sm" role="status"
-                                                    aria-hidden="true"></span>
-                                                Loading...
-                                            </button>
-                                        </div>
-                                    @else
-                                        @if ($paginatedForms->lastPage() !== 1)
-                                            <a id="previous" href="{{ $paginatedForms->previousPageUrl() }}"
-                                                class="btn btn-primary mb-3">Previous</a>
-                                        @endif
+                                    </div>
+                                @else
+                                    @if ($paginatedForms->lastPage() !== 1)
+                                        <a id="previous" href="{{ $paginatedForms->previousPageUrl() }}"
+                                            class="btn btn-primary mb-3">Previous</a>
                                     @endif
-                                </div>
+                                @endif
                             @else
-                                <div class="">
+                                <div class="mb-3">
                                     @if ($paginatedForms->currentPage() > 1)
                                         <a id="previous" href="{{ $paginatedForms->previousPageUrl() }}"
                                             class="btn btn-primary">Previous</a>
                                     @endif
                                     <a id="next" href="{{ $paginatedForms->nextPageUrl() }}"
                                         class="btn btn-primary">Next</a>
-                                    <div class="mt-3 ">
-                                        @if (isset($status) && $status->status !== 'completed' && !$expired)
-                                            <button id="save-button" class="btn btn-warning">Save</button>
-
-                                            <button id="save-button-loading" class="btn btn-warning d-none"
-                                                type="button" disabled>
-                                                <span class="spinner-border spinner-border-sm" role="status"
-                                                    aria-hidden="true"></span>
-                                                Loading...
-                                            </button>
-                                        @endif
-                                    </div>
                                 </div>
                             @endif
 
                             @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
                                 @if (isset($status) && $status->status === 'completed' && !$expired)
-                                    <div>
+                                    <div class="mb-3">
                                         <button type="button" class="btn btn-warning" id="edit-button">Ubah</button>
                                         <button id="button-edit-loading" class="btn btn-warning d-none" type="button"
                                             disabled>
@@ -261,8 +253,8 @@
 
 
                             {{-- Kembali ke halaman auditee --}}
-                            @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm', 'gpm'])
-                                <a href="{{ route('auditee.dokumen') }}" class="btn btn-outline-secondary mt-3">Kembali</a>
+                            @role(['pj_universitas', 'pj_fakultas', 'pj_prodi', 'gkm'])
+                                <a href="{{ route('auditee.dokumen') }}" class="btn btn-outline-secondary">Kembali</a>
                             @endrole
                         </div>
                     </div>
@@ -384,16 +376,27 @@
 
             save_session();
 
-            $('#save-button').on('click', save_jawaban);
+            // Save Jawaban
+            $(document).on('click', '[id^=simpan_]', function() {
+                var id = $(this).attr('id').split('_')[1];
+
+                $('[id^=simpan_' + id + ']').addClass('d-none');
+
+                $('#simpan-button-loading_' + id).removeClass('d-none');
+
+                save_jawaban(id);
+
+                save_session();
+            });
 
             $('textarea[name^="instrumen_"], input[name^="instrumen_"]').on('input', debounce(function() {
                 save_session();
-            }, 500));
+            }, 1000));
 
 
             $('input[name^="link_"]').on('input', debounce(function() {
                 save_session();
-            }, 500));
+            }, 1000));
 
             @foreach ($paginatedForms as $item)
                 tombol_hapus_link('{{ $item['form']->id }}');
@@ -423,13 +426,29 @@
         });
 
         // Save Jawaban
-        function save_jawaban(e) {
-            e.preventDefault();
+        function save_jawaban(formId) {
+            event.preventDefault();
 
-            const formData = new FormData(document.getElementById('create-form'));
+            // Jawaban Selector
+            const jawabanSelector = document.querySelector(`[name="instrumen_${formId}"]`);
+            const jawaban = jawabanSelector ? jawabanSelector.value : null;
 
-            document.getElementById('save-button').classList.add('d-none');
-            document.getElementById('save-button-loading').classList.remove('d-none');
+            // Link Selector
+            const linkSelector = document.querySelectorAll(`[name="link_${formId}[]"]`);
+            const links = Array.from(linkSelector).map(link => link.value);
+
+            // Loading
+            document.getElementById(`simpan_${formId}`).classList.add('d-none');
+            document.getElementById(`simpan-button-loading_${formId}`).classList.remove('d-none');
+
+            // Form Data
+            const formData = new FormData();
+            formData.append(`instrumen_${formId}`, jawaban);
+
+            links.forEach((link, index) => {
+                formData.append(`link_${formId}[]`, link);
+            });
+
             $.ajax({
                 url: "{{ route('auditee.dokumen.save', ['jadwalAudit' => $jadwal->id, 'unit' => $unitId, 'type' => $type]) }}",
                 type: 'POST',
@@ -447,8 +466,8 @@
                         }
                     });
 
-                    document.getElementById('save-button').classList.remove('d-none');
-                    document.getElementById('save-button-loading').classList.add('d-none');
+                    document.getElementById(`simpan_${formId}`).classList.remove('d-none');
+                    document.getElementById(`simpan-button-loading_${formId}`).classList.add('d-none');
                 },
                 error: function(xhr) {
                     var response = JSON.parse(xhr.responseText);
@@ -472,8 +491,8 @@
                         text: errorMessages,
                     });
 
-                    document.getElementById('save-button').classList.remove('d-none');
-                    document.getElementById('save-button-loading').classList.add('d-none');
+                    document.getElementById(`simpan_${formId}`).classList.remove('d-none');
+                    document.getElementById(`simpan-button-loading_${formId}`).classList.add('d-none');
                 }
 
             });

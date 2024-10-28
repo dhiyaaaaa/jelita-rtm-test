@@ -11,41 +11,46 @@ use Illuminate\View\View;
 
 class LapanganController extends Controller
 {
+    protected $user;
+    protected $jabatanUser;
+
+    public function __construct()
+    {
+        $this->user = Auth::user();
+        $this->jabatanUser = Auth::user()->jabatan->isNotEmpty() ? Auth::user()->jabatan->first()->id : null;
+    }
+
     public function index(): View
     {
-        $user = Auth::user();
-        $jabatanUser = Auth::user()->jabatan->isNotEmpty() ? Auth::user()->jabatan->first()->id : null;;
+        $prodi = $this->user->prodi->first();
+        $fakultas = $this->user->fakultas->first();
+        $unit = $this->user->unit->first();
 
-        $auditees = Auditee::where('user_id', $user->id)->with(['prodi', 'fakultas', 'unit'])->get();
+        if (!$prodi && !$fakultas && !$unit) {
+            abort(403);
+        }
+
+        $auditees = Auditee::where('user_id', $this->user->id)->with(['prodi', 'fakultas', 'unit'])->get();
         $auditeeids = $auditees->pluck('id')->toArray();
 
-        $jadwal = JadwalAudit::whereHas('form.instrumen', function ($query) use ($auditees, $jabatanUser) {
-            $query->where(function ($query) use ($auditees) {
-                foreach ($auditees as $auditee) {
-                    $query->orWhereHas('jenjang', function ($query) use ($auditee) {
-                        if ($auditee->prodi_id) {
-                            $query->where('prodi_id', $auditee->prodi_id)
-                                ->orWhere('jenjang_id', $auditee->prodi->jenjang_id);
-                        } elseif ($auditee->unit_id) {
-                            $query->where('unit_id', $auditee->unit_id);
-                        }
-                    });
-                }
-            })->orWhereHas('jabatan', function ($query) use ($jabatanUser) {
-                $query->where('jabatan_id', $jabatanUser);
+        $jadwal = JadwalAudit::whereHas('form.instrumen', function ($query) use ($prodi, $unit) {
+            $query->where(function ($query) use ($prodi, $unit) {
+                $query->orWhereHas('jenjang', function ($query) use ($prodi, $unit) {
+                    if ($prodi) {
+                        $query->where('prodi_id', $prodi->id)
+                            ->orWhere('jenjang_id', $prodi->jenjang->id);
+                    } elseif ($unit) {
+                        $query->where('unit_id', $unit->id);
+                    }
+                });
+            })->orWhereHas('jabatan', function ($query) {
+                $query->where('jabatan_id', $this->jabatanUser);
             });
-        })->with('auditee', function ($query) use ($auditeeids) {
-            $query->whereIn('id', $auditeeids)->with(['auditor.user']);
-        })->whereHas('auditee', function ($query) use ($auditeeids) {
-            $query->whereIn('id', $auditeeids)->with(['auditor.user']);
         })->with([
+            'berita_acara',
+            'ptk',
+            'laporan',
             'status_audit_auditee' => function ($query) use ($auditees) {
-                foreach ($auditees as $auditee) {
-                    $unit = get_type_model($auditee);
-                    $query->where($unit['kolom'], $unit['value']);
-                }
-            },
-            'berita_acara' => function ($query) use ($auditees) {
                 foreach ($auditees as $auditee) {
                     $unit = get_type_model($auditee);
                     $query->where($unit['kolom'], $unit['value']);
@@ -54,20 +59,8 @@ class LapanganController extends Controller
             'berita_acara.auditee' => function ($query) use ($auditees, $auditeeids) {
                 $query->whereIn('auditee_id', $auditeeids);
             },
-            'ptk' => function ($query) use ($auditees) {
-                foreach ($auditees as $auditee) {
-                    $unit = get_type_model($auditee);
-                    $query->where($unit['kolom'], $unit['value']);
-                }
-            },
             'ptk.auditee' => function ($query) use ($auditees, $auditeeids) {
                 $query->whereIn('auditee_id', $auditeeids);
-            },
-            'laporan' => function ($query) use ($auditees) {
-                foreach ($auditees as $auditee) {
-                    $unit = get_type_model($auditee);
-                    $query->where($unit['kolom'], $unit['value']);
-                }
             },
             'laporan.auditee' => function ($query) use ($auditees, $auditeeids) {
                 $query->whereIn('auditee_id', $auditeeids);
