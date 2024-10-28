@@ -62,7 +62,8 @@ class NotifikasiController extends Controller
 
                 $response['message'] = 'Notifikasi berhasil terkirim!';
             } catch (\Exception $e) {
-                $response['message'] = 'Notifikasi gagal terkirim : ' . $e->getMessage();
+                // $response['message'] = 'Notifikasi gagal terkirim : ' . $e->getMessage();
+                $response['message'] = 'Terjadi kesalahan saat mengirim notifikasi!';
 
                 return response()->json($response, 500);
             }
@@ -93,7 +94,9 @@ class NotifikasiController extends Controller
 
                 $response['message'] = 'Notifikasi berhasil diterima!';
             } catch (\Exception $e) {
-                $response['message'] = 'Notifikasi gagal terkirim : ' . $e->getMessage();
+                if ($auditee === 'null') throw new \Exception('Anda tidak terdaftar sebagai auditan.');
+
+                $response['message'] = 'Error!';
 
                 return response()->json($response, 500);
             }
@@ -122,7 +125,8 @@ class NotifikasiController extends Controller
 
                 $response['message'] = 'Notifikasi selesai!';
             } catch (\Exception $e) {
-                $response['message'] = 'Notifikasi gagal tersimpan : ' . $e->getMessage();
+                // $response['message'] = 'Notifikasi gagal tersimpan : ' . $e->getMessage();
+                $response['message'] = 'Terjadi kesalahan!';
 
                 return response()->json($response, 500);
             }

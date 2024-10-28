@@ -192,7 +192,7 @@
                                         </div>
 
                                         {{-- Notifikasi Selesai --}}
-                                        @if ($notifCollection->isNotEmpty() && !$isDisabled)
+                                        @if ($notifCollection->isNotEmpty())
                                             @foreach ($notifCollection as $notif)
                                                 <div class="mt-3" id="alert_notifikasi_{{ $notif->id }}">
                                                     <div class="alert alert-warning" role="alert">
