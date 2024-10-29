@@ -78,6 +78,8 @@ class DashboardController extends Controller
         $fakultas = $this->user->fakultas->first();
         $unit = $this->user->unit->first();
 
+        if (!$this->jabatanUser) return collect();
+
         $jadwalAuditan = JadwalAudit::whereHas('form.instrumen', function ($query) {
             $query->where(function ($query) {
                 $query->orWhereHas('jenjang', function ($query) {
