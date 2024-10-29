@@ -31,10 +31,6 @@ class DashboardController extends Controller
     {
         $jadwal = $box = null;
 
-        if ($this->jabatanUser && $this->jabatanUser->slug === 'rektor') {
-            $jadwal = JadwalAudit::orderBy('created_at', 'desc')->get();
-        }
-
         $box = [
             'Program Studi' => [
                 'count' => Prodi::count(),
@@ -175,7 +171,9 @@ class DashboardController extends Controller
         $jadwalAuditor = $jadwalAuditan = $jadwal = $box = collect();
         $auditorid = null;
 
-        if ($this->user->roles->pluck('name')->contains('auditor') && $this->user->roles->pluck('name')->intersect($rolesAuditee)->isNotEmpty()) {
+        if ($this->jabatanUser && $this->jabatanUser->slug === 'rektor') {
+            $jadwal = JadwalAudit::orderBy('created_at', 'desc')->get();
+        } elseif ($this->user->roles->pluck('name')->contains('auditor') && $this->user->roles->pluck('name')->intersect($rolesAuditee)->isNotEmpty()) {
             $jadwalAuditan = $this->dashboard_auditan();
             $jadwalAuditor = $this->dashboard_auditor();
         } else if ($this->user->roles->pluck('name')->contains('pusjamu')) {

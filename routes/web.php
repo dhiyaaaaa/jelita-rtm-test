@@ -38,11 +38,16 @@ use App\Http\Controllers\auditor\PeerAssessmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\gpm\AuditorController as GpmAuditorController;
+use App\Http\Controllers\HasilAuditProdiController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'guest'], function () {
+    // Login Pusjamu
+    Route::get('pusjamu', [AuthController::class, 'pusjamu'])->name('login.pusjamu');
+
     // Login
     Route::get('', [AuthController::class, 'index'])->name('login');
     Route::post('login', [AuthController::class, 'login'])->name('login.store');
@@ -429,47 +434,28 @@ Route::group(['middleware' => 'auth'], function () {
         });
     });
 
-    // Hasil Audit
-    Route::prefix('audit/hasil-audit')->group(function () {
-        // Lihat
-        Route::get('', [HasilAuditController::class, 'index'])->name('hasil_audit');
-        Route::get('{jadwalAudit}/show/{type}', [HasilAuditController::class, 'show'])->name('hasil_audit.show');
+    // Hasil Audit untuk Rektor dan Pusjamu
+    Route::group(['middleware' => 'check_is_admin_or_rektor'], function () {
+        Route::prefix('audit/hasil-audit')->group(function () {
+            // Lihat
+            Route::get('', [HasilAuditController::class, 'index'])->name('hasil_audit');
+            Route::get('{jadwalAudit}/show/{type}', [HasilAuditController::class, 'show'])->name('hasil_audit.show');
 
-        // Audit Dokumen
-        Route::get('{jadwalAudit}/audit_dokumen/{unit}/{type}', [HasilAuditController::class, 'audit_dokumen'])->name('hasil_audit.audit_dokumen');
+            // Audit Dokumen
+            Route::get('{jadwalAudit}/audit_dokumen/{unit}/{type}', [HasilAuditController::class, 'audit_dokumen'])->name('hasil_audit.audit_dokumen');
 
-        // Daftar Tilik
-        Route::get('{jadwalAudit}/daftar_tilik/{unit}/{type}', [HasilAuditController::class, 'daftar_tilik'])->name('hasil_audit.daftar_tilik');
+            // Daftar Tilik
+            Route::get('{jadwalAudit}/daftar_tilik/{unit}/{type}', [HasilAuditController::class, 'daftar_tilik'])->name('hasil_audit.daftar_tilik');
 
-        // PTK
-        Route::get('{ptk}/ptk', [HasilAuditController::class, 'ptk'])->name('hasil_audit.ptk');
+            // PTK
+            Route::get('{ptk}/ptk', [HasilAuditController::class, 'ptk'])->name('hasil_audit.ptk');
 
-        // Laporan
-        Route::get('{laporan}/laporan', [HasilAuditController::class, 'laporan'])->name('hasil_audit.laporan');
+            // Laporan
+            Route::get('{laporan}/laporan', [HasilAuditController::class, 'laporan'])->name('hasil_audit.laporan');
+        });
     });
 
-    // Hasil Audit untuk Rektor
-    // Route::group(['middleware' => 'check_is_rektor'], function () {
-    //     Route::prefix('dashboard/hasil-audit')->group(function () {
-    //         // Lihat
-    //         Route::get('', [HasilAuditController::class, 'index'])->name('dashboard.hasil_audit');
-    //         Route::get('{jadwalAudit}/show/{type}', [HasilAuditController::class, 'show_rektor'])->name('dashboard.hasil_audit.show');
-
-    //         // Audit Dokumen
-    //         Route::get('{jadwalAudit}/audit_dokumen/{unit}/{type}', [HasilAuditController::class, 'audit_dokumen'])->name('dashboard.hasil_audit.audit_dokumen');
-
-    //         // Daftar Tilik
-    //         Route::get('{jadwalAudit}/daftar_tilik/{unit}/{type}', [HasilAuditController::class, 'daftar_tilik'])->name('dashboard.hasil_audit.daftar_tilik');
-
-    //         // PTK
-    //         Route::get('{ptk}/ptk', [HasilAuditController::class, 'ptk'])->name('dashboard.hasil_audit.ptk');
-
-    //         // Laporan
-    //         Route::get('{laporan}/laporan', [HasilAuditController::class, 'laporan'])->name('dashboard.hasil_audit.laporan');
-    //     });
-    // });
-
-    // Middlware Auditee
+    // Middlware Auditan
     Route::group(['middleware' => 'check_auditee'], function () {
         // Audit Dokumen
         Route::prefix('auditan/dokumen')->group(function () {
@@ -567,7 +553,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('{jadwalAudit}/save/{unit}/{type}', [AuditorDokumenController::class, 'save'])->name('auditor.dokumen.save');
             // Save Jawaban per Nomor
             Route::post('{jadwalAudit}/save/{unit}/{type}/{formId}', [AuditorDokumenController::class, 'save_per_nomor'])->name('auditor.dokumen.save_per_nomor');
-            
+
             // Session
             Route::post('{jadwalAudit}/isi_audit_session/{unit}/{auditorId}', [SessionController::class, 'session_auditor'])->name('auditor.dokumen.session');
             // Session per Nomor
@@ -645,7 +631,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('ptk/{ptk}/save/{auditor}', [AuditorPtkController::class, 'save_form'])->name('auditor.lapangan.ptk.save_form');
             // Save Form PTK per nomor
             Route::post('ptk/{ptk}/save/{auditor}/{formId}', [AuditorPtkController::class, 'save_form_per_nomor'])->name('auditor.lapangan.ptk.save_form_per_nomor');
-            
+
             // Save Session Form PTK 
             Route::post('{ptk}/auditor/{auditor}', [SessionController::class, 'session_ptk_auditor'])->name('auditor.lapangan.ptk.session');
             // Save Session PTK per nomor
@@ -731,4 +717,64 @@ Route::group(['middleware' => 'auth'], function () {
         // Daftar Auditee Auditor
         Route::post('{jadwalAudit}/auditee_auditor', [DownloadController::class, 'download_auditee_auditor'])->name('download.auditee_auditor');
     });
+
+    // GPM
+    Route::group(['middleware' => 'role:gpm'], function () {
+        Route::prefix('gpm')->group(function () {
+            // Auditor
+            Route::prefix('auditor')->group(function () {
+                Route::get('', [GpmAuditorController::class, 'index'])->name('gpm.auditor');
+                Route::get('{jadwalAudit}/show', [GpmAuditorController::class, 'show'])->name('gpm.auditor.show');
+
+                // Create
+                Route::get('{jadwalAudit}/create/{unit}', [GpmAuditorController::class, 'create'])->name('gpm.auditor.create');
+                Route::post('{jadwalAudit}/store/{unit}', [GpmAuditorController::class, 'store'])->name('gpm.auditor.store');
+
+                // Edit
+                Route::get('{jadwalAudit}/edit/{unit}', [GpmAuditorController::class, 'edit'])->name('gpm.auditor.edit');
+                Route::put('{jadwalAudit}/update/{unit}', [GpmAuditorController::class, 'update'])->name('gpm.auditor.update');
+            });
+        });
+    });
+
+    // Hasil Audit Prodi untuk Dekan dan GPM
+    Route::group(['middleware' => 'check_is_gpm_or_dekan'], function () {
+        Route::prefix('hasil-audit-prodi')->group(function () {
+            Route::get('', [HasilAuditProdiController::class, 'index'])->name('hasil_audit_prodi');
+            Route::get('{jadwalAudit}/show', [HasilAuditProdiController::class, 'show'])->name('hasil_audit_prodi.show');
+
+            // Audit Dokumen
+            Route::get('{jadwalAudit}/audit_dokumen/{unit}', [HasilAuditProdiController::class, 'audit_dokumen'])->name('hasil_audit_prodi.audit_dokumen');
+
+            // Daftar Tilik
+            Route::get('{jadwalAudit}/daftar_tilik/{unit}', [HasilAuditProdiController::class, 'daftar_tilik'])->name('hasil_audit_prodi.daftar_tilik');
+
+            // PTK
+            Route::get('{ptk}/ptk', [HasilAuditProdiController::class, 'ptk'])->name('hasil_audit_prodi.ptk');
+
+            // Laporan
+            Route::get('{laporan}/laporan', [HasilAuditProdiController::class, 'laporan'])->name('hasil_audit_prodi.laporan');
+        });
+    });
+
+    // Hasil Audit untuk Rektor
+    // Route::group(['middleware' => 'check_is_rektor'], function () {
+    //     Route::prefix('dashboard/hasil-audit')->group(function () {
+    //         // Lihat
+    //         Route::get('', [HasilAuditController::class, 'index'])->name('dashboard.hasil_audit');
+    //         Route::get('{jadwalAudit}/show/{type}', [HasilAuditController::class, 'show_rektor'])->name('dashboard.hasil_audit.show');
+
+    //         // Audit Dokumen
+    //         Route::get('{jadwalAudit}/audit_dokumen/{unit}/{type}', [HasilAuditController::class, 'audit_dokumen'])->name('dashboard.hasil_audit.audit_dokumen');
+
+    //         // Daftar Tilik
+    //         Route::get('{jadwalAudit}/daftar_tilik/{unit}/{type}', [HasilAuditController::class, 'daftar_tilik'])->name('dashboard.hasil_audit.daftar_tilik');
+
+    //         // PTK
+    //         Route::get('{ptk}/ptk', [HasilAuditController::class, 'ptk'])->name('dashboard.hasil_audit.ptk');
+
+    //         // Laporan
+    //         Route::get('{laporan}/laporan', [HasilAuditController::class, 'laporan'])->name('dashboard.hasil_audit.laporan');
+    //     });
+    // });
 });

@@ -9,6 +9,7 @@
     <div>
         <!-- Small boxes (Stat box) -->
         @hasanyrole('pusjamu|auditor|pj_universitas|pj_fakultas|pj_prodi|gkm|gpm')
+            {{-- Pusjamu --}}
             @role('pusjamu')
                 @if ($user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'rektor')
                     <div class="card card-dark">
@@ -87,6 +88,11 @@
                 @endif
             @endrole
 
+            {{-- GPM --}}
+            @role('gpm')
+            @endrole
+
+            {{-- Auditor --}}
             @role('auditor')
                 <div class="card card-dark">
                     <div class="card-header">
@@ -182,8 +188,8 @@
                 </div>
             @endrole
 
-
-            @role(['pj_fakultas', 'pj_prodi', 'gkm', 'gpm'])
+            {{-- Auditan --}}
+            @role(['pj_fakultas', 'pj_prodi', 'gkm'])
                 <div class="card card-dark">
                     <div class="card-header">
                         <h3 class="card-title title-size">Daftar Auditor</h3>
@@ -247,141 +253,141 @@
                 </div>
             @endrole
 
+            {{-- PJ Universitas --}}
             @role('pj_universitas')
-                @if ($user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'rektor')
-                    <div class="card card-dark">
-                        <div class="card-header">
-                            <h3 class="card-title title-size">Hasil Audit</h3>
-                        </div>
-                        <!-- /.card-header -->
-                        <div class="card-body">
-
-                            {{-- Auditor --}}
-                            <div>
-                                <table id="hasil-audit" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-center">No</th>
-                                            <th class="text-center">Jadwal</th>
-                                            <th class="text-center">Tgl Mulai</th>
-                                            <th class="text-center">Tgl Selesai</th>
-                                            <th class="text-center">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse ($jadwal as $item)
-                                            <tr>
-                                                <td class="text-center">{{ $loop->iteration }}</td>
-                                                <td class="text-center">{{ $item->jadwal }}</td>
-                                                <td class="text-center">
-                                                    {{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
-                                                </td>
-                                                <td class="text-center">
-                                                    <a class="btn btn-outline-info"
-                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">Hasil
-                                                        Audit
-                                                        PS</a>
-                                                    <a class="btn btn-outline-primary"
-                                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}">Hasil
-                                                        Audit
-                                                        UPPS</a>
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td class="text-center" colspan="5">Tidak Tersedia</td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <!-- /.card-body -->
+                <div class="card card-dark">
+                    <div class="card-header">
+                        <h3 class="card-title title-size">Daftar Auditor</h3>
                     </div>
-                @else
-                    <div class="card card-dark">
-                        <div class="card-header">
-                            <h3 class="card-title title-size">Daftar Auditor</h3>
+                    <div class="card-body">
+                        {{-- User Manual --}}
+                        <div class="mb-3">
+                            <a href="{{ asset('user_manual/Auditan.pdf') }}" target="_blank" class="btn btn-outline-info">
+                                <i class="fa fa-book mr-2"></i> User Manual
+                            </a>
                         </div>
-                        <div class="card-body">
-                            {{-- User Manual --}}
-                            <div class="mb-3">
-                                <a href="{{ asset('user_manual/Auditan.pdf') }}" target="_blank" class="btn btn-outline-info">
-                                    <i class="fa fa-book mr-2"></i> User Manual
-                                </a>
-                            </div>
 
-                            <table id="auditee" class="table table-bordered table-striped">
+                        <table id="auditee" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">No</th>
+                                    <th class="text-center">Jadwal</th>
+                                    <th class="text-center">Periode</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Auditor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!is_null($jadwal) && $jadwal->count() > 0)
+                                    @foreach ($jadwal as $item)
+                                        <tr>
+                                            <td class="text-center align-middle">{{ $loop->iteration }}</td>
+                                            <td class="text-center align-middle">{{ $item->jadwal }}</td>
+                                            <td class="text-center align-middle">
+                                                {{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }} -
+                                                {{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                @if (!$item->expired)
+                                                    <span class="badge badge-success">Terbuka</span>
+                                                @else
+                                                    <span class="badge badge-danger">Tertutup</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if ($item->auditee_auditor->isNotEmpty())
+                                                    @foreach ($item->auditee_auditor as $auditeeAuditor)
+                                                        <p style="margin: 0; padding: 0;">{{ $loop->iteration }}.
+                                                            {{ $auditeeAuditor->auditor->user->name }}
+                                                            {{ '(' . $auditeeAuditor->auditor->user->no_telepon . ')' }}</p>
+                                                    @endforeach
+                                                @else
+                                                    <div class="text-center">
+                                                        <a class="btn disabled">Belum ada auditor</a>
+                                                    </div>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endrole
+        @else
+            @if ($user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'rektor')
+                <div class="card card-dark">
+                    <div class="card-header">
+                        <h3 class="card-title title-size">Hasil Audit</h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        {{-- Auditor --}}
+                        <div>
+                            <table id="hasil-audit" class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
                                         <th class="text-center">No</th>
                                         <th class="text-center">Jadwal</th>
-                                        <th class="text-center">Periode</th>
-                                        <th class="text-center">Status</th>
-                                        <th class="text-center">Auditor</th>
+                                        <th class="text-center">Tgl Mulai</th>
+                                        <th class="text-center">Tgl Selesai</th>
+                                        <th class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @if (!is_null($jadwal) && $jadwal->count() > 0)
-                                        @foreach ($jadwal as $item)
-                                            <tr>
-                                                <td class="text-center align-middle">{{ $loop->iteration }}</td>
-                                                <td class="text-center align-middle">{{ $item->jadwal }}</td>
-                                                <td class="text-center align-middle">
-                                                    {{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }} -
-                                                    {{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
-                                                </td>
-                                                <td class="text-center align-middle">
-                                                    @if (!$item->expired)
-                                                        <span class="badge badge-success">Terbuka</span>
-                                                    @else
-                                                        <span class="badge badge-danger">Tertutup</span>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if ($item->auditee_auditor->isNotEmpty())
-                                                        @foreach ($item->auditee_auditor as $auditeeAuditor)
-                                                            <p style="margin: 0; padding: 0;">{{ $loop->iteration }}.
-                                                                {{ $auditeeAuditor->auditor->user->name }}
-                                                                {{ '(' . $auditeeAuditor->auditor->user->no_telepon . ')' }}</p>
-                                                        @endforeach
-                                                    @else
-                                                        <div class="text-center">
-                                                            <a class="btn disabled">Belum ada auditor</a>
-                                                        </div>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    @endif
+                                    @forelse ($jadwal as $item)
+                                        <tr>
+                                            <td class="text-center">{{ $loop->iteration }}</td>
+                                            <td class="text-center">{{ $item->jadwal }}</td>
+                                            <td class="text-center">
+                                                {{ Carbon::parse($item->tgl_mulai)->translatedFormat('j F Y') }}
+                                            </td>
+                                            <td class="text-center">
+                                                {{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
+                                            </td>
+                                            <td class="text-center">
+                                                <a class="btn btn-outline-info"
+                                                    href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">Hasil
+                                                    Audit
+                                                    PS</a>
+                                                <a class="btn btn-outline-primary"
+                                                    href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}">Hasil
+                                                    Audit
+                                                    UPPS</a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td class="text-center" colspan="5">Tidak Tersedia</td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                @endif
-            @endrole
-        @else
-            <section class="content">
-                <div class="error-page">
-                    <h2 class="headline text-warning"> 403</h2>
-
-                    <div class="error-content">
-                        <h3><i class="fas fa-exclamation-triangle text-warning"></i> Oops! Anda tidak punya akses ke dalam
-                            sistem.</h3>
-
-                        <p class="error" style="font-size: 18px;">
-                            Silahkan hubungi Admin atau
-                            untuk sementara, Anda dapat <a href="{{ route('dashboard') }}">kembali ke dashboard.</a>
-                        </p>
-
-                    </div>
-                    <!-- /.error-content -->
+                    <!-- /.card-body -->
                 </div>
-                <!-- /.error-page -->
-            </section>
+            @else
+                <section class="content">
+                    <div class="error-page">
+                        <h2 class="headline text-warning"> 403</h2>
+
+                        <div class="error-content">
+                            <h3><i class="fas fa-exclamation-triangle text-warning"></i> Oops! Anda tidak punya akses ke dalam
+                                sistem.</h3>
+
+                            <p class="error" style="font-size: 18px;">
+                                Silahkan hubungi Admin atau
+                                untuk sementara, Anda dapat <a href="{{ route('dashboard') }}">kembali ke dashboard.</a>
+                            </p>
+
+                        </div>
+                        <!-- /.error-content -->
+                    </div>
+                    <!-- /.error-page -->
+                </section>
+            @endif
         @endhasanyrole
 
     </div>

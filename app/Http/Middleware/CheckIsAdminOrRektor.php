@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckIsRektor
+class CheckIsAdminOrRektor
 {
     /**
      * Handle an incoming request.
@@ -19,7 +19,9 @@ class CheckIsRektor
         if (Auth::check()) {
             $user = Auth::user();
 
-            if ($user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'rektor') {
+            $userRole = $user->roles->pluck('name')->toArray();
+
+            if (in_array('pusjamu', $userRole) || $user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'rektor') {
                 return $next($request);
             }
         }

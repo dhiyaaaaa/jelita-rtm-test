@@ -21,6 +21,13 @@ class AuthController extends Controller
         return view('login', compact('title'));
     }
 
+    // View Login Pusjamu
+    public function pusjamu(): View
+    {
+        $title = 'Login | IJAMU';
+        return view('login_pusjamu', compact('title'));
+    }
+
     // Login Store
     public function login(Request $request): RedirectResponse
     {
