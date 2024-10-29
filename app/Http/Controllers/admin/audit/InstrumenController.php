@@ -559,7 +559,7 @@ class InstrumenController extends Controller
             'jenis_pertanyaan' => JenisPertanyaan::all(),
             'kriteria' => $combinedKriteria,
             'jenjang' => Jenjang::all(),
-            'prodi' => Prodi::all(),
+            'prodi' => Prodi::with(['jenjang'])->get(),
             'jabatan' => Jabatan::all(),
             'units' => Unit::all(),
         ];
@@ -575,6 +575,10 @@ class InstrumenController extends Controller
         $prodiId = Level::where('slug', 'prodi')->pluck('id')->first();
         $fakultasId = Level::where('slug', 'fakultas')->pluck('id')->first();
         $universitasId = Level::where('slug', 'universitas')->pluck('id')->first();
+
+        if ($request->kode_huruf && $request->kode_angka) {
+            $instrumen->update(['kode' => strtoupper($request->kode_huruf) . '-' . $request->kode_angka]);
+        }
 
         $instrumen->update([
             'pernyataan' => $request->pernyataan,

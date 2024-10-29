@@ -34,6 +34,8 @@ class InstrumenUpdateRequest extends FormRequest
             'kategori' => 'required|exists:kategori,id',
             'level' => 'required|exists:level,id',
             'jenis_pertanyaan' => 'required|exists:jenis_pertanyaan,id',
+            'kode_huruf' => 'nullable|string',
+            'kode_angka' => 'nullable|integer',
             'kriteria' => 'required|array',
             'kriteria.*' => 'required',
             'kriteria_id' => 'required|array',

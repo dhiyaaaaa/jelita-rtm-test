@@ -105,6 +105,55 @@
                     @endif
                 </div>
 
+                {{-- Kode --}}
+                <div class="form-group">
+                    <div class="d-flex items-center">
+                        <label>Kode</label>
+                        @php
+                            [$huruf, $angka] = explode('-', $instrumen->kode);
+                        @endphp
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="row">
+                                <div class="col-4">
+                                    <input type="text" id="kode_huruf" name="kode_huruf" class="form-control"
+                                        value="{{ $huruf }}" placeholder="Masukkan kode huruf" disabled>
+                                </div>
+                                <div class="col-4">
+                                    <input type="number" id="kode_angka" name="kode_angka" class="form-control"
+                                        value="{{ $angka }}" placeholder="Masukkan angka" disabled>
+                                </div>
+                                {{-- Button Ubah --}}
+                                <div class="col-4">
+                                    <button id="ubah_kode_button" type="button" class="btn btn-warning"
+                                        onclick="ubah_kode()">Ubah Kode</button>
+                                    <button id="batal_button" type="button" class="btn btn-outline-secondary d-none"
+                                        onclick="batal()">Batal</button>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="col d-flex align-items-center">
+                            <div id="loading-spinner-kode" style="display: none;">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Loading...
+                            </div>
+                            <span id="kode"></span>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Isi kolom kode jika ingin mengubah instrumen dengan kode yang
+                        sama atau kode yang berbeda</small>
+                    @if ($errors->has('kode_huruf'))
+                        <span class="text-danger d-block"
+                            style="font-size: 14px">{{ $errors->first('kode_huruf') }}</span>
+                    @endif
+                    @if ($errors->has('kode_angka'))
+                        <span class="text-danger d-block"
+                            style="font-size: 14px">{{ $errors->first('kode_angka') }}</span>
+                    @endif
+                </div>
+
                 {{-- pernyataan --}}
                 <div class="form-group">
                     <label for="pernyataan">Pernyataan</label>
@@ -112,7 +161,8 @@
                     <textarea name="pernyataan" id="pernyataan" cols="30" rows="3"
                         class="form-control @error('pernyataan') is-invalid @enderror" placeholder="Masukkan Pernyataan">{{ $instrumen->pernyataan }}</textarea>
                     @if ($errors->has('pernyataan'))
-                        <span class="text-danger d-block" style="font-size: 14px">{{ $errors->first('pernyataan') }}</span>
+                        <span class="text-danger d-block"
+                            style="font-size: 14px">{{ $errors->first('pernyataan') }}</span>
                     @endif
                 </div>
 
@@ -123,7 +173,8 @@
                     <textarea name="indikator" id="indikator" cols="30" rows="3"
                         class="form-control @error('indikator') is-invalid @enderror" placeholder="Masukkan Indikator">{{ $instrumen->indikator }}</textarea>
                     @if ($errors->has('indikator'))
-                        <span class="text-danger d-block" style="font-size: 14px">{{ $errors->first('indikator') }}</span>
+                        <span class="text-danger d-block"
+                            style="font-size: 14px">{{ $errors->first('indikator') }}</span>
                     @endif
                 </div>
 
@@ -267,6 +318,21 @@
                 theme: 'bootstrap4'
             })
         });
+
+        // Ubah Kode
+        function ubah_kode() {
+            $("#kode_huruf").prop("disabled", false);
+            $("#kode_angka").prop("disabled", false);
+            $("#ubah_kode_button").hide();
+            $("#batal_button").removeClass("d-none").show();
+        }
+
+        function batal() {
+            $("#kode_huruf").prop("disabled", true);
+            $("#kode_angka").prop("disabled", true);
+            $("#ubah_kode_button").show();
+            $("#batal_button").addClass("d-none").hide();
+        }
     </script>
 
     <script>
@@ -344,7 +410,7 @@
             // Get Kategori
             $('select[name="standar"]').on('change', function() {
                 var standarId = $(this).val();
-                
+
                 if (standarId) {
                     var kategoriId = @json($instrumen->kategori->id);
                     showLoading('#loading-spinner-kategori');
@@ -365,7 +431,7 @@
                                 );
                             });
                             $('select[name="kategori"]').trigger('change.select2');
-                            $('select[name="standar"]').trigger('change');
+                            $('select[name="kategori"]').trigger('change');
                         },
                         complete: function() {
                             hideLoading('#loading-spinner-kategori');
@@ -384,7 +450,7 @@
             // get Jabatan by Level
             function getJabatanByLevel(levelId) {
                 var selectedJabatan = @json($selectedJabatan);
-                
+
                 if (levelId) {
                     showLoading();
                     $.ajax({
@@ -415,6 +481,29 @@
                     $('select[name="jabatan[]"]').empty();
                 }
             }
+
+            // Get Kode
+            $('select[name="kategori"]').on('change', function() {
+                var standarId = $('select[name="standar"]').val();
+                var kategoriId = $(this).val();
+                if (kategoriId) {
+                    showLoading('#loading-spinner-kode');
+                    $.ajax({
+                        url: "{{ route('instrumen.get_kode', ['standar' => ':standar', 'kategori' => ':kategori']) }}"
+                            .replace(':standar', standarId).replace(':kategori', kategoriId),
+                        type: "GET",
+                        dataType: "json",
+                        success: function(data) {
+                            $('#kode').text("Kode instrumen sebelumnya : " + data);
+                        },
+                        complete: function() {
+                            hideLoading('#loading-spinner-kode');
+                        }
+                    });
+                } else {
+                    $('#kode').text('');
+                }
+            });
 
             // Function to check Level and show/hide elements
             function checkLevel() {
