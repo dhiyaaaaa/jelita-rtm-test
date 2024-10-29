@@ -111,7 +111,7 @@ class AuthController extends Controller
 
             // API
             $time = now()->format('Y-m-d H:i:s');
-            $kunci = base64_encode("$time~WEQklmhZuWmOhPZAiU");
+            $kunci = base64_encode("$time~WEQkImhZuWmOhPZAiU");
 
             $request = Http::asForm()->post('https://kurikulum.akademik.unsoed.ac.id/lazarus/peg_api_new', [
                 'kunci' => $kunci,
