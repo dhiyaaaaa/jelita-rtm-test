@@ -145,7 +145,7 @@ class AuthController extends Controller
                 'email' => $email,
                 'gauth_id' => $user->id,
                 'gauth_type' => 'google',
-                'password' => Hash::make(Str::random(6))
+                'password' => Hash::make('123123')
             ]);
 
             Auth::login($newUser);
