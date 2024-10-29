@@ -314,17 +314,17 @@ class JadwalAuditController extends Controller
 
         // Auditee Fakultas (Dekan WD)
         $settingFakultas = Setting::where('nama_setting', 'fakultas')->pluck('jabatan_id')->toArray();
-        $userGpm = Prodi::with(['user' => function ($query) use ($settingProdi) {
-            $query->whereHas('roles', function ($q) {
-                $q->whereIn('name', ['gpm']);
-            });
-            $query->whereHas('jabatan', function ($q) use ($settingProdi) {
-                $q->whereIn('jabatan_id', $settingProdi);
-            });
-        }, 'fakultas'])->get();
+        // $userGpm = Prodi::with(['user' => function ($query) use ($settingProdi) {
+        //     $query->whereHas('roles', function ($q) {
+        //         $q->whereIn('name', ['gpm']);
+        //     });
+        //     $query->whereHas('jabatan', function ($q) use ($settingProdi) {
+        //         $q->whereIn('jabatan_id', $settingProdi);
+        //     });
+        // }, 'fakultas'])->get();
         $userFakultas = Fakultas::with(['user' => function ($query) use ($settingFakultas) {
             $query->whereHas('roles', function ($q) {
-                $q->whereIn('name', ['pj_fakultas', 'gpm']);
+                $q->whereIn('name', ['pj_fakultas']);
             });
             $query->whereHas('jabatan', function ($q) use ($settingFakultas) {
                 $q->whereIn('jabatan_id', $settingFakultas);
@@ -347,20 +347,20 @@ class JadwalAuditController extends Controller
         }
 
         // User GPM
-        foreach ($userGpm as $prodi) {
-            foreach ($prodi->user as $user) {
-                foreach ($user->jabatan as $jabatan) {
-                    if (in_array($jabatan->id, $settingProdi)) {
-                        Auditee::create([
-                            'user_id' => $user->id,
-                            'jabatan_id' => $jabatan->id,
-                            'fakultas_id' => $prodi->fakultas->id,
-                            'jadwal_audit_id' => $jadwal->id,
-                        ]);
-                    }
-                }
-            }
-        }
+        // foreach ($userGpm as $prodi) {
+        //     foreach ($prodi->user as $user) {
+        //         foreach ($user->jabatan as $jabatan) {
+        //             if (in_array($jabatan->id, $settingProdi)) {
+        //                 Auditee::create([
+        //                     'user_id' => $user->id,
+        //                     'jabatan_id' => $jabatan->id,
+        //                     'fakultas_id' => $prodi->fakultas->id,
+        //                     'jadwal_audit_id' => $jadwal->id,
+        //                 ]);
+        //             }
+        //         }
+        //     }
+        // }
 
         // Auditee Unit
         $settingUniversitas = Setting::where('nama_setting', 'universitas')->pluck('jabatan_id')->toArray();
