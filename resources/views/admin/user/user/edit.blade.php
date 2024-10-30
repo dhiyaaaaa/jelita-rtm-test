@@ -60,7 +60,7 @@
                         @endforeach
                     </select>
                     <small class="form-text text-muted">Pilih role untuk user</small>
-                    @if ($errors->has('jabatan'))
+                    @if ($errors->has('role'))
                         <span class="text-danger d-block" style="font-size: 14px">{{ $errors->first('jabatan') }}</span>
                     @endif
                 </div>

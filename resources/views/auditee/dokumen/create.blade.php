@@ -222,8 +222,10 @@
                                     </div>
                                 @else
                                     @if ($paginatedForms->lastPage() !== 1)
-                                        <a id="previous" href="{{ $paginatedForms->previousPageUrl() }}"
-                                            class="btn btn-primary mb-3">Previous</a>
+                                        <div>
+                                            <a id="previous" href="{{ $paginatedForms->previousPageUrl() }}"
+                                                class="btn btn-primary mb-3">Previous</a>
+                                        </div>
                                     @endif
                                 @endif
                             @else

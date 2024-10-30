@@ -72,6 +72,40 @@ class DashboardController extends Controller
         return compact('box', 'jadwal');
     }
 
+    private function dashboard_gpm()
+    {
+        $box = [
+            'Program Studi' => [
+                'count' => 0,
+                'route' => 'hasil_audit_prodi',
+                'color' => 'info'
+            ],
+            'Hasil Audit' => [
+                'count' => 0,
+                'route' => 'hasil_audit_prodi',
+                'color' => 'warning'
+            ],
+            'Auditor' => [
+                'count' => 0,
+                'route' => 'gpm.auditor',
+                'color' => 'danger'
+            ],
+        ];
+
+        if (!$this->jabatanUser) return $box;
+
+        if ($this->user->prodi->isNotEmpty() && $this->user->prodi->first()) {
+            $fakultas = Fakultas::where('id', $this->user->prodi->first()->fakultas_id)->first();
+            $allProdi = Prodi::where('fakultas_id', $fakultas->id)->pluck('id')->toArray();
+
+            $box['Program Studi']['count'] = Prodi::where('fakultas_id', $fakultas->id)->count();
+            $box['Hasil Audit']['count'] = JadwalAudit::count();
+            $box['Auditor']['count'] = AuditeeAuditor::whereIn('prodi_id', $allProdi)->distinct('auditor_id')->count();
+        }
+
+        return $box;
+    }
+
     private function dashboard_auditan()
     {
         $prodi = $this->user->prodi->first();
@@ -168,12 +202,17 @@ class DashboardController extends Controller
 
     public function index(): View
     {
-        $rolesAuditee = ['pj_prodi', 'pj_fakultas', 'pj_universitas', 'gkm', 'gpm'];
+        $rolesAuditee = ['pj_prodi', 'pj_fakultas', 'pj_universitas', 'gkm'];
 
         $jadwalAuditor = $jadwalAuditan = $jadwal = $box = collect();
         $auditorid = null;
 
-        if ($this->jabatanUser && $this->jabatanUser->slug === 'rektor') {
+        $hasGpmRole = Auth::user()->roles->contains('name', 'gpm');
+        $totalRoles = Auth::user()->roles->count();
+
+        if ($hasGpmRole && $totalRoles === 1) {
+            $box = $this->dashboard_gpm() ?? collect();
+        } elseif ($this->jabatanUser && $this->jabatanUser->slug === 'rektor') {
             $jadwal = JadwalAudit::orderBy('created_at', 'desc')->get();
         } elseif ($this->user->roles->pluck('name')->contains('auditor') && $this->user->roles->pluck('name')->intersect($rolesAuditee)->isNotEmpty()) {
             $jadwalAuditan = $this->dashboard_auditan();

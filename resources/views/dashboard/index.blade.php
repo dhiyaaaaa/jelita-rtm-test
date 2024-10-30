@@ -90,6 +90,26 @@
 
             {{-- GPM --}}
             @role('gpm')
+                <div class="row">
+                    @forelse ($box as $item => $value)
+                        <div class="col-lg-3 col-6">
+                            <!-- small box -->
+                            <div class="small-box bg-{{ $value['color'] }}">
+                                <div class="inner">
+                                    <h3>{{ $value['count'] }}</h3>
+
+                                    <p>{{ $item }}</p>
+                                </div>
+                                <div class="icon">
+                                    <i class="ion ion-bag"></i>
+                                </div>
+                                <a href="{{ route($value['route']) }}" class="small-box-footer">More info <i
+                                        class="fas fa-arrow-circle-right"></i></a>
+                            </div>
+                        </div>
+                    @empty
+                    @endforelse
+                </div>
             @endrole
 
             {{-- Auditor --}}
