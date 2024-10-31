@@ -58,12 +58,40 @@
                                             <span class="text-danger">&#42;</span>
                                         </p>
                                     </h4>
-                                    {{-- Indikator --}}
-                                    <h4 class="card-title w-100">
-                                        <span class="text-bold">Indikator</span>
-                                        <p>{{ $item['form']->instrumen->indikator }}
-                                        </p>
-                                    </h4>
+
+                                    {{-- Kriteria dan indikator --}}
+                                    <button type="button" class="btn btn-outline-info"
+                                        onclick="lihat_kriteria({{ $item['form']->instrumen->id }})">Lihat Kriteria</button>
+                                    <div class="d-none mt-2" id="kriteria_{{ $item['form']->instrumen->id }}">
+                                        {{-- Indikator --}}
+                                        <h4 class="card-title w-100 mt-1">
+                                            <span class="text-bold">Indikator</span>
+                                            <p>{{ $item['form']->instrumen->indikator }}
+                                            </p>
+                                        </h4>
+
+                                        {{-- Kriteria --}}
+                                        <h4 class="card-title w-100">
+                                            <span class="text-bold">Kriteria</span>
+                                        </h4>
+                                        <ul>
+                                            @forelse ($item['form']->instrumen->kriteria as $kriteria)
+                                                <li>
+                                                    <p class="text-bold" style="margin: 0; padding:0;">
+                                                        {{ $kriteria->nama }}
+                                                    </p>
+                                                    @if ($kriteria->pivot && $kriteria->pivot->isi)
+                                                        <span>{{ $kriteria->pivot->isi }}</span>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </li>
+                                            @empty
+                                                <span class="text-muted">Kriteria belum ada</span>
+                                            @endforelse
+                                        </ul>
+                                    </div>
+
                                 </div>
                                 <div>
                                     <div class="card-body">
@@ -328,6 +356,11 @@
 
             $(window).trigger('scroll');
         });
+
+        // Lihat Kriteria
+        function lihat_kriteria(id) {
+            $('#kriteria_' + id).toggleClass('d-none');
+        }
     </script>
 
     <script>
