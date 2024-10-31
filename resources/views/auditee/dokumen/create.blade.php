@@ -51,10 +51,17 @@
                             @endphp
                             <div class="card">
                                 <div class="card-header">
+                                    {{-- Pernyataan --}}
                                     <h4 class="card-title w-100">
                                         <span class="badge badge-success mb-3">{{ $item['form']->instrumen->kode }}</span>
                                         <p>{{ $no }}. {{ $item['form']->instrumen->pernyataan }}
                                             <span class="text-danger">&#42;</span>
+                                        </p>
+                                    </h4>
+                                    {{-- Indikator --}}
+                                    <h4 class="card-title w-100">
+                                        <span class="text-bold">Indikator</span>
+                                        <p>{{ $item['form']->instrumen->indikator }}
                                         </p>
                                     </h4>
                                 </div>
