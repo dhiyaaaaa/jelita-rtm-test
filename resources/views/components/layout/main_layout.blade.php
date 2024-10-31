@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title . ' | JELITA' }}</title>
 
-    <link rel="icon" href="{{ asset('dist/img/logo_jelita.jpg') }}" type="image/x-icon" />
+    <link rel="icon" href="{{ asset('dist/img/logo_jelita.png') }}" type="image/x-icon" />
 
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
@@ -84,7 +84,7 @@
         <aside class="main-sidebar sidebar-light-primary elevation-4">
             <!-- Brand Logo -->
             <a href="#" class="brand-link text-center mx-auto">
-                <img src="{{ asset('dist/img/logo_jelita.jpg') }}" alt="AdminLTE Logo" class="brand-image img-circle"
+                <img src="{{ asset('dist/img/logo_jelita.png') }}" alt="AdminLTE Logo" class="brand-image img-circle"
                     style="opacity: .8;">
                 <span class="brand-text font-weight-light">JELITA</span>
             </a>

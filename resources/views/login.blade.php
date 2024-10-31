@@ -76,7 +76,7 @@
                 <div class="div-wrapper">
                     <button type="submit" id="login-button"
                         class="btn btn-primary btn-block mt-4 shadow-sm signin-btn">Sign In</button>
-                    <button id="login-button-loading" class="btn btn-primary btn-block mt-5 shadow-sm d-none"
+                    <button id="login-button-loading" class="btn btn-primary btn-block mt-4 shadow-sm d-none loading-btn"
                         type="button" disabled>
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                         Loading...

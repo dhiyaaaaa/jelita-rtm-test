@@ -164,7 +164,6 @@
 }
 
 .label {
-    
     font-size: 1.5vw;
     position: absolute;
     top: 0.5vw;
@@ -179,6 +178,9 @@
 .input:not(:placeholder-shown) + .label {
     transform: translateY(-90%) scale(0.75);
     color: #007bff;
+}
+.loading-btn {
+    font-size: 1.5vw;
 }
 
 .signin-btn,
@@ -231,6 +233,7 @@
         top: 8px;
     }
 
+    .loading-btn,
     .signin-btn,
     .sso-btn {
         font-size: 18px;
@@ -253,6 +256,7 @@
 /* HP */
 @media (max-width: 576px) {
     .signin-btn,
+    .loading-btn,
     .sso-btn {
         font-size: 18px;
     }
