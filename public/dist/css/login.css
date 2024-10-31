@@ -1,0 +1,259 @@
+/* Container */
+#container {
+    background-size: cover;
+    display: flex;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* No Select */
+/* Mencegah teks dan gambar diseleksi */
+.no-select {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: none;
+}
+
+/* Fade In */
+.fade-in {
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: fadeIn 1s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Kiri */
+#kiri {
+    padding: 4vw;
+}
+
+/* Kiri Div Satu */
+#logo-unsoed {
+    width: 7vw;
+}
+
+/* Kiri Div Dua */
+/* Animasi Typing */
+.typing {
+    color: white;
+    animation: typing 2s steps(22), blink 0.5s step-end infinite alternate;
+    white-space: nowrap;
+    overflow: hidden;
+    border-right: 3px solid;
+    font-family: monospace;
+    font-size: 2.5vw;
+}
+
+.typing:nth-child(1) {
+    width: 27ch;
+    animation: typing 2s steps(22) forwards,
+        blink 0.5s step-end infinite alternate, remove-border 0s 2s forwards;
+}
+
+/* Baris kedua */
+.typing:nth-child(2) {
+    visibility: hidden; /* Sembunyikan awalnya */
+    width: 17.3ch;
+    animation: show 0s 2s forwards, typing 2s steps(22) 2s forwards,
+        blink 0.5s step-end infinite alternate 4s;
+}
+
+@keyframes typing {
+    from {
+        width: 0;
+    }
+}
+
+@keyframes blink {
+    50% {
+        border-color: transparent;
+    }
+}
+
+@keyframes show {
+    from {
+        visibility: hidden;
+    }
+    to {
+        visibility: visible;
+    }
+}
+
+@keyframes remove-border {
+    from {
+        border-right: 3px solid;
+    }
+    to {
+        border-right: none;
+    }
+}
+
+/* Kiri Div Tiga */
+#animasi-1 {
+    width: 22vw;
+    margin-top: 1vw;
+}
+/* Animasi Shake */
+.shake {
+    animation: shake 0.8s infinite;
+    transform-origin: center;
+}
+
+@keyframes shake {
+    0% {
+        transform: rotate(-5deg);
+    }
+    50% {
+        transform: rotate(5deg);
+    }
+    100% {
+        transform: rotate(-5deg);
+    }
+}
+
+/* Hentikan animasi saat di-hover */
+.shake:hover {
+    animation-play-state: paused;
+}
+
+/* Kanan */
+#kanan {
+    background-color: #f8f9fa;
+    width: 33.33vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-height: 100vh;
+    justify-content: center;
+}
+
+#logo-jelita {
+    width: 15vw; /* Menyesuaikan ukuran logo dengan viewport width */
+}
+
+.div-wrapper {
+    position: relative;
+    margin: auto;
+    max-width: 26vw; /* Responsif berdasarkan lebar viewport */
+}
+
+.input {
+    font-size: 1.5vw; /* Responsif berdasarkan viewport width */
+    width: 100%;
+    padding: 0.5vw 0;
+    padding-right: 2vw;
+    color: #333;
+    border: none;
+    border-bottom: 0.1vw solid #ddd;
+    background-color: transparent;
+    transition: border-color 250ms;
+}
+
+.input:focus {
+    outline: none;
+    border-bottom-color: #777;
+}
+
+.label {
+    
+    font-size: 1.5vw;
+    position: absolute;
+    top: 0.5vw;
+    left: 0;
+    color: #43454e;
+    pointer-events: none;
+    transform-origin: left center;
+    transition: transform 250ms ease, color 250ms ease;
+}
+
+.input:focus + .label,
+.input:not(:placeholder-shown) + .label {
+    transform: translateY(-90%) scale(0.75);
+    color: #007bff;
+}
+
+.signin-btn,
+.sso-btn {
+    font-size: 1.5vw;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.signin-btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.sso-btn:hover {
+    transform: scale(1.05);
+}
+
+.shadow-left {
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+    #container {
+        flex-direction: column;
+    }
+
+    .input,
+    .label {
+        font-size: 20px;
+    }
+
+    #logo-jelita {
+        width: 200px;
+    }
+
+    .div-wrapper {
+        max-width: 430px;
+    }
+
+    .input {
+        font-size: 18px;
+        padding: 8px 0;
+        padding-right: 30px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .label {
+        font-size: 18px;
+        top: 8px;
+    }
+
+    .signin-btn,
+    .sso-btn {
+        font-size: 18px;
+    }
+    #kiri {
+        display: none;
+    }
+
+    #kanan {
+        width: 100%;
+        margin: auto;
+        box-sizing: border-box;
+    }
+
+    #logo-jelita {
+        width: 200px;
+    }
+}
+
+/* HP */
+@media (max-width: 576px) {
+    .signin-btn,
+    .sso-btn {
+        font-size: 18px;
+    }
+}
