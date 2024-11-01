@@ -2,8 +2,10 @@
 #container {
     background-size: cover;
     display: flex;
+    flex-direction: row;
     box-sizing: border-box;
     position: relative;
+    height: 100vh;
 }
 
 /* No Select */
@@ -32,7 +34,11 @@
 
 /* Kiri */
 #kiri {
+    display: flex;
+    flex-direction: column;
     padding: 4vw;
+    justify-content: space-between;
+    /* padding: 4vw; */
 }
 
 /* Kiri Div Satu */
@@ -98,9 +104,13 @@
 
 /* Kiri Div Tiga */
 #animasi-1 {
-    width: 22vw;
+    width: 25vw;
     margin-top: 1vw;
+    /* Center animation within the container */
+    position: relative;
+    margin-left: auto;
 }
+
 /* Animasi Shake */
 .shake {
     animation: shake 0.8s infinite;
@@ -134,6 +144,7 @@
     position: relative;
     min-height: 100vh;
     justify-content: center;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
 }
 
 #logo-jelita {
