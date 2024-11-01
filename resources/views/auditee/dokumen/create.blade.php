@@ -53,7 +53,14 @@
                                 <div class="card-header">
                                     {{-- Pernyataan --}}
                                     <h4 class="card-title w-100">
-                                        <span class="badge badge-success mb-3">{{ $item['form']->instrumen->kode }}</span>
+                                        <span class="badge badge-success mb-3">{{ $item['form']->instrumen->kode }}</span><br>
+                                        @if ($item['form']->instrumen->jabatan->isNotEmpty() && $type == 'fakultas')
+                                            @forelse ($item['form']->instrumen->jabatan as $jab)
+                                                <span class="badge badge-secondary mb-3">{{ $jab->nama }}</span>
+                                            @empty
+                                                <span class="badge badge-secondary mb-3">-</span>
+                                            @endforelse
+                                        @endif
                                         <p>{{ $no }}. {{ $item['form']->instrumen->pernyataan }}
                                             <span class="text-danger">&#42;</span>
                                         </p>
