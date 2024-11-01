@@ -43,7 +43,7 @@ class AuditeeController extends Controller
             })->get()->unique();
             $route = 'ps';
         } else if ($type === 'fakultas') {
-            $pascasarjana = Fakultas::where('nama', 'Pasca Sarjana')->first();
+            $pascasarjana = Fakultas::where('nama', 'Pascasarjana')->first();
             if ($pascasarjana->id == $unit) {
                 $jenjangPascaSarjana = Jenjang::whereIn('nama', ['S2', 'S3'])->pluck('id')->toArray();
 
