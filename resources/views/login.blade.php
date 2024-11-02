@@ -90,7 +90,7 @@
                     <a href="{{ route('login.google') }}"
                         class="btn btn-light border-dark btn-block shadow-sm sso-btn">
                         <img src="{{ asset('dist/img/logo_unsoed.png') }}" alt="Unsoed"
-                            style="width: 20px; height:20px">
+                            style="width: 1.8vw; height:1.8vw">
                         Sign In dengan SSO</a>
                 </div>
             </div>
