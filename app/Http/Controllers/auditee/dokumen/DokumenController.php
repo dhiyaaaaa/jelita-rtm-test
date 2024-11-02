@@ -317,14 +317,14 @@ class DokumenController extends Controller
                                 'form_id' => $formId,
                                 'auditee_id' => $auditee->id,
                                 'jawaban' => $value,
+                                get_type($type) => $unit,
                             ];
-
-                            $jawabanAuditeeData[get_type($type)] = $unit;
 
                             JawabanAuditee::updateOrCreate(
                                 [
                                     'jadwal_audit_id' => $jadwalAudit->id,
                                     'form_id' => $formId,
+                                    get_type($type) => $unit,
                                 ],
                                 $jawabanAuditeeData
                             );

@@ -586,7 +586,11 @@ class DownloadController extends Controller
         $title = "Hasil Pengisian Audit";
         $jawabanAuditee = JawabanAuditee::where('jadwal_audit_id', $jadwalId)
             ->where(get_type($type), $unitId)
+            ->join('form', 'jawaban_auditee.form_id', '=', 'form.id')
+            ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
             ->with(['form.instrumen'])
+            ->orderByRaw("REGEXP_REPLACE(instrumen.kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(instrumen.kode, '[0-9]', '', 'g') ASC")
+            ->select('jawaban_auditee.*')
             ->get();
 
         if (!$jawabanAuditee || $jawabanAuditee->isEmpty()) {
@@ -638,25 +642,23 @@ class DownloadController extends Controller
         foreach ($jawabanAuditee as $index => $form) {
             $instrumenKode = $form->form->instrumen->kode;
             $links = Link::where('jadwal_audit_id', $jadwalId)
-                ->where(function ($query) use ($unitId) {
-                    $query->where('prodi_id', $unitId)
-                        ->orWhere('fakultas_id', $unitId)
-                        ->orWhere('unit_id', $unitId);
+                ->where(function ($query) use ($unitId, $type) {
+                    $query->where(get_type($type), $unitId);
                 })
                 ->where('form_id', $form->form_id)
                 ->with(['form.instrumen'])
                 ->get();
 
+            if (!isset($groupedValues[$instrumenKode])) {
+                $groupedValues[$instrumenKode] = [
+                    'no' => $no++ . '. ',
+                    'kode' => $instrumenKode,
+                    'pernyataan' => $form->form->instrumen->pernyataan,
+                    'jawaban' => $form->jawaban,
+                    'link' => []
+                ];
+            }
             foreach ($links as $link) {
-                if (!isset($groupedValues[$instrumenKode])) {
-                    $groupedValues[$instrumenKode] = [
-                        'no' => $no++ . '. ',
-                        'kode' => $instrumenKode,
-                        'pernyataan' => $form->form->instrumen->pernyataan,
-                        'jawaban' => $form->jawaban,
-                        'link' => []
-                    ];
-                }
                 $groupedValues[$instrumenKode]['link'][] = '- ' . $link->link;
             }
         }
