@@ -59,12 +59,12 @@
                     <div class="d-flex">
                         <div class="custom-control custom-radio mr-5">
                             <input class="custom-control-input" type="radio" id="aktif" name="unik" value="1">
-                            <label for="aktif" class="custom-control-label">Aktif</label>
+                            <label for="aktif" class="custom-control-label">Unik</label>
                         </div>
                         <div class="custom-control custom-radio">
                             <input class="custom-control-input" type="radio" id="tidak_aktif" name="unik"
                                 value="0">
-                            <label for="tidak_aktif" class="custom-control-label">Tidak Aktif</label>
+                            <label for="tidak_aktif" class="custom-control-label">Tidak Unik</label>
                         </div>
                     </div>
                     <small class="form-text text-muted">Unik artinya jabatan tersebut hanya bisa dimiliki oleh 1
