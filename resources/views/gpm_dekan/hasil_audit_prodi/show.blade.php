@@ -100,8 +100,14 @@
                                                 Auditor sedang mengisi audit</p>
                                         @endif
                                     @elseif ($status_audit_auditee)
-                                        <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditan sedang
-                                            mengisi audit</p>
+                                        @if ($status_audit_auditee->status === 'completed')
+                                            <p class="list badge badge-success p-1" style="font-size: 14px;">Auditan
+                                                sudah mengisi Audit Dokumen</p>
+                                        @else
+                                            <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditan
+                                                sedang
+                                                mengisi audit</p>
+                                        @endif
                                     @elseif ($status_audit_auditor)
                                         <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditan dan
                                             Auditor sedang mengisi audit</p>
