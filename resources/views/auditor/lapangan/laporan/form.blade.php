@@ -24,6 +24,9 @@
                                 // Jawaban
                                 $jawaban = $jawabanLaporan->where('form_id', $item->form->id)->first();
 
+                                // Catatan Auditor
+                                $jawabanAuditor = $jawabanAuditorAll->where('form_id', $item->form->id)->first();
+
                                 $sessionKelebihan =
                                     $jawaban && $jawaban->kelebihan
                                         ? $jawaban->kelebihan

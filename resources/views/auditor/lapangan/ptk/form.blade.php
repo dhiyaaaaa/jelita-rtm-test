@@ -26,6 +26,7 @@
 
                                 // Jawaban Auditor
                                 $deskripsiCollection = $jawabanPtkDeskripsi->where('form_id', $item->form->id);
+                                $jawabanAuditor = $jawabanAuditorAll->where('form_id', $item->form->id)->first();
 
                                 $sessionDeskripsi =
                                     $deskripsiCollection && $deskripsiCollection->isNotEmpty()

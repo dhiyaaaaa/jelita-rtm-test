@@ -164,6 +164,8 @@ class LaporanController extends Controller
         // Cek jika kosong
         $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $laporan->jadwal_audit_id, $unit['kolom'] => $unit['value']])
             ->first();
+        $jawaban_auditor_all = JawabanAuditor::where(['jadwal_audit_id' => $laporan->jadwal_audit_id, $unit['kolom'] => $unit['value']])
+            ->get();
 
 
         if (!$jawaban_auditor) {
@@ -211,7 +213,7 @@ class LaporanController extends Controller
             'expired' => $laporan->jadwal_audit->expired,
             'jawabanLaporan' => $jawabanLaporan,
             'sessionFormData' => $sessionFormData,
-            'jawabanAuditor' => $jawaban_auditor
+            'jawabanAuditor' => $jawaban_auditor_all
         ];
 
         return view('auditor.lapangan.laporan.form', $data);

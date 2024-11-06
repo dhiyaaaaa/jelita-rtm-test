@@ -161,6 +161,7 @@ class PtkController extends Controller
         $jadwal = JadwalAudit::findOrFail($ptk->jadwal_audit_id);
 
         $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $jadwal->id, $unit['kolom'] => $unit['value'], 'ptk' => 1])->first();
+        $jawaban_auditor_all = JawabanAuditor::where(['jadwal_audit_id' => $jadwal->id, $unit['kolom'] => $unit['value'], 'ptk' => 1])->get();
 
         if (!$jawaban_auditor) {
             return back()->with('error', 'Belum ada instrumen yang masuk ke dalam Temuan Negatif.');
@@ -210,7 +211,7 @@ class PtkController extends Controller
             'status' => $status,
             'jawabanPtk' => $jawabanPtk,
             'jawabanPtkDeskripsi' => $jawabanPtkDeskripsi,
-            'jawabanAuditor' => $jawaban_auditor,
+            'jawabanAuditorAll' => $jawaban_auditor_all,
             'sessionFormData' => $sessionFormData,
             'expired' => $jadwal->expired,
         ];
