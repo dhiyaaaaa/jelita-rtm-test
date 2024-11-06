@@ -28,8 +28,8 @@
                     <span class="text-danger">&#42;</span>
                     <select class="select2" data-placeholder="Pilih Auditan" style="width: 100%;" name="auditee">
                         @foreach ($auditees as $item)
-                            <option value="{{ $item->uuid }}"
-                                {{ in_array($item->uuid, $auditeeSelected->toArray()) ? 'selected' : '' }}>
+                            <option value="{{ $item->id }}"
+                                {{ in_array($item->id, $auditeeSelected->toArray()) ? 'selected' : '' }}>
                                 {{ ucwords($item->user->name) }}</option>
                         @endforeach
                     </select>
