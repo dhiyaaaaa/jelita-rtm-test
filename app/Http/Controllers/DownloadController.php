@@ -659,7 +659,8 @@ class DownloadController extends Controller
                 ];
             }
             foreach ($links as $link) {
-                $groupedValues[$instrumenKode]['link'][] = '- ' . $link->link;
+                $trimLink = htmlspecialchars($link->link);
+                $groupedValues[$instrumenKode]['link'][] = '- ' . $trimLink;
             }
         }
 
