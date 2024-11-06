@@ -213,7 +213,7 @@ class LaporanController extends Controller
             'expired' => $laporan->jadwal_audit->expired,
             'jawabanLaporan' => $jawabanLaporan,
             'sessionFormData' => $sessionFormData,
-            'jawabanAuditor' => $jawaban_auditor_all
+            'jawabanAuditorAll' => $jawaban_auditor_all
         ];
 
         return view('auditor.lapangan.laporan.form', $data);
