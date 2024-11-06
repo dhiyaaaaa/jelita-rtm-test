@@ -193,7 +193,7 @@
 
                                     {{-- Analisis --}}
                                     <div class="form-group">
-                                        <label for="">Analisis</label>
+                                        <label for="">Analisis Penyebab</label>
                                         <span class="text-danger">&#42;</span>
                                         <textarea name="analisis_{{ $item->form->id }}" cols="10" rows="5"
                                             class="form-control @if ($errors->has('analisis_' . $item['form']->id)) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>{{ old('analisis_' . $item->form->id, $sessionAnalisis) }}</textarea>
@@ -206,7 +206,7 @@
 
                                     {{-- Penyebab --}}
                                     <div class="form-group">
-                                        <label for="">Penyebab</label>
+                                        <label for="">Akibat</label>
                                         <span class="text-danger">&#42;</span>
                                         <textarea name="akibat_{{ $item->form->id }}" cols="10" rows="5"
                                             class="form-control @if ($errors->has('analisis_' . $item['form']->id)) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>{{ old('akibat_' . $item->form->id, $sessionAkibat) }}</textarea>
