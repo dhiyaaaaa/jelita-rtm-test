@@ -7,7 +7,7 @@
         </div>
         <!-- /.card-header -->
         <!-- form start -->
-        <form method="POST" action="{{ route('auditor.lapangan.ptk.update', ['ptkId' => $ptk->uuid]) }}" id="create-form">
+        <form method="POST" action="{{ route('auditor.lapangan.ptk.update', ['ptk' => $ptk->id]) }}" id="create-form">
             @csrf
             @method('PUT')
             <div class="card-body">
@@ -41,7 +41,7 @@
 
                 <!-- /.form-group -->
                 <div>
-                    <a href="{{ route('auditor.lapangan.show', $ptk->jadwal_audit_uuid) }}" class="btn btn-outline-secondary">Kembali</a>
+                    <a href="{{ route('auditor.lapangan.show', $ptk->jadwal_audit_id) }}" class="btn btn-outline-secondary">Kembali</a>
                     <x-button-submit text="Edit Temuan Negatif" formId="create-form" />
                 </div>
             </div>
