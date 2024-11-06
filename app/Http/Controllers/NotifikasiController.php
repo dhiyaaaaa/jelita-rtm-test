@@ -63,7 +63,7 @@ class NotifikasiController extends Controller
                 $response['message'] = 'Notifikasi berhasil terkirim!';
             } catch (\Exception $e) {
                 // $response['message'] = 'Notifikasi gagal terkirim : ' . $e->getMessage();
-                $response['message'] = 'Terjadi kesalahan saat mengirim notifikasi!';
+                $response['message'] = 'Terjadi kesalahan saat mengirim notifikasi! Harap isi kolom jawaban auditor dan daftar tilik kemudian simpan jawaban terlebih dahulu';
 
                 return response()->json($response, 500);
             }
