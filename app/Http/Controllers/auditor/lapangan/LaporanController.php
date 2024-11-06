@@ -163,7 +163,6 @@ class LaporanController extends Controller
 
         // Cek jika kosong
         $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $laporan->jadwal_audit_id, $unit['kolom'] => $unit['value']])
-            // ->whereIn('kriteria_id', $kriteria)
             ->first();
 
 
@@ -212,6 +211,7 @@ class LaporanController extends Controller
             'expired' => $laporan->jadwal_audit->expired,
             'jawabanLaporan' => $jawabanLaporan,
             'sessionFormData' => $sessionFormData,
+            'jawabanAuditor' => $jawaban_auditor
         ];
 
         return view('auditor.lapangan.laporan.form', $data);

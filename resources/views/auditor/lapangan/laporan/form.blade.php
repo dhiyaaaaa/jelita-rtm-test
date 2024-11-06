@@ -74,14 +74,22 @@
                                                 <p>Belum ada link dari auditan</p>
                                             @endforelse
                                         </div>
+                                        <div>
+                                            <label for="">Catatan Auditor</label><br>
+                                            @if ($jawabanAuditor && $jawabanAuditor->catatan)
+                                                <p>{{ $jawabanAuditor->catatan }}</p>
+                                            @else
+                                                <p>Tidak ada catatan</p>
+                                            @endif
+                                        </div>
                                     </div>
 
                                     {{-- Kelebihan --}}
                                     <div class="form-group">
                                         <label for="">Kelebihan</label>
                                         <span class="text-danger">&#42;</span>
-                                        <textarea name="kelebihan_{{ $item->form->id }}" cols="10" rows="5" class="form-control @if ($errors->has('kelebihan_' . $item->form->id)) is-invalid @endif"
-                                            {{ $isDisabled ? 'disabled' : '' }}>{{ old('kelebihan_' . $item->form->id, $sessionKelebihan) }}</textarea>
+                                        <textarea name="kelebihan_{{ $item->form->id }}" cols="10" rows="5"
+                                            class="form-control @if ($errors->has('kelebihan_' . $item->form->id)) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>{{ old('kelebihan_' . $item->form->id, $sessionKelebihan) }}</textarea>
 
                                         @if ($errors->has('kelebihan_' . $item->form->id))
                                             <span class="text-danger d-block"
@@ -93,8 +101,8 @@
                                     <div class="form-group">
                                         <label for="">Ruang Peningkatan</label>
                                         <span class="text-danger">&#42;</span>
-                                        <textarea name="ruang_{{ $item->form->id }}" cols="10" rows="5" class="form-control @if ($errors->has('ruang_' . $item->form->id)) is-invalid @endif"
-                                            {{ $isDisabled ? 'disabled' : '' }}>{{ old('ruang_' . $item->form->id, $sessionRuang) }}</textarea>
+                                        <textarea name="ruang_{{ $item->form->id }}" cols="10" rows="5"
+                                            class="form-control @if ($errors->has('ruang_' . $item->form->id)) is-invalid @endif" {{ $isDisabled ? 'disabled' : '' }}>{{ old('ruang_' . $item->form->id, $sessionRuang) }}</textarea>
 
                                         @if ($errors->has('ruang_' . $item->form->id))
                                             <span class="text-danger d-block"

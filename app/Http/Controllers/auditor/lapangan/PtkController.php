@@ -210,6 +210,7 @@ class PtkController extends Controller
             'status' => $status,
             'jawabanPtk' => $jawabanPtk,
             'jawabanPtkDeskripsi' => $jawabanPtkDeskripsi,
+            'jawabanAuditor' => $jawaban_auditor,
             'sessionFormData' => $sessionFormData,
             'expired' => $jadwal->expired,
         ];

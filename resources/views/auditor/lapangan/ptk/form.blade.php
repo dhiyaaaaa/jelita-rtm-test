@@ -87,6 +87,14 @@
                                                 <p>Belum ada link dari auditan</p>
                                             @endforelse
                                         </div>
+                                        <div>
+                                            <label for="">Catatan Auditor</label><br>
+                                            @if ($jawabanAuditor && $jawabanAuditor->catatan)
+                                                <p>{{ $jawabanAuditor->catatan }}</p>
+                                            @else
+                                                <p>Tidak ada catatan</p>
+                                            @endif
+                                        </div>
                                     </div>
 
                                     {{-- Kategori Temuan --}}
