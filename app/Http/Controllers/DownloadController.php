@@ -571,6 +571,8 @@ class DownloadController extends Controller
             ->join('form', 'jawaban_auditee.form_id', '=', 'form.id')
             ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
             ->with(['form.instrumen'])
+            ->orderBy('instrumen.standar_id', 'asc')
+            ->orderBy('instrumen.kategori_id', 'asc')
             ->orderByRaw("REGEXP_REPLACE(instrumen.kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(instrumen.kode, '[0-9]', '', 'g') ASC")
             ->select('jawaban_auditee.*')
             ->get();
