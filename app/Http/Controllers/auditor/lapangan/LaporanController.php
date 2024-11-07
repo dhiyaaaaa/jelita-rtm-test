@@ -233,8 +233,8 @@ class LaporanController extends Controller
 
                         $data = [
                             'auditor_id' => $auditor,
-                            'kelebihan' => $requestData[$kelebihanKey] ?? null,
-                            'ruang_peningkatan' => $requestData[$ruangKey] ?? null,
+                            'kelebihan' => $request->input($kelebihanKey, null),
+                            'ruang_peningkatan' => $request->input($ruangKey, null),
                         ];
 
                         $kriteria = [

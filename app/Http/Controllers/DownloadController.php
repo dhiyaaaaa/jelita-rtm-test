@@ -245,6 +245,54 @@ class DownloadController extends Controller
         }
         $templateProcessor->cloneRowAndSetValues('noAkibat', $valuesFormAkibat);
 
+        // Temuan
+        if ($ptk) {
+            $valuesTemuan = [];
+            $noTemuan = 1;
+
+            foreach ($ptkForm as $jawabans) {
+                $jawabanTemuanDeskripsi = PtkFormDeskripsi::where('ptk_id', $ptk->id)->where('form_id', $jawabans->form_id)->get();
+
+                foreach ($jawabanTemuanDeskripsi as $jawaban) {
+                    if ($jawaban && !empty($jawaban->deskripsi)) {
+                        $observasi = $jawabans->kategori_temuan == 'observasi' ? '✔' : '';
+                        $minor = $jawabans->kategori_temuan == 'minor' ? '✔' : '';
+                        $mayor = $jawabans->kategori_temuan == 'mayor' ? '✔' : '';
+
+                        $valuesTemuan[] = [
+                            'noTemuan' => $noTemuan++,
+                            'temuan' => $jawaban->deskripsi,
+                            'observasi' => $observasi,
+                            'minor' => $minor,
+                            'mayor' => $mayor,
+                        ];
+                    }
+                }
+            }
+
+            if (!empty($valuesTemuan)) {
+                $templateProcessor->cloneRowAndSetValues('noTemuan', $valuesTemuan);
+            } else {
+                $valuesTemuan[] = [
+                    'noTemuan' => 1,
+                    'temuan' => '',
+                    'observasi' => '',
+                    'minor' => '',
+                    'mayor' => '',
+                ];
+                $templateProcessor->cloneRowAndSetValues('noTemuan', $valuesTemuan);
+            }
+        } else {
+            $valuesTemuan[] = [
+                'noTemuan' => 1,
+                'temuan' => '',
+                'observasi' => '',
+                'minor' => '',
+                'mayor' => '',
+            ];
+            $templateProcessor->cloneRowAndSetValues('noTemuan', $valuesTemuan);
+        }
+
         // Form - Rencana
         $groupedRencanas = [];
         $noRencana = 1;
@@ -320,8 +368,7 @@ class DownloadController extends Controller
         $title = "Temuan Positif";
         $auditors = LaporanAuditor::where('laporan_id', $laporan->id)->with(['auditor.user'])->orderBy('created_at', 'ASC')->get();
         $auditee = LaporanAuditee::where('laporan_id', $laporan->id)->with(['auditee.user'])->first();
-        $laporanForm = LaporanForm::where('laporan_id', $laporan->id)
-            ->get();
+        $laporanForm = LaporanForm::where('laporan_id', $laporan->id)->get();
 
         $unitData = $this->get_unit($laporan);
 
@@ -356,71 +403,6 @@ class DownloadController extends Controller
                 'ruang' => null,
             ];
             $templateProcessor->cloneRowAndSetValues('no', $valuesPositif);
-        }
-
-        // Temuan
-        if ($unitData['type'] == "Program Studi") {
-            $ptk = Ptk::where('jadwal_audit_id', $laporan->jadwal_audit_id)
-                ->where('prodi_id', $unitData['unit']->id)
-                ->first();
-        } else if ($unitData['type'] == "Fakultas") {
-            $ptk = Ptk::where('jadwal_audit_id', $laporan->jadwal_audit_id)
-                ->where('fakultas_id', $unitData['unit']->id)
-                ->first();
-        } else if ($unitData['type'] == "Unit") {
-            $ptk = Ptk::where('jadwal_audit_id', $laporan->jadwal_audit_id)
-                ->where('unit_id', $unitData['unit']->id)
-                ->first();
-        } else {
-            $ptk = null;
-        }
-
-        if ($ptk) {
-            $jawabanTemuan = PtkForm::where('ptk_id', $ptk->id)->get();
-            $valuesTemuan = [];
-            $noTemuan = 1;
-
-            foreach ($jawabanTemuan as $jawabans) {
-                $jawabanTemuanDeskripsi = PtkFormDeskripsi::where('ptk_id', $ptk->id)->where('form_id', $jawabans->form_id)->get();
-
-                foreach ($jawabanTemuanDeskripsi as $jawaban) {
-                    if ($jawaban && !empty($jawaban->deskripsi)) {
-                        $observasi = $jawabans->kategori_temuan == 'observasi' ? '✔' : '';
-                        $minor = $jawabans->kategori_temuan == 'minor' ? '✔' : '';
-                        $mayor = $jawabans->kategori_temuan == 'mayor' ? '✔' : '';
-
-                        $valuesTemuan[] = [
-                            'noTemuan' => $noTemuan++,
-                            'temuan' => $jawaban->deskripsi,
-                            'observasi' => $observasi,
-                            'minor' => $minor,
-                            'mayor' => $mayor,
-                        ];
-                    }
-                }
-            }
-
-            if (!empty($valuesTemuan)) {
-                $templateProcessor->cloneRowAndSetValues('noTemuan', $valuesTemuan);
-            } else {
-                $valuesTemuan[] = [
-                    'noTemuan' => 1,
-                    'temuan' => '',
-                    'observasi' => '',
-                    'minor' => '',
-                    'mayor' => '',
-                ];
-                $templateProcessor->cloneRowAndSetValues('noTemuan', $valuesTemuan);
-            }
-        } else {
-            $valuesTemuan[] = [
-                'noTemuan' => 1,
-                'temuan' => '',
-                'observasi' => '',
-                'minor' => '',
-                'mayor' => '',
-            ];
-            $templateProcessor->cloneRowAndSetValues('noTemuan', $valuesTemuan);
         }
 
 
