@@ -542,6 +542,7 @@ class DokumenController extends Controller
                                 'jadwal_audit_id' => $jadwalAudit->id,
                                 'form_id' => $id,
                                 'link' => $link,
+                                get_type($type) => $unit
                             ],
                             [
                                 'auditee_id' => $auditee->id,
