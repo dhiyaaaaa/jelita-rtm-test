@@ -77,7 +77,7 @@
                                                 <p>Belum ada link dari auditan</p>
                                             @endforelse
                                         </div>
-                                        <div>
+                                        <div class="mt-3">
                                             <label for="">Catatan Auditor</label><br>
                                             @if ($jawabanAuditor && $jawabanAuditor->catatan)
                                                 <p>{{ $jawabanAuditor->catatan }}</p>
