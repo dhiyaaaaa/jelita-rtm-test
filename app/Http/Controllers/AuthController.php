@@ -75,7 +75,7 @@ class AuthController extends Controller
     {
         $rules = [
             'no_telepon' => ['required', 'string', 'max:13', function ($attribute, $value, $fail) {
-                if (!preg_match('/^08[0-9]{9,12}$/', $value)) {
+                if (!preg_match('/^08[0-8]{8,12}$/', $value)) {
                     $fail('Format nomor telepon tidak valid. Harap gunakan format 08xxxxxxxxxx.');
                 }
             }],
