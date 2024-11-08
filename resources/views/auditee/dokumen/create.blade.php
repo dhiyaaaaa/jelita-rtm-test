@@ -116,7 +116,7 @@
                                                     <input type="number" name="instrumen_{{ $item['form']->id }}"
                                                         {{ $isDisabled ? 'disabled' : '' }}
                                                         class="form-control @if ($errors->has('instrumen_' . $item['form']->id)) is-invalid @endif"
-                                                        value="{{ old('instrumen_' . $item['form']->id, $sessionJawaban) }}">
+                                                        value="{{ old('instrumen_' . $item['form']->id, isset($sessionJawaban) ? $sessionJawaban : '') }}">
                                                 @endrole
                                             @endif
                                             @if ($errors->has('instrumen_' . $item['form']->id))
