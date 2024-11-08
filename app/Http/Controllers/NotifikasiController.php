@@ -26,11 +26,11 @@ class NotifikasiController extends Controller
                     ->first();
 
                 if (!$pesan) {
-                    $response['message'] = 'Catatan auditor kosong. Silahkan isi dan save jawaban terlebih dahulu';
+                    throw new \Exception('Catatan auditor kosong. Silahkan isi dan save jawaban terlebih dahulu');
                 }
 
                 if (strlen($pesan) > 255) {
-                    $response['message'] = 'Catatan auditor melebihi 255 karakter. Harap periksa dan kurangi panjang catatan.';
+                    throw new \Exception('Catatan auditor melebihi 255 karakter. Harap periksa dan kurangi panjang catatan.');
                 }
 
                 if ($type === 'prodi') {
@@ -61,14 +61,16 @@ class NotifikasiController extends Controller
                         'status' => 'terkirim',
                     ]);
                 } else {
-                    $response['message'] = 'Tipe notifikasi tidak valid.';
+                    throw new \Exception('Tipe notifikasi tidak valid.');
                 }
 
                 $response['message'] = 'Notifikasi berhasil terkirim!';
             } catch (\Exception $e) {
-                // $response['message'] = 'Notifikasi gagal terkirim : ' . $e->getMessage();
-                $response['message'] = 'Terjadi kesalahan saat mengirim notifikasi! Harap isi kolom jawaban auditor dan daftar tilik kemudian simpan jawaban terlebih dahulu';
-
+                if ($e) {
+                    $response['message'] = 'Notifikasi gagal terkirim : ' . $e->getMessage();
+                } else {
+                    $response['message'] = 'Terjadi kesalahan saat mengirim notifikasi! Harap isi kolom jawaban auditor dan daftar tilik kemudian simpan jawaban terlebih dahulu';
+                }
                 return response()->json($response, 500);
             }
 
