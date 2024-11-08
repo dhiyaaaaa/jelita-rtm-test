@@ -29,6 +29,10 @@ class NotifikasiController extends Controller
                     throw new \Exception('Catatan auditor kosong. Silahkan isi dan save jawaban terlebih dahulu');
                 }
 
+                if (strlen($pesan) > 255) {
+                    throw new \Exception('Catatan auditor melebihi 255 karakter. Harap periksa dan kurangi panjang catatan.');
+                }
+
                 if ($type === 'prodi') {
                     Notifikasi::create([
                         'jadwal_audit_id' => $jadwalId,
@@ -62,8 +66,8 @@ class NotifikasiController extends Controller
 
                 $response['message'] = 'Notifikasi berhasil terkirim!';
             } catch (\Exception $e) {
-                $response['message'] = 'Notifikasi gagal terkirim : ' . $e->getMessage();
-                // $response['message'] = 'Terjadi kesalahan saat mengirim notifikasi! Harap isi kolom jawaban auditor dan daftar tilik kemudian simpan jawaban terlebih dahulu';
+                // $response['message'] = 'Notifikasi gagal terkirim : ' . $e->getMessage();
+                $response['message'] = 'Terjadi kesalahan saat mengirim notifikasi! Harap isi kolom jawaban auditor dan daftar tilik kemudian simpan jawaban terlebih dahulu';
 
                 return response()->json($response, 500);
             }
