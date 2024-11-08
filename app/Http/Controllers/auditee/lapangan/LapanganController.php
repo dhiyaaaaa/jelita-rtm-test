@@ -47,24 +47,48 @@ class LapanganController extends Controller
                 $query->where('jabatan_id', $this->jabatanUser);
             });
         })->with([
-            'berita_acara',
-            'ptk',
-            'laporan',
+            'berita_acara' => function ($query) use ($prodi, $fakultas, $unit) {
+                if ($prodi) {
+                    $query->where('prodi_id', $prodi->id);
+                } elseif ($fakultas) {
+                    $query->where('fakultas_id', $fakultas->id);
+                } elseif ($unit) {
+                    $query->where('unit_id', $unit->id);
+                }
+            },
+            'ptk' => function ($query) use ($prodi, $fakultas, $unit) {
+                if ($prodi) {
+                    $query->where('prodi_id', $prodi->id);
+                } elseif ($fakultas) {
+                    $query->where('fakultas_id', $fakultas->id);
+                } elseif ($unit) {
+                    $query->where('unit_id', $unit->id);
+                }
+            },
+            'laporan' => function ($query) use ($prodi, $fakultas, $unit) {
+                if ($prodi) {
+                    $query->where('prodi_id', $prodi->id);
+                } elseif ($fakultas) {
+                    $query->where('fakultas_id', $fakultas->id);
+                } elseif ($unit) {
+                    $query->where('unit_id', $unit->id);
+                }
+            },
             'status_audit_auditee' => function ($query) use ($auditees) {
                 foreach ($auditees as $auditee) {
                     $unit = get_type_model($auditee);
                     $query->where($unit['kolom'], $unit['value']);
                 }
             },
-            'berita_acara.auditee' => function ($query) use ($auditees, $auditeeids) {
-                $query->whereIn('auditee_id', $auditeeids);
-            },
-            'ptk.auditee' => function ($query) use ($auditees, $auditeeids) {
-                $query->whereIn('auditee_id', $auditeeids);
-            },
-            'laporan.auditee' => function ($query) use ($auditees, $auditeeids) {
-                $query->whereIn('auditee_id', $auditeeids);
-            },
+            // 'berita_acara.auditee' => function ($query) use ($auditees, $auditeeids) {
+            //     $query->whereIn('auditee_id', $auditeeids);
+            // },
+            // 'ptk.auditee' => function ($query) use ($auditees, $auditeeids) {
+            //     $query->whereIn('auditee_id', $auditeeids);
+            // },
+            // 'laporan.auditee' => function ($query) use ($auditees, $auditeeids) {
+            //     $query->whereIn('auditee_id', $auditeeids);
+            // },
         ])->orderBy('created_at', 'DESC')
             ->get();
 
