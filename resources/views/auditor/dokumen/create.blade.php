@@ -102,7 +102,7 @@
                                         <div class="form-group mt-3">
                                             <label for="">Jawaban Auditor</label>
                                             <span class="text-danger">&#42;</span>
-                                            @foreach ($item['form']->instrumen->kriteria->sortBy('kriteria_id') as $index => $kriteria)
+                                            @foreach ($item['form']->instrumen->kriteria->sortBy('id') as $index => $kriteria)
                                                 <div class="custom-control custom-radio">
                                                     <input
                                                         class="custom-control-input jawaban-auditor @if ($errors->has('kriteria_' . $item['form']->id)) is-invalid @endif"
