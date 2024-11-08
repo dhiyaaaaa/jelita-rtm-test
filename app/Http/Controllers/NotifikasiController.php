@@ -26,11 +26,11 @@ class NotifikasiController extends Controller
                     ->first();
 
                 if (!$pesan) {
-                    throw new \Exception('Catatan auditor kosong. Silahkan isi dan save jawaban terlebih dahulu');
+                    $response['message'] = 'Catatan auditor kosong. Silahkan isi dan save jawaban terlebih dahulu';
                 }
 
                 if (strlen($pesan) > 255) {
-                    throw new \Exception('Catatan auditor melebihi 255 karakter. Harap periksa dan kurangi panjang catatan.');
+                    $response['message'] = 'Catatan auditor melebihi 255 karakter. Harap periksa dan kurangi panjang catatan.';
                 }
 
                 if ($type === 'prodi') {
@@ -61,7 +61,7 @@ class NotifikasiController extends Controller
                         'status' => 'terkirim',
                     ]);
                 } else {
-                    throw new \Exception('Tipe notifikasi tidak valid.');
+                    $response['message'] = 'Tipe notifikasi tidak valid.';
                 }
 
                 $response['message'] = 'Notifikasi berhasil terkirim!';
