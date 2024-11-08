@@ -186,7 +186,6 @@ class DokumenController extends Controller
                         });
                     })
                     ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
-                    ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
                     ->orderBy(
                         DB::raw('(SELECT standar_id FROM instrumen WHERE instrumen.id = form.instrumen_id)'),
                         'asc'
@@ -205,7 +204,6 @@ class DokumenController extends Controller
                     ->whereHas('instrumen', function ($query) use ($level) {
                         $query->where('level_id', $level->id);
                     })
-                    ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
                     ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
                     ->orderBy(
                         DB::raw('(SELECT standar_id FROM instrumen WHERE instrumen.id = form.instrumen_id)'),
@@ -231,7 +229,6 @@ class DokumenController extends Controller
                                 $query->where('unit_id', $unit);
                             });
                     })
-                    ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
                     ->with(['instrumen.standar', 'instrumen.kategori', 'instrumen.jenis_pertanyaan'])
                     ->orderBy(
                         DB::raw('(SELECT standar_id FROM instrumen WHERE instrumen.id = form.instrumen_id)'),

@@ -92,13 +92,13 @@ class DownloadController extends Controller
             $templateProcessor->setValue('nomor#' . ($no + 1), ($no + 1) . '. ');
             $templateProcessor->setValue('no_auditor#' . ($no + 1), 'Auditor ' . ($no + 1) . ',');
             $templateProcessor->setValue('auditor#' . ($no + 1), $auditor->auditor->user->name);
-        }
 
-        if (count($auditors) <= 2) {
-            $templateProcessor->setValues(['nomor#2' => '', 'no_auditor#2' => '', 'auditor#2' => '', 'image_auditor#2' => '']);
-            $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
-        } else if (count($auditors) <= 3) {
-            $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
+            if (count($auditors) <= 2) {
+                $templateProcessor->setValues(['nomor#2' => '', 'no_auditor#2' => '', 'auditor#2' => '', 'image_auditor#2' => '']);
+                $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
+            } else if (count($auditors) <= 3) {
+                $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
+            }
         }
     }
 
