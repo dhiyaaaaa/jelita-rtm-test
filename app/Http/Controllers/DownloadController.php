@@ -78,51 +78,51 @@ class DownloadController extends Controller
     // Auditor
     private function auditors($templateProcessor, $auditors, $unit, $titleDokumen)
     {
-        for ($i = count($auditors) + 1; $i <= 3; $i++) {
-            $templateProcessor->setValues([
-                "nomor#$i" => '',
-                "no_auditor#$i" => '',
-                "auditor#$i" => '',
-                "image_auditor#$i" => ''
-            ]);
-        }
-
-        foreach ($auditors as $no => $auditor) {
-            if ($auditor->approve) {
-                $createdTime = \Carbon\Carbon::parse($auditor->updated_at);
-                $auditorData = $titleDokumen . " " . ($unit ? $unit['unitName'] : '') . " telah ditandatangani oleh " . $auditor->auditor->user->name . " | " . $createdTime->format('H:i:s') . " | " . $createdTime->isoFormat('D MMMM YYYY');
-                $this->set_barcode($templateProcessor, 'image_auditor#' . ($no + 1), $auditorData, $auditor->auditor->id);
-            } else {
-                $templateProcessor->setValue('image_auditor#' . ($no + 1), '');
-            }
-
-            $templateProcessor->setValue('nomor#' . ($no + 1), ($no + 1) . '. ');
-            $templateProcessor->setValue('no_auditor#' . ($no + 1), 'Auditor ' . ($no + 1) . ',');
-            $templateProcessor->setValue('auditor#' . ($no + 1), $auditor->auditor->user->name);
-        }
+        // for ($i = count($auditors) + 1; $i <= 3; $i++) {
+        //     $templateProcessor->setValues([
+        //         "nomor#$i" => '',
+        //         "no_auditor#$i" => '',
+        //         "auditor#$i" => '',
+        //         "image_auditor#$i" => ''
+        //     ]);
+        // }
 
         // foreach ($auditors as $no => $auditor) {
         //     if ($auditor->approve) {
         //         $createdTime = \Carbon\Carbon::parse($auditor->updated_at);
-        //         $auditorData = $titleDokumen . " " . ($unit ? $unit['unitName'] : '') .
-        //             " telah ditandatangani oleh " . $auditor->auditor->user->name .
-        //             " | " . $createdTime->format('H:i:s') . " | " . $createdTime->isoFormat('D MMMM YYYY');
-
+        //         $auditorData = $titleDokumen . " " . ($unit ? $unit['unitName'] : '') . " telah ditandatangani oleh " . $auditor->auditor->user->name . " | " . $createdTime->format('H:i:s') . " | " . $createdTime->isoFormat('D MMMM YYYY');
         //         $this->set_barcode($templateProcessor, 'image_auditor#' . ($no + 1), $auditorData, $auditor->auditor->id);
         //     } else {
         //         $templateProcessor->setValue('image_auditor#' . ($no + 1), '');
         //     }
+
         //     $templateProcessor->setValue('nomor#' . ($no + 1), ($no + 1) . '. ');
         //     $templateProcessor->setValue('no_auditor#' . ($no + 1), 'Auditor ' . ($no + 1) . ',');
         //     $templateProcessor->setValue('auditor#' . ($no + 1), $auditor->auditor->user->name);
         // }
 
-        // if (count($auditors) <= 2) {
-        //     $templateProcessor->setValues(['nomor#2' => '', 'no_auditor#2' => '', 'auditor#2' => '', 'image_auditor#2' => '']);
-        //     $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
-        // } else if (count($auditors) <= 3) {
-        //     $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
-        // }
+        foreach ($auditors as $no => $auditor) {
+            if ($auditor->approve) {
+                $createdTime = \Carbon\Carbon::parse($auditor->updated_at);
+                $auditorData = $titleDokumen . " " . ($unit ? $unit['unitName'] : '') .
+                    " telah ditandatangani oleh " . $auditor->auditor->user->name .
+                    " | " . $createdTime->format('H:i:s') . " | " . $createdTime->isoFormat('D MMMM YYYY');
+
+                $this->set_barcode($templateProcessor, 'image_auditor#' . ($no + 1), $auditorData, $auditor->auditor->id);
+            } else {
+                $templateProcessor->setValue('image_auditor#' . ($no + 1), '');
+            }
+            $templateProcessor->setValue('nomor#' . ($no + 1), ($no + 1) . '. ');
+            $templateProcessor->setValue('no_auditor#' . ($no + 1), 'Auditor ' . ($no + 1) . ',');
+            $templateProcessor->setValue('auditor#' . ($no + 1), $auditor->auditor->user->name);
+        }
+
+        if (count($auditors) <= 2) {
+            $templateProcessor->setValues(['nomor#2' => '', 'no_auditor#2' => '', 'auditor#2' => '', 'image_auditor#2' => '']);
+            $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
+        } else if (count($auditors) <= 3) {
+            $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
+        }
     }
 
     // QrCode
