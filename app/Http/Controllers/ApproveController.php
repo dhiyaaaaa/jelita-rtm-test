@@ -3,47 +3,58 @@
 namespace App\Http\Controllers;
 
 use App\Models\BeritaAcara;
+use App\Models\BeritaAcaraAuditee;
+use App\Models\BeritaAcaraAuditor;
 use App\Models\Laporan;
+use App\Models\LaporanAuditee;
+use App\Models\LaporanAuditor;
 use App\Models\Ptk;
+use App\Models\PtkAuditee;
+use App\Models\PtkAuditor;
 use Illuminate\Http\Request;
 
 class ApproveController extends Controller
 {
-    private function approve($model, $relation, $documentId, $userId)
+    private function approve($model, $relation, $relationModel, $documentId, $userId)
     {
-        $document = $model::findOrFail($documentId);
-        $document->$relation()->updateExistingPivot($userId, ['approve' => 1]);
+        $model::updateOrCreate(
+            [
+                $relation . '_id' => $userId,
+                $relationModel . '_id' => $documentId,
+            ],
+            ['approve' => 1]
+        );
 
         return back()->with('success', 'Approval berhasil');
     }
 
     public function approve_berita_acara_auditor(string $beritaAcara, string $auditor)
     {
-        return $this->approve(BeritaAcara::class, 'auditor', $beritaAcara, $auditor);
+        return $this->approve(BeritaAcaraAuditor::class, 'auditor', 'berita_acara', $beritaAcara, $auditor);
     }
 
     public function approve_berita_acara_auditee(string $beritaAcara, string $auditee)
     {
-        return $this->approve(BeritaAcara::class, 'auditee', $beritaAcara, $auditee);
+        return $this->approve(BeritaAcaraAuditee::class, 'auditee', 'berita_acara', $beritaAcara, $auditee);
     }
 
     public function approve_ptk_auditor(string $ptk, string $auditor)
     {
-        return $this->approve(Ptk::class, 'auditor', $ptk, $auditor);
+        return $this->approve(PtkAuditor::class, 'auditor', 'ptk', $ptk, $auditor);
     }
 
     public function approve_ptk_auditee(string $ptk, string $auditee)
     {
-        return $this->approve(Ptk::class, 'auditee', $ptk, $auditee);
+        return $this->approve(PtkAuditee::class, 'auditee', 'ptk', $ptk, $auditee);
     }
 
     public function approve_laporan_auditor(string $laporan, string $auditor)
     {
-        return $this->approve(Laporan::class, 'auditor', $laporan, $auditor);
+        return $this->approve(LaporanAuditor::class, 'auditor', 'laporan', $laporan, $auditor);
     }
 
     public function approve_laporan_auditee(string $laporan, string $auditee)
     {
-        return $this->approve(Laporan::class, 'auditee', $laporan, $auditee);
+        return $this->approve(LaporanAuditee::class, 'auditee', 'laporan', $laporan, $auditee);
     }
 }
