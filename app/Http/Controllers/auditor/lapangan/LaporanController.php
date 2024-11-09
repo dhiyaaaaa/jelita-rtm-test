@@ -18,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
@@ -172,6 +173,14 @@ class LaporanController extends Controller
             return back()->with('error', 'Belum ada instrumen yang masuk ke dalam Temuan Positif.');
         }
 
+        $order_by_kode = DB::raw("
+            CASE
+                WHEN REGEXP_REPLACE((SELECT kode FROM instrumen WHERE instrumen.id = form.instrumen_id), '[^0-9]', '', 'g') ~ '^[0-9]+$'
+                THEN CAST(REGEXP_REPLACE((SELECT kode FROM instrumen WHERE instrumen.id = form.instrumen_id), '[^0-9]', '', 'g') AS INTEGER)
+                ELSE NULL
+            END
+        ");
+
         $forms = JawabanAuditor::where('jadwal_audit_id', $laporan->jadwal_audit_id)
             ->whereIn('kriteria_id', $kriteria)
             ->where($unit['kolom'], $unit['value'])
@@ -185,6 +194,10 @@ class LaporanController extends Controller
                     $query->where($unit['kolom'], $unit['value']);
                 }
             ])
+            ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
+            ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+            ->orderBy($order_by_kode)
+            ->select('jawaban_auditor.*')
             ->get();
 
         $perPage = 10;

@@ -138,8 +138,8 @@ class AuditeeController extends Controller
     public function show(JadwalAudit $jadwalAudit, string $type): View
     {
         // Sweet Alert
-        $title = 'Hapus Auditan dan Auditor!';
-        $text = "Apakah Anda yakin ingin menghapus auditan dan auditor ini?";
+        $title = 'Hapus Auditor!';
+        $text = "Apakah Anda yakin ingin menghapus auditor ini?";
         confirmDelete($title, $text);
 
         $ps = collect();
@@ -397,24 +397,24 @@ class AuditeeController extends Controller
             $auditees = Auditee::where(['prodi_id' => $unit, 'jadwal_audit_id' => $jadwalAudit->id])->get();
             foreach ($auditees as $auditee) {
                 $auditee->auditor()->detach();
-                $auditee->delete();
+                // $auditee->delete();
             }
         } else if ($type === 'fakultas') {
             $auditees = Auditee::where(['fakultas_id' => $unit, 'jadwal_audit_id' => $jadwalAudit->id])->get();
             foreach ($auditees as $auditee) {
                 $auditee->auditor()->detach();
-                $auditee->delete();
+                // $auditee->delete();
             }
         } else if ($type === 'universitas') {
             $auditees = Auditee::where(['unit_id' => $unit, 'jadwal_audit_id' => $jadwalAudit->id])->get();
             foreach ($auditees as $auditee) {
                 $auditee->auditor()->detach();
-                $auditee->delete();
+                // $auditee->delete();
             }
         } else {
             abort(404);
         }
 
-        return back()->with('success', 'Auditee dan Auditor berhasil dihapus!');
+        return back()->with('success', 'Auditor berhasil dihapus!');
     }
 }

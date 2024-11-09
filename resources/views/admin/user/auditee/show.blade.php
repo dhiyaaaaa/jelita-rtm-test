@@ -113,7 +113,7 @@
                                                     <a href="{{ route('auditee.edit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
                                                         class="dropdown-item">Ubah Auditan</a>
                                                     <a href="{{ route('auditee.delete', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
-                                                        class="dropdown-item" data-confirm-delete="true">Hapus</a>
+                                                        class="dropdown-item" data-confirm-delete="true">Hapus Auditor</a>
                                                 </div>
                                             </div>
                                         @else
@@ -239,7 +239,7 @@
                                                     <a href="{{ route('auditee.edit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
                                                         class="dropdown-item">Ubah Auditan</a>
                                                     <a href="{{ route('auditee.delete', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
-                                                        class="dropdown-item" data-confirm-delete="true">Hapus</a>
+                                                        class="dropdown-item" data-confirm-delete="true">Hapus Auditor</a>
                                                 </div>
                                             </div>
                                         @else
