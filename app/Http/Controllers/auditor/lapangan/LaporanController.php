@@ -182,6 +182,7 @@ class LaporanController extends Controller
         ");
 
         $forms = JawabanAuditor::where('jadwal_audit_id', $laporan->jadwal_audit_id)
+            ->where('daftar_tilik', 0)
             ->whereIn('kriteria_id', $kriteria)
             ->where($unit['kolom'], $unit['value'])
             ->with([
@@ -196,6 +197,8 @@ class LaporanController extends Controller
             ])
             ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
             ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+            ->orderBy('instrumen.standar_id', 'asc')
+            ->orderBy('instrumen.kategori_id', 'asc')
             ->orderBy($order_by_kode)
             ->select('jawaban_auditor.*')
             ->get();

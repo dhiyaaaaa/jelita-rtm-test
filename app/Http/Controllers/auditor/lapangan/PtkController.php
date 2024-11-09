@@ -192,6 +192,8 @@ class PtkController extends Controller
             ])
             ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
             ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+            ->orderBy('instrumen.standar_id', 'asc')
+            ->orderBy('instrumen.kategori_id', 'asc')
             ->orderBy($order_by_kode)
             ->select('jawaban_auditor.*')
             ->get();
