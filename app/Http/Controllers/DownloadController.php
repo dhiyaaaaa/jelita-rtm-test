@@ -78,29 +78,6 @@ class DownloadController extends Controller
     // Auditor
     private function auditors($templateProcessor, $auditors, $unit, $titleDokumen)
     {
-        // for ($i = count($auditors) + 1; $i <= 3; $i++) {
-        //     $templateProcessor->setValues([
-        //         "nomor#$i" => '',
-        //         "no_auditor#$i" => '',
-        //         "auditor#$i" => '',
-        //         "image_auditor#$i" => ''
-        //     ]);
-        // }
-
-        // foreach ($auditors as $no => $auditor) {
-        //     if ($auditor->approve) {
-        //         $createdTime = \Carbon\Carbon::parse($auditor->updated_at);
-        //         $auditorData = $titleDokumen . " " . ($unit ? $unit['unitName'] : '') . " telah ditandatangani oleh " . $auditor->auditor->user->name . " | " . $createdTime->format('H:i:s') . " | " . $createdTime->isoFormat('D MMMM YYYY');
-        //         $this->set_barcode($templateProcessor, 'image_auditor#' . ($no + 1), $auditorData, $auditor->auditor->id);
-        //     } else {
-        //         $templateProcessor->setValue('image_auditor#' . ($no + 1), '');
-        //     }
-
-        //     $templateProcessor->setValue('nomor#' . ($no + 1), ($no + 1) . '. ');
-        //     $templateProcessor->setValue('no_auditor#' . ($no + 1), 'Auditor ' . ($no + 1) . ',');
-        //     $templateProcessor->setValue('auditor#' . ($no + 1), $auditor->auditor->user->name);
-        // }
-
         foreach ($auditors as $no => $auditor) {
             if ($auditor->approve) {
                 $createdTime = \Carbon\Carbon::parse($auditor->updated_at);
@@ -154,7 +131,7 @@ class DownloadController extends Controller
     {
         $title = "Berita Acara";
         $auditee = BeritaAcaraAuditee::where('berita_acara_id', $beritaAcara->id)->with(['auditee.user'])->first();
-        $auditors = BeritaAcaraAuditor::where('berita_acara_id', $beritaAcara->id)->with(['auditor.user'])->orderBy('created_at', 'ASC')->get();
+        $auditors = BeritaAcaraAuditor::where('berita_acara_id', $beritaAcara->id)->with(['auditor.user'])->distinct('auditor_id')->orderBy('created_at', 'ASC')->get();
 
         $unitData = $this->get_unit($beritaAcara);
         $date = \Carbon\Carbon::parse($beritaAcara->tgl);
@@ -183,7 +160,7 @@ class DownloadController extends Controller
     {
         $title = "Temuan Negatif";
         $ptkForm = PtkForm::where('ptk_id', $ptk->id)->with(['form.instrumen'])->get();
-        $auditors = PtkAuditor::where('ptk_id', $ptk->id)->with(['auditor.user'])->orderBy('created_at', 'ASC')->get();
+        $auditors = PtkAuditor::where('ptk_id', $ptk->id)->with(['auditor.user'])->distinct('auditor_id')->orderBy('created_at', 'ASC')->get();
         $auditee = PtkAuditee::where('ptk_id', $ptk->id)->with(['auditee.user'])->first();
 
         $unitData = $this->get_unit($ptk);
@@ -389,7 +366,7 @@ class DownloadController extends Controller
     public function download_laporan(Laporan $laporan)
     {
         $title = "Temuan Positif";
-        $auditors = LaporanAuditor::where('laporan_id', $laporan->id)->with(['auditor.user'])->orderBy('created_at', 'ASC')->get();
+        $auditors = LaporanAuditor::where('laporan_id', $laporan->id)->with(['auditor.user'])->distinct('auditor_id')->orderBy('created_at', 'ASC')->get();
         $auditee = LaporanAuditee::where('laporan_id', $laporan->id)->with(['auditee.user'])->first();
         $laporanForm = LaporanForm::where('laporan_id', $laporan->id)->get();
 
