@@ -87,9 +87,9 @@ class AuditorUnitController extends Controller
                 'jadwal_audit_id' => $auditor->jadwal_audit_id,
             ]);
         } elseif ($type === 'prodi') {
-            $user_prodi = Auth::user()->prodi->first()->id;
+            $user_prodi = Auth::user()->prodi->first()->id ?? null;
 
-            if ($user_prodi === $unit) return back()->with('error', 'Anda tidak bisa melakukan audit pada prodi Anda sendiri.');
+            if ($user_prodi != null && $user_prodi === $unit) return back()->with('error', 'Anda tidak bisa melakukan audit pada prodi Anda sendiri.');
 
             $prodi = Prodi::with(['auditee' => function ($query) use ($auditor) {
                 $query->whereHas('jadwal_audit', function ($subQuery) use ($auditor) {
