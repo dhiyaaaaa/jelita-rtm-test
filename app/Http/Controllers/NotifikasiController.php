@@ -29,10 +29,6 @@ class NotifikasiController extends Controller
                     throw new \Exception('Catatan auditor kosong. Silahkan isi dan save jawaban terlebih dahulu');
                 }
 
-                if (strlen($pesan) > 255) {
-                    throw new \Exception('Catatan auditor melebihi 255 karakter. Harap periksa dan kurangi panjang catatan.');
-                }
-
                 if ($type === 'prodi') {
                     Notifikasi::create([
                         'jadwal_audit_id' => $jadwalId,
