@@ -147,7 +147,7 @@ class DashboardController extends Controller
         $auditors = Auditor::where('user_id', $this->user->id)->get();
         $auditorid = $auditors->pluck('id')->toArray();
 
-        $jadwalAuditor = JadwalAudit::with(['auditee_auditor', 'auditee_auditor.auditor.user', 'auditee_auditor.prodi', 'auditee_auditor.fakultas', 'auditee_auditor.unit'])->whereHas('auditor', function ($query) use ($auditorid) {
+        $jadwalAuditor = JadwalAudit::with(['auditee_auditor', 'auditee_auditor.auditor.user', 'auditee_auditor.prodi.jenjang', 'auditee_auditor.fakultas', 'auditee_auditor.unit'])->whereHas('auditor', function ($query) use ($auditorid) {
             $query->whereIn('id', $auditorid);
         })->with(['auditor.user'])->orderBy('created_at', 'DESC')->get()->map(function ($item) use ($auditorid) {
             $units = $item->auditee_auditor->whereIn('auditor_id', $auditorid)
@@ -163,7 +163,7 @@ class DashboardController extends Controller
 
             $unitData = $units->map(function ($unit) use ($item) {
                 $unitType = $unit->type === 'prodi'
-                    ? 'Prodi'
+                    ? 'Program Studi'
                     : ($unit->type === 'fakultas'
                         ? 'Fakultas'
                         : 'Unit');
@@ -179,7 +179,7 @@ class DashboardController extends Controller
 
                 return [
                     'unitType' => $unitType,
-                    'unitName' => $unit->nama,
+                    'unitName' => $unit->type === 'prodi' ? ($unit->nama . ' ' . $unit->jenjang->nama) : $unit->nama,
                     'auditees' => $relatedAuditees->map(function ($aud) {
                         return $aud->auditor->user;
                     })
