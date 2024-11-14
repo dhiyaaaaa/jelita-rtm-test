@@ -252,7 +252,7 @@ class DashboardController extends Controller
         $auditeeAuditor = AuditeeAuditor::whereIn('auditor_id', $auditors)
             ->orWhereIn('auditee_id', $auditeesUuid)
             ->distinct()
-            ->get(['jadwal_audit_id', 'prodi_id', 'fakultas_id', 'unit_id']);
+            ->get(['jadwal_audit_id', 'prodi_id', 'fakultas_id', 'unit_id', 'auditor_id']);
 
         $jadwalAuditUuids = $auditeeAuditor->pluck('jadwal_audit_id');
         $prodiUuids = $auditeeAuditor->pluck('prodi_id');
@@ -274,9 +274,9 @@ class DashboardController extends Controller
         })->sortByDesc('updated_at')
             ->groupBy(fn($item) => Carbon::parse($item->updated_at)->translatedFormat('j F Y'));
 
-        $notifikasiAuditee = $notifikasi->filter(function ($item) use ($user, $rolesAuditee) {
+        $notifikasiAuditee = $notifikasi->filter(function ($item) use ($user, $rolesAuditee, $auditors) {
             return $user->roles->pluck('name')->intersect($rolesAuditee)->isNotEmpty() &&
-                in_array($item->status, ['terkirim', 'diterima', 'selesai']);
+                in_array($item->status, ['terkirim', 'selesai']) && !in_array($item->auditor_id, $auditors);
         })->sortByDesc('created_at')
             ->groupBy(fn($item) => Carbon::parse($item->created_at)->translatedFormat('j F Y'));
 
