@@ -47,7 +47,7 @@
                                         : $sessionFormData['catatan_' . $item['form']->id] ?? '';
 
                                 $sessionDaftarTilik =
-                                    $jawabanAuditor && $jawabanAuditor->daftar_tilik
+                                    $jawabanAuditor && $jawabanAuditor->daftar_tilik !== null
                                         ? $jawabanAuditor->daftar_tilik
                                         : $sessionFormData['daftar-tilik_' . $item['form']->id] ?? '';
 
@@ -152,7 +152,7 @@
                                                     class="custom-control-input daftar-tilik @if ($errors->has('daftar-tilik_' . $item['form']->id)) is-invalid @endif"
                                                     type="radio" id="daftarTilikTidak-{{ $item['form']->id }}"
                                                     name="daftar-tilik_{{ $item['form']->id }}" value="0"
-                                                     {{ old('daftar-tilik_' . $item['form']->id) == '0' || (isset($sessionDaftarTilik) && $sessionDaftarTilik == false) ? 'checked' : '' }}
+                                                    {{ old('daftar-tilik_' . $item['form']->id, $sessionDaftarTilik) === '0' || $sessionDaftarTilik === false ? 'checked' : '' }}
                                                     {{ $isDisabled ? 'disabled' : '' }}>
                                                 <label for="daftarTilikTidak-{{ $item['form']->id }}"
                                                     class="custom-control-label">
