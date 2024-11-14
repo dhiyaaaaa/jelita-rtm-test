@@ -33,13 +33,16 @@
                             @endif
                         @endforeach
                     </select>
+                    <div class="input-group-append mt-3">
+                        <button type="button" class="btn btn-danger clear-btn"
+                            data-target="auditor_1">Hapus</button>
+                    </div>
                     @if ($errors->has('auditor_1'))
                         <span class="text-danger d-block" style="font-size: 14px">{{ $errors->first('auditor_1') }}</span>
                     @endif
                 </div>
                 <div class="form-group">
                     <label>Auditor 2</label>
-                    <span class="text-danger">&#42;</span>
                     <select class="select2 auditor-select" data-placeholder="Pilih Auditor 2" style="width: 100%;"
                         name="auditor_2">
                         <option value="" selected>Pilih Auditor 2</option>
@@ -57,13 +60,16 @@
                             @endif
                         @endforeach
                     </select>
+                    <div class="input-group-append mt-3">
+                        <button type="button" class="btn btn-danger clear-btn"
+                            data-target="auditor_2">Hapus</button>
+                    </div>
                     @if ($errors->has('auditor_2'))
                         <span class="text-danger d-block" style="font-size: 14px">{{ $errors->first('auditor_2') }}</span>
                     @endif
                 </div>
                 <div class="form-group">
                     <label>Auditor 3</label>
-                    <span class="text-danger">&#42;</span>
                     <select class="select2 auditor-select" data-placeholder="Pilih Auditor 3" style="width: 100%;"
                         name="auditor_3">
                         <option value="" selected>Pilih Auditor 3</option>
@@ -81,6 +87,10 @@
                             @endif
                         @endforeach
                     </select>
+                    <div class="input-group-append mt-3">
+                        <button type="button" class="btn btn-danger clear-btn"
+                            data-target="auditor_3">Hapus</button>
+                    </div>
                     @if ($errors->has('auditor_3'))
                         <span class="text-danger d-block" style="font-size: 14px">{{ $errors->first('auditor_3') }}</span>
                     @endif
@@ -135,6 +145,13 @@
             }
 
             $('.auditor-select').on('change', function() {
+                updateAuditorOptions();
+            });
+
+            $('.clear-btn').on('click', function() {
+                let targetName = $(this).data('target');
+                let selectElement = $(`select[name="${targetName}"]`);
+                selectElement.val(null).trigger('change');
                 updateAuditorOptions();
             });
 

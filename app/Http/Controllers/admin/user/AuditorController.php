@@ -16,6 +16,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Yajra\DataTables\DataTables;
 
@@ -226,11 +227,26 @@ class AuditorController extends Controller
     public function edit_auditee_auditor(JadwalAudit $jadwalAudit, string $unit, string $type): View
     {
         if ($type === 'prodi') {
-            $auditor = AuditeeAuditor::where('prodi_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->distinct('auditor_id')->pluck('auditor_id');
-        } else if ($type === 'fakultas') {
-            $auditor = AuditeeAuditor::where('fakultas_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->distinct('auditor_id')->pluck('auditor_id');
-        } else if ($type === 'universitas') {
-            $auditor = AuditeeAuditor::where('unit_id', $unit)->where('jadwal_audit_id', $jadwalAudit->id)->distinct('auditor_id')->pluck('auditor_id');
+            $auditor = AuditeeAuditor::select('auditor_id')
+                ->where('prodi_id', $unit)
+                ->where('jadwal_audit_id', $jadwalAudit->id)
+                ->groupBy('auditor_id')
+                ->orderBy(DB::raw('MAX(updated_at)'), 'asc')
+                ->pluck('auditor_id');
+        } elseif ($type === 'fakultas') {
+            $auditor = AuditeeAuditor::select('auditor_id')
+                ->where('fakultas_id', $unit)
+                ->where('jadwal_audit_id', $jadwalAudit->id)
+                ->groupBy('auditor_id')
+                ->orderBy(DB::raw('MAX(updated_at)'), 'asc')
+                ->pluck('auditor_id');
+        } elseif ($type === 'universitas') {
+            $auditor = AuditeeAuditor::select('auditor_id')
+                ->where('unit_id', $unit)
+                ->where('jadwal_audit_id', $jadwalAudit->id)
+                ->groupBy('auditor_id')
+                ->orderBy(DB::raw('MAX(updated_at)'), 'asc')
+                ->pluck('auditor_id');
         } else {
             abort(404);
         }
