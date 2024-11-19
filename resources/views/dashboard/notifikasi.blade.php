@@ -108,10 +108,10 @@
                                                 : ($item->fakultas_id
                                                     ? 'fakultas'
                                                     : 'universitas');
-                                            $auditee = $auditees
-                                                ->where('jadwal_audit_id', $item->jadwal_audit_id)
-                                                ->first();
-                                            $auditeeId = $auditee ? $auditee->id : null;
+                                            // $auditee = $auditees
+                                            //     ->where('jadwal_audit_id', $item->jadwal_audit_id)
+                                            //     ->first();
+                                            // $auditeeId = $auditee ? $auditee->id : null;
                                         @endphp
                                         <div>
                                             <i class="fas fa-envelope bg-blue"></i>
@@ -134,8 +134,8 @@
                                                 </div>
 
                                                 <div class="timeline-footer" style="margin-top:-10px;">
-                                                    <a href="{{ $auditeeId && $item->status == 'terkirim' ? route('auditee.dokumen.create', ['jadwalAudit' => $item->jadwal_audit_id, 'unit' => $unitId, 'type' => $type]) : '#' }}"
-                                                        class="btn btn-success btn-sm {{ $auditeeId && $item->status == 'terkirim' ? '' : 'disabled' }}">
+                                                    <a href="{{ $item->status == 'terkirim' ? route('auditee.dokumen.create', ['jadwalAudit' => $item->jadwal_audit_id, 'unit' => $unitId, 'type' => $type]) : '#' }}"
+                                                        class="btn btn-success btn-sm {{ $item->status == 'terkirim' ? '' : 'disabled' }}">
                                                         {{ ucfirst($item->status == 'terkirim' ? 'Lihat' : $item->status) }}
                                                     </a>
                                                 </div>
