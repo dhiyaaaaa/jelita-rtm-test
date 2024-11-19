@@ -80,15 +80,15 @@ class LapanganController extends Controller
                     $query->where($unit['kolom'], $unit['value']);
                 }
             },
-            // 'berita_acara.auditee' => function ($query) use ($auditees, $auditeeids) {
-            //     $query->whereIn('auditee_id', $auditeeids);
-            // },
-            // 'ptk.auditee' => function ($query) use ($auditees, $auditeeids) {
-            //     $query->whereIn('auditee_id', $auditeeids);
-            // },
-            // 'laporan.auditee' => function ($query) use ($auditees, $auditeeids) {
-            //     $query->whereIn('auditee_id', $auditeeids);
-            // },
+            'berita_acara.auditee' => function ($query) use ($auditees, $auditeeids) {
+                $query->whereIn('auditee_id', $auditeeids);
+            },
+            'ptk.auditee' => function ($query) use ($auditees, $auditeeids) {
+                $query->whereIn('auditee_id', $auditeeids);
+            },
+            'laporan.auditee' => function ($query) use ($auditees, $auditeeids) {
+                $query->whereIn('auditee_id', $auditeeids);
+            },
         ])->orderBy('created_at', 'DESC')
             ->get();
 
