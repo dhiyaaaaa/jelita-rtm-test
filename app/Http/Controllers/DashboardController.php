@@ -242,28 +242,33 @@ class DashboardController extends Controller
 
     public function notifikasi(): View
     {
-        $prodi = $this->user->prodi->first();
-        $fakultas = $this->user->fakultas->first();
-        $unit = $this->user->unit->first();
-
         $auditors = Auditor::where('user_id', $this->user->id)->pluck('id')->toArray();
-        $auditees = Auditee::where('user_id', $this->user->id)->pluck('id')->toArray();
+        $auditees = Auditee::where('user_id', $this->user->id)->get();
+
+        $auditeeData = [
+            'jadwal' => $auditees->pluck('jadwal_audit_id'),
+            'prodi' => $auditees->pluck('prodi_id'),
+            'fakultas' => $auditees->pluck('fakultas_id'),
+            'unit' => $auditees->pluck('unit_id'),
+        ];
 
         $auditeeAuditor = AuditeeAuditor::whereIn('auditor_id', $auditors)
             ->distinct()
             ->get(['jadwal_audit_id', 'prodi_id', 'fakultas_id', 'unit_id', 'auditor_id']);
 
-        $jadwalAuditUuids = $auditeeAuditor->pluck('jadwal_audit_id');
-        $prodiUuids = $auditeeAuditor->pluck('prodi_id');
-        $fakultasUuids = $auditeeAuditor->pluck('fakultas_id');
-        $unitUuids = $auditeeAuditor->pluck('unit_id');
+        $auditorData = [
+            'jadwal' => $auditeeAuditor->pluck('jadwal_audit_id'),
+            'prodi' => $auditeeAuditor->pluck('prodi_id'),
+            'fakultas' => $auditeeAuditor->pluck('fakultas_id'),
+            'unit' => $auditeeAuditor->pluck('unit_id'),
+        ];
 
-        $notifikasiAuditor = Notifikasi::whereIn('jadwal_audit_id', $jadwalAuditUuids)
+        $notifikasiAuditor = Notifikasi::whereIn('jadwal_audit_id', $auditorData['jadwal'])
             ->whereIn('status', ['diterima', 'selesai'])
-            ->where(function ($query) use ($prodiUuids, $fakultasUuids, $unitUuids) {
-                $query->whereIn('prodi_id', $prodiUuids)
-                    ->orWhereIn('fakultas_id', $fakultasUuids)
-                    ->orWhereIn('unit_id', $unitUuids);
+            ->where(function ($query) use ($auditorData) {
+                $query->whereIn('prodi_id', $auditorData['prodi'])
+                    ->orWhereIn('fakultas_id', $auditorData['fakultas'])
+                    ->orWhereIn('unit_id', $auditorData['unit']);
             })
             ->with(['auditor', 'auditor.user', 'auditee.user', 'form.instrumen', 'jadwal_audit', 'prodi', 'fakultas', 'unit'])
             ->get()
@@ -271,16 +276,12 @@ class DashboardController extends Controller
             ->groupBy(fn($item) => Carbon::parse($item->updated_at)->translatedFormat('j F Y'));
 
 
-        $notifikasiAuditee = Notifikasi::whereIn('jadwal_audit_id', $jadwalAuditUuids)
+        $notifikasiAuditee = Notifikasi::whereIn('jadwal_audit_id', $auditeeData['jadwal'])
             ->whereIn('status', ['terkirim', 'selesai'])
-            ->where(function ($query) use ($prodi, $fakultas, $unit) {
-                if ($prodi) {
-                    $query->orWhere('prodi_id', $prodi->id);
-                } else if ($fakultas) {
-                    $query->orWhere('fakultas_id', $fakultas->id);
-                } else if ($unit) {
-                    $query->orWhere('unit_id', $unit->id);
-                }
+            ->where(function ($query) use ($auditeeData) {
+                $query->whereIn('prodi_id', $auditeeData['prodi'])
+                    ->orWhereIn('fakultas_id', $auditeeData['fakultas'])
+                    ->orWhereIn('unit_id', $auditeeData['unit']);
             })
             ->with(['auditor', 'auditor.user', 'auditee.user', 'form.instrumen', 'jadwal_audit', 'prodi', 'fakultas', 'unit'])
             ->get()
