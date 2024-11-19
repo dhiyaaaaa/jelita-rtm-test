@@ -38,9 +38,15 @@ class DownloadController extends Controller
     // Ambil Unit
     private function get_unit($query)
     {
+        $unit = null;
+        $unitName = null;
+        $unitJenjang = null;
+        $type = null;
+
         if ($query->prodi_id) {
             $unit = Prodi::where('id', $query->prodi_id)->first();
             $unitName = $unit ? 'Program Studi ' . $unit->nama  . ' ' . $unit->jenjang->nama : null;
+            $unitJenjang = $unit ? $unit->nama  . ' ' . $unit->jenjang->nama : null;
             $type = "Program Studi";
         } elseif ($query->fakultas_id) {
             $unit = Fakultas::where('id', $query->fakultas_id)->first();
@@ -50,13 +56,9 @@ class DownloadController extends Controller
             $unit = Unit::where('id', $query->unit_id)->first();
             $unitName = $unit ? 'Unit ' . $unit->nama : null;
             $type = "Unit";
-        } else {
-            $unit = null;
-            $unitName = null;
-            $type = null;
         }
 
-        return ['unit' => $unit, 'unitName' => $unitName, 'type' => $type];
+        return ['unit' => $unit, 'unitName' => $unitName, 'type' => $type, 'unitJenjang' => $unitJenjang];
     }
 
     // Auditee
@@ -145,7 +147,7 @@ class DownloadController extends Controller
             'bulan' => $date->isoFormat('MMMM'),
             'tahun' => $date->format('Y'),
             'date' => $date->isoFormat('D MMMM YYYY'),
-            'unit' => $unitData ? $unitData['unit']->nama : '',
+            'unit' => $unitData ? $unitData['unitJenjang'] : '',
             'type' => $unitData ? $unitData['type'] : '',
         ]);
 
