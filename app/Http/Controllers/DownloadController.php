@@ -62,7 +62,7 @@ class DownloadController extends Controller
     // Auditee
     private function auditee($templateProcessor, $auditee, $unit, $titleDokumen)
     {
-        if ($auditee && $auditee->approve == 1) {
+        if ($auditee && $auditee->approve == 1 || $auditee->approve == true) {
             $createdTime = \Carbon\Carbon::parse($auditee->updated_at);
             $auditeeData = $titleDokumen . " " . ($unit ? $unit['unitName'] : '') .
                 " telah ditandatangani oleh " . $auditee->auditee->user->name .
