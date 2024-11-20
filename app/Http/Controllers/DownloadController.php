@@ -147,7 +147,7 @@ class DownloadController extends Controller
             'bulan' => $date->isoFormat('MMMM'),
             'tahun' => $date->format('Y'),
             'date' => $date->isoFormat('D MMMM YYYY'),
-            'unit' => $unitData ? $unitData['unitJenjang'] : '',
+            'unit' => $unitData ? ($unitData['type'] == 'Program Studi' ? $unitData['unitJenjang'] : $unitData['unitName']) : '',
             'type' => $unitData ? $unitData['type'] : '',
         ]);
 
