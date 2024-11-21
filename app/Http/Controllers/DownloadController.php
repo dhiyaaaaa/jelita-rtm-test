@@ -133,7 +133,7 @@ class DownloadController extends Controller
     {
         $title = "Berita Acara";
         $auditee = BeritaAcaraAuditee::where('berita_acara_id', $beritaAcara->id)->with(['auditee.user'])->first();
-        $auditors = BeritaAcaraAuditor::where('berita_acara_id', $beritaAcara->id)->with(['auditor.user'])->distinct('auditor_id')->orderBy('auditor_id')->orderBy('created_at', 'ASC')->get();
+        $auditors = BeritaAcaraAuditor::where('berita_acara_id', $beritaAcara->id)->with(['auditor.user'])->groupBy('auditor_id', 'created_at', 'id')->orderBy('created_at', 'ASC')->get();
 
         $unitData = $this->get_unit($beritaAcara);
         $date = \Carbon\Carbon::parse($beritaAcara->tgl);
@@ -162,7 +162,7 @@ class DownloadController extends Controller
     {
         $title = "Temuan Negatif";
         $ptkForm = PtkForm::where('ptk_id', $ptk->id)->with(['form.instrumen'])->get();
-        $auditors = PtkAuditor::where('ptk_id', $ptk->id)->with(['auditor.user'])->distinct('auditor_id')->orderBy('auditor_id')->orderBy('created_at', 'ASC')->get();
+        $auditors = PtkAuditor::where('ptk_id', $ptk->id)->with(['auditor.user'])->groupBy('auditor_id', 'created_at', 'id')->orderBy('created_at', 'ASC')->get();
         $auditee = PtkAuditee::where('ptk_id', $ptk->id)->with(['auditee.user'])->first();
 
         $unitData = $this->get_unit($ptk);
@@ -368,7 +368,7 @@ class DownloadController extends Controller
     public function download_laporan(Laporan $laporan)
     {
         $title = "Temuan Positif";
-        $auditors = LaporanAuditor::where('laporan_id', $laporan->id)->with(['auditor.user'])->distinct('auditor_id')->orderBy('auditor_id')->orderBy('created_at', 'ASC')->get();
+        $auditors = LaporanAuditor::where('laporan_id', $laporan->id)->with(['auditor.user'])->groupBy('auditor_id', 'created_at', 'id')->orderBy('created_at', 'ASC')->get();
         $auditee = LaporanAuditee::where('laporan_id', $laporan->id)->with(['auditee.user'])->first();
         $laporanForm = LaporanForm::where('laporan_id', $laporan->id)->get();
 
