@@ -126,6 +126,27 @@ class PtkController extends Controller
             ]);
         }
 
+        // Auditor
+        $unit = get_type_model($ptk);
+        $auditors = AuditeeAuditor::select('auditor_id', 'created_at')
+            ->where('jadwal_audit_id', $ptk->jadwal_audit_id)
+            ->distinct()
+            ->where($unit['kolom'], $unit['value'])
+            ->orderBy('created_at', 'asc')
+            ->pluck('auditor_id');
+
+        $existingAuditors = $ptk->auditor()->orderByPivot('created_at', 'asc')->pluck('auditor_id');
+
+        if ($auditors->toArray() !== $existingAuditors->toArray()) {
+            $timestamp = now();
+
+            foreach ($auditors as $index => $auditorId) {
+                $ptk->auditor()->updateExistingPivot($auditorId, [
+                    'created_at' => $timestamp->addMilliseconds(5000),
+                ]);
+            }
+        }
+
         return redirect()->route('auditor.lapangan.show', [
             'jadwalAudit' => $ptk->jadwal_audit_id,
         ])
