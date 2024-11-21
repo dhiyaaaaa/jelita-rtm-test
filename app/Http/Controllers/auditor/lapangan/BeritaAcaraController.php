@@ -38,10 +38,11 @@ class BeritaAcaraController extends Controller
      */
     public function store(BeritaAcaraAuditorStoreUpdateRequest $request, string $jadwalAudit, string $unit, string $type): RedirectResponse
     {
-        $auditors = AuditeeAuditor::select('auditor_id')
+        $auditors = AuditeeAuditor::select('auditor_id', 'created_at')
             ->where('jadwal_audit_id', $jadwalAudit)
             ->distinct()
             ->where(get_type($type), $unit)
+            ->orderBy('created_at', 'asc')
             ->get();
 
         $beritaAcara = BeritaAcara::updateOrCreate([
@@ -56,7 +57,7 @@ class BeritaAcaraController extends Controller
 
         foreach ($auditors as $auditor) {
             $beritaAcara->auditor()->attach($auditor->auditor_id, [
-                'created_at' => $timestamp->addMilliseconds(1000)
+                'created_at' => $timestamp->addMilliseconds(5000)
             ]);
         }
 
@@ -104,6 +105,27 @@ class BeritaAcaraController extends Controller
                 'auditee_id' => $request->auditee,
                 'approve' => 0,
             ]);
+        }
+
+        // Auditor
+        $unit = get_type_model($beritaAcara);
+        $auditors = AuditeeAuditor::select('auditor_id', 'created_at')
+            ->where('jadwal_audit_id', $beritaAcara->jadwal_audit_id)
+            ->distinct()
+            ->where($unit['kolom'], $unit['value'])
+            ->orderBy('created_at', 'asc')
+            ->pluck('auditor_id');
+
+        $existingAuditors = $beritaAcara->auditor()->orderByPivot('created_at', 'asc')->pluck('auditor_id');
+
+        if ($auditors->toArray() !== $existingAuditors->toArray()) {
+            $timestamp = now();
+
+            foreach ($auditors as $index => $auditorId) {
+                $beritaAcara->auditor()->updateExistingPivot($auditorId, [
+                    'created_at' => $timestamp->addMilliseconds(5000),
+                ]);
+            }
         }
 
         return redirect()->route('auditor.lapangan.show', [

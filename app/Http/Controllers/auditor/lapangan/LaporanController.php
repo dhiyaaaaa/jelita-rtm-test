@@ -56,10 +56,11 @@ class LaporanController extends Controller
      */
     public function store(LaporanAuditorStoreRequest $request, string $jadwalAudit, string $unit, string $type): RedirectResponse
     {
-        $auditors = AuditeeAuditor::select('auditor_id')
+        $auditors = AuditeeAuditor::select('auditor_id', 'created_at')
             ->where('jadwal_audit_id', $jadwalAudit)
             ->distinct()
             ->where(get_type($type), $unit)
+            ->orderBy('created_at', 'asc')
             ->get();
 
         $laporan = Laporan::updateOrCreate([
@@ -74,7 +75,7 @@ class LaporanController extends Controller
 
         foreach ($auditors as $auditor) {
             $laporan->auditor()->attach($auditor->auditor_id, [
-                'created_at' => $timestamp->addMilliseconds(1000)
+                'created_at' => $timestamp->addMilliseconds(5000)
             ]);
         }
 
