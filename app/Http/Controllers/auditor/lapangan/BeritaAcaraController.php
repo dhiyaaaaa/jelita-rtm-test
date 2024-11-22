@@ -100,8 +100,16 @@ class BeritaAcaraController extends Controller
         // One to One Auditee
         $auditee = BeritaAcaraAuditee::where('berita_acara_id', $beritaAcara->id)->first();
 
-        if ($auditee->auditee_id !== $request->auditee) {
-            $auditee->update([
+        if ($auditee) { 
+            if ($auditee->auditee_id !== $request->auditee) {
+                $auditee->update([
+                    'auditee_id' => $request->auditee,
+                    'approve' => 0,
+                ]);
+            }
+        } else {
+            BeritaAcaraAuditee::create([
+                'berita_acara_id' => $beritaAcara->id,
                 'auditee_id' => $request->auditee,
                 'approve' => 0,
             ]);

@@ -119,8 +119,16 @@ class PtkController extends Controller
         // One to One
         $auditee = PtkAuditee::where('ptk_id', $ptk->id)->first();
 
-        if ($auditee->auditee_id !== $request->auditee) {
-            $auditee->update([
+        if ($auditee) {
+            if ($auditee->auditee_id !== $request->auditee) {
+                $auditee->update([
+                    'auditee_id' => $request->auditee,
+                    'approve' => 0,
+                ]);
+            }
+        } else {
+            PtkAuditee::create([
+                'ptk_id' => $ptk->id,
                 'auditee_id' => $request->auditee,
                 'approve' => 0,
             ]);

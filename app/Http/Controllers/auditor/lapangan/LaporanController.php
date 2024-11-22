@@ -116,8 +116,16 @@ class LaporanController extends Controller
         // One to One
         $auditee = LaporanAuditee::where('laporan_id', $laporan->id)->first();
 
-        if ($auditee->auditee_id !== $request->auditee) {
-            $auditee->update([
+        if ($auditee) {
+            if ($auditee->auditee_id !== $request->auditee) {
+                $auditee->update([
+                    'auditee_id' => $request->auditee,
+                    'approve' => 0,
+                ]);
+            }
+        } else {
+            LaporanAuditee::create([
+                'laporan_id' => $laporan->id,
                 'auditee_id' => $request->auditee,
                 'approve' => 0,
             ]);
