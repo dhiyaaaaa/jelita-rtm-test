@@ -203,7 +203,7 @@ class DownloadController extends Controller
                         'deskripsi' => []
                     ];
                 }
-                $groupedDescriptions[$instrumenKode]['deskripsi'][] = '- ' . $deskripsi->deskripsi;
+                $groupedDescriptions[$instrumenKode]['deskripsi'][] = '- ' . htmlspecialchars($deskripsi->deskripsi, ENT_QUOTES, 'UTF-8');
             }
         }
 
@@ -230,7 +230,7 @@ class DownloadController extends Controller
             $valuesFormAnalisis[] = [
                 'noAnalisis' => $noAnalisis++ . '. ',
                 'kodeAnalisis' => 'Instrumen ' . $form->form->instrumen->kode,
-                'analisis' => $form->analisis,
+                'analisis' => htmlspecialchars($form->analisis, ENT_QUOTES, 'UTF-8'),
             ];
         }
         $templateProcessor->cloneRowAndSetValues('noAnalisis', $valuesFormAnalisis);
@@ -242,7 +242,7 @@ class DownloadController extends Controller
             $valuesFormAkibat[] = [
                 'noAkibat' => $noAkibat++ . '. ',
                 'kodeAkibat' => 'Instrumen ' . $form->form->instrumen->kode,
-                'akibat' => $form->akibat,
+                'akibat' => htmlspecialchars($form->akibat, ENT_QUOTES, 'UTF-8'),
             ];
         }
         $templateProcessor->cloneRowAndSetValues('noAkibat', $valuesFormAkibat);
@@ -313,7 +313,7 @@ class DownloadController extends Controller
                         'rencana' => []
                     ];
                 }
-                $groupedRencanas[$instrumenKode]['rencana'][] = '- ' . $rencana->rencana;
+                $groupedRencanas[$instrumenKode]['rencana'][] = '- ' . htmlspecialchars($rencana->rencana, ENT_QUOTES, 'UTF-8');
             }
         }
 
@@ -339,7 +339,7 @@ class DownloadController extends Controller
             $valuesFormTarget[] = [
                 'noTarget' => $noTarget++ . '. ',
                 'kodeTarget' => 'Instrumen ' . $form->form->instrumen->kode,
-                'target' => $form->target,
+                'target' => htmlspecialchars($form->target, ENT_QUOTES, 'UTF-8'),
             ];
         }
 
@@ -352,7 +352,7 @@ class DownloadController extends Controller
             $valuesFormPic[] = [
                 'noPic' => $noPic++ . '. ',
                 'kodePic' => 'Instrumen ' . $form->form->instrumen->kode,
-                'pic' => $form->pic,
+                'pic' => htmlspecialchars($form->pic, ENT_QUOTES, 'UTF-8'),
             ];
         }
 
