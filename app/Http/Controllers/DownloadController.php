@@ -391,8 +391,8 @@ class DownloadController extends Controller
             if ($jawaban && !empty($jawaban->kelebihan) || $jawaban && !empty($jawaban->ruang_peningkatan)) {
                 $valuesPositif[] = [
                     'no' => $no++,
-                    'kelebihan' => $jawaban->kelebihan,
-                    'ruang' => $jawaban->ruang_peningkatan,
+                    'kelebihan' => htmlspecialchars($jawaban->kelebihan, ENT_QUOTES, 'UTF-8'),
+                    'ruang' => htmlspecialchars($jawaban->ruang_peningkatan, ENT_QUOTES, 'UTF-8'),
                 ];
             }
         }
