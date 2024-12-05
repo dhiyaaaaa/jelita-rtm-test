@@ -119,8 +119,8 @@ class BeritaAcaraController extends Controller
         $unit = get_type_model($beritaAcara);
         $auditors = AuditeeAuditor::select('auditor_id', 'created_at')
             ->where('jadwal_audit_id', $beritaAcara->jadwal_audit_id)
-            ->distinct()
             ->where($unit['kolom'], $unit['value'])
+            ->distinct()
             ->orderBy('created_at', 'asc')
             ->pluck('auditor_id');
 
