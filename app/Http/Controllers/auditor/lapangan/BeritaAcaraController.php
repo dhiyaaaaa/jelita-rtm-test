@@ -44,7 +44,8 @@ class BeritaAcaraController extends Controller
             ->where(get_type($type), $unit)
             ->distinct()
             ->orderBy('created_at', 'asc')
-            ->get();
+            ->get()
+            ->unique('auditor_id');
 
         $beritaAcara = BeritaAcara::updateOrCreate([
             'jadwal_audit_id' => $jadwalAudit,
@@ -57,7 +58,9 @@ class BeritaAcaraController extends Controller
         $timestamp = now();
 
         foreach ($auditors as $auditor) {
-            $beritaAcara->auditor()->attach($auditor->auditor_id, [
+            BeritaAcaraAuditor::create([
+                'berita_acara_id' => $beritaAcara->id,
+                'auditor_id' => $auditor->auditor_id,
                 'created_at' => $timestamp->addMilliseconds(5000)
             ]);
         }
