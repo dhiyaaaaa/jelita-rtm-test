@@ -8,6 +8,7 @@ use App\Models\Auditee;
 use App\Models\AuditeeAuditor;
 use App\Models\BeritaAcara;
 use App\Models\BeritaAcaraAuditee;
+use App\Models\BeritaAcaraAuditor;
 use App\Models\JadwalAudit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,8 +41,8 @@ class BeritaAcaraController extends Controller
     {
         $auditors = AuditeeAuditor::select('auditor_id', 'created_at')
             ->where('jadwal_audit_id', $jadwalAudit)
-            ->distinct()
             ->where(get_type($type), $unit)
+            ->distinct()
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -100,7 +101,7 @@ class BeritaAcaraController extends Controller
         // One to One Auditee
         $auditee = BeritaAcaraAuditee::where('berita_acara_id', $beritaAcara->id)->first();
 
-        if ($auditee) { 
+        if ($auditee) {
             if ($auditee->auditee_id !== $request->auditee) {
                 $auditee->update([
                     'auditee_id' => $request->auditee,
@@ -122,17 +123,34 @@ class BeritaAcaraController extends Controller
             ->where($unit['kolom'], $unit['value'])
             ->distinct()
             ->orderBy('created_at', 'asc')
-            ->pluck('auditor_id');
+            ->pluck('auditor_id')
+            ->unique();
 
-        $existingAuditors = $beritaAcara->auditor()->orderByPivot('created_at', 'asc')->pluck('auditor_id');
+        $existingAuditors = $beritaAcara->auditor()->orderByPivot('created_at', 'asc')->pluck('auditor_id')->unique();
 
-        if ($auditors->toArray() !== $existingAuditors->toArray()) {
+        if ($auditors->diff($existingAuditors)->isNotEmpty()) {
             $timestamp = now();
 
             foreach ($auditors as $index => $auditorId) {
-                $beritaAcara->auditor()->updateExistingPivot($auditorId, [
-                    'created_at' => $timestamp->addMilliseconds(5000),
-                ]);
+                if (!$existingAuditors->contains($auditorId)) {
+                    $beritaAcara->auditor()->updateExistingPivot($auditorId, [
+                        'created_at' => $timestamp->addMilliseconds(5000),
+                    ]);
+                }
+            }
+        } else {
+            $beritaAcaraAuditor = BeritaAcaraAuditor::where('berita_acara_id', $beritaAcara->id)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $unikAuditor = $beritaAcaraAuditor->groupBy('auditor_id');
+
+            foreach ($unikAuditor as $auditorId => $entries) {
+                if ($entries->count() > 1) {
+                    $entries->slice(1)->each(function ($entry) {
+                        $entry->delete();
+                    });
+                }
             }
         }
 
