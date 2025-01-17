@@ -32,6 +32,8 @@ use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DownloadController extends Controller
 {
@@ -755,5 +757,90 @@ class DownloadController extends Controller
         $templateProcessor->saveAs($filePath);
 
         return response()->download($filePath)->deleteFileAfterSend(true);
+    }
+
+    // Download user berdasarkan role
+    public function download_user(Request $request)
+    {
+        // Validasi
+        $request->validate([
+            'role' => 'required|exists:roles,id'
+        ]);
+
+        // Tgl
+        \Carbon\Carbon::setLocale('id');
+
+        $jam = \Carbon\Carbon::now()->translatedFormat('H:i');
+        $tgl = \Carbon\Carbon::now()->translatedFormat('d F Y');
+
+        // Nama File
+        $fileNames = [
+            2 => "Daftar GKM (JELITA)" . $tgl . ".xls",
+            3 => "Daftar GPM (JELITA) " . $tgl . ".xls",
+            5 => "Daftar Pimpinan Universitas (JELITA) " . $tgl . ".xls",
+            4 => "Daftar Auditor (JELITA) " . $tgl . ".xls",
+            6 => "Daftar Dekan dan Wakil Dekan (JELITA) " . $tgl . ".xls",
+            7 => "Daftar Ketua Program Studi (JELITA) " . $tgl . ".xls",
+        ];
+
+        $fileName = $fileNames[$request->role] ?? "Daftar Pengguna (JELITA) " . $tgl . ".xls";
+
+        // Query
+        $query = DB::table('model_has_roles')
+            ->join('users', 'model_has_roles.model_id', '=', 'users.id')
+            ->leftJoin('jabatan_user', 'jabatan_user.user_id', '=', 'users.id')
+            ->leftJoin('jabatan', 'jabatan_user.jabatan_id', '=', 'jabatan.id')
+            ->where('model_has_roles.role_id', $request->role)
+            ->select('users.name', 'users.email', 'users.no_telepon', 'jabatan.nama as jabatan');
+
+        // Join berdasarkan role
+        if ($request->role == 7 || $request->role == 2 || $request->role == 4 || $request->role == 3) {
+            $query->leftJoin('prodi', 'jabatan_user.prodi_id', '=', 'prodi.id')
+                ->leftJoin('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+                ->addSelect(DB::raw("CASE WHEN jabatan.id IS NULL THEN NULL ELSE CONCAT('Program Studi ', prodi.nama, ' ', jenjang.nama) END as prodi"));
+        } elseif ($request->role == 6) {
+            $query->join('fakultas', 'jabatan_user.fakultas_id', '=', 'fakultas.id')
+                ->addSelect(DB::raw("CONCAT('Fakultas ', fakultas.nama) as fakultas"));
+        } elseif ($request->role == 5) {
+            $query->join('unit', 'jabatan_user.unit_id', '=', 'unit.id')
+                ->addSelect('unit.nama as unit');
+        }
+
+        $users = $query->get();
+
+        // PHP Spreadsheet
+        $templatePath = storage_path('app/public/template/template_user.xlsx');
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($templatePath);
+
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        $title = [
+            2 => "Daftar GKM (JELITA)",
+            3 => "Daftar GPM (JELITA)",
+            5 => "Daftar Pimpinan Universitas (JELITA)",
+            4 => "Daftar Auditor (JELITA)",
+            6 => "Daftar Dekan dan Wakil Dekan (JELITA)",
+            7 => "Daftar Ketua Program Studi (JELITA)",
+        ];
+
+        $worksheet->getCell('A1')->setValue($title[$request->role]);
+        $worksheet->getCell('A2')->setValue("Diunduh pada pukul " . $jam . " tanggal " . $tgl);
+
+        $baris = 5;
+        $no = 1;
+        foreach ($users as $user) {
+            $worksheet->getCell('A' . $baris)->setValue($no++);
+            $worksheet->getCell('B' . $baris)->setValue($user->name);
+            $worksheet->getCell('C' . $baris)->setValue($user->email);
+            $worksheet->getCell('D' . $baris)->setValue($user->jabatan ?? '-');
+            $worksheet->getCell('E' . $baris)->setValue($user->prodi ?? $user->fakultas ?? $user->unit ?? '-');
+            $worksheet->getCell('F' . $baris)->setValue($user->no_telepon ?? '-');
+            $baris++;
+        }
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
+        $writer->save($fileName);
+
+        return response()->download($fileName)->deleteFileAfterSend(true);
     }
 }

@@ -167,6 +167,7 @@ class UserController extends Controller
 
         $data = [
             'title' => 'User',
+            'roles' => Role::where('id', '!=', 1)->get()
         ];
         return view('admin.user.user.index', $data);
     }

@@ -716,6 +716,9 @@ Route::group(['middleware' => 'auth'], function () {
 
         // Daftar Auditee Auditor
         Route::post('{jadwalAudit}/auditee_auditor', [DownloadController::class, 'download_auditee_auditor'])->name('download.auditee_auditor');
+
+        // Download User
+        Route::post('user', [DownloadController::class, 'download_user'])->name('download.user');
     });
 
     // GPM
