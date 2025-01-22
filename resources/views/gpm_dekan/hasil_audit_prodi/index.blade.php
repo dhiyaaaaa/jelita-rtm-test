@@ -47,6 +47,21 @@
                                         href="{{ route('hasil_audit_prodi.show', ['jadwalAudit' => $item->id]) }}"><i
                                             class="fa fa-eye"></i>
                                         Hasil</a>
+
+                                    {{-- Unduh Laporan Hasil Audit --}}
+                                    <div class="d-inline-block">
+                                        <div>
+                                            {{-- Laporan Hasil Audit per fakultas pdf --}}
+                                            <form class="d-inline"
+                                                action="{{ route('download.laporan_hasil', ['jadwalAudit' => $item->id, 'fakultas' => $fakultas]) }}"
+                                                method="post">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-dark">
+                                                    <i class="fa fa-download"></i> PDF
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach

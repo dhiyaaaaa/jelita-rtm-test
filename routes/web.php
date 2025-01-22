@@ -720,6 +720,9 @@ Route::group(['middleware' => 'auth'], function () {
 
         // Download User by role
         Route::post('user', [DownloadController::class, 'download_user'])->name('download.user');
+
+        // Laporan hasil PDF
+        Route::post('{jadwalAudit}/laporan/{fakultas}', [DownloadController::class, 'download_laporan_hasil'])->name('download.laporan_hasil');
     });
 
     // GPM
