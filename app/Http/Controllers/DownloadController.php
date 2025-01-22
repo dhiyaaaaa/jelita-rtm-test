@@ -1209,7 +1209,8 @@ class DownloadController extends Controller
 
             return response()->download($fileName)->deleteFileAfterSend(true);
         } catch (\Exception $e) {
-            return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+            return back()->with('error', $e->getMessage());
+            // return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
         }
     }
 
@@ -1331,7 +1332,8 @@ class DownloadController extends Controller
                 'X-Filename' => $namaFile,
             ]);
         } catch (\Exception $e) {
-            return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+            return back()->with('error', $e->getMessage());
+            // return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
         }
     }
 
