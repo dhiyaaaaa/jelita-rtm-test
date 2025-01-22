@@ -60,6 +60,18 @@
                                                     <i class="fa fa-download"></i> PDF
                                                 </button>
                                             </form>
+
+                                            {{-- Laporan hasil audit per fakultas merge zip  --}}
+                                            <form class="d-inline"
+                                                action="{{ route('download.zip_fakultas', ['jadwalAudit' => $item->id]) }}"
+                                                method="post">
+                                                @csrf
+                                                <input type="text" name="fakultas" id="fakultas"
+                                                    value="{{ $fakultas }}" hidden>
+                                                <button type="submit" class="btn btn-outline-dark">
+                                                    <i class="fa fa-download"></i> Zip
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
                                 </td>

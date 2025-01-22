@@ -51,8 +51,7 @@ class HasilAuditController extends Controller
      */
     public function show(JadwalAudit $jadwalAudit, string $type): View
     {
-        $ps = collect();
-        $upps = collect();
+        $ps = $upps = $fakultas = collect();
 
         if ($type === 'ps') {
             $ps = Prodi::with([
@@ -81,6 +80,8 @@ class HasilAuditController extends Controller
                     'jadwal_audit'
                 ]);
             }])->get();
+
+            $fakultas = DB::table('fakultas')->select('id', 'nama')->get();
         } elseif ($type === 'upps') {
             $fakultas = Fakultas::with([
                 'berita_acara' => function ($query) use ($jadwalAudit) {
@@ -147,6 +148,7 @@ class HasilAuditController extends Controller
             'upps' => $upps,
             'jadwalAudit' => $jadwalAudit,
             'type' => $type,
+            'fakultas' => $fakultas,
         ];
 
         return view('admin.audit.hasil_audit.show', $data);
@@ -258,7 +260,7 @@ class HasilAuditController extends Controller
 
     public function audit_dokumen(Request $request, JadwalAudit $jadwalAudit, string $unit, string $type): View
     {
-        
+
         $status_audit_auditee = StatusAuditAuditee::where(['jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->first();
 
         $status_audit_auditor = StatusAuditAuditor::where(['jadwal_audit_id' => $jadwalAudit->id, get_type($type) => $unit])->first();

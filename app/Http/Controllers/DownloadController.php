@@ -1434,4 +1434,89 @@ class DownloadController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
         }
     }
+
+    // Laporan Hasil Zip per fakultas
+    public function zip_per_fakultas(Request $request, string $jadwalAudit)
+    {
+        try {
+            $request->validate([
+                'fakultas' => 'required|uuid|exists:fakultas,id'
+            ]);
+
+            $fakultas = $request->fakultas;
+
+            // Ambil semua prodi berdasarkan fakultas
+            $prodi = DB::table('fakultas')
+                ->join('prodi', 'fakultas.id', '=', 'prodi.fakultas_id')
+                ->join('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+                ->where('fakultas.id', $fakultas)
+                ->select('prodi.id as id',  DB::raw("CONCAT(prodi.nama, ' ', jenjang.nama) as nama"))
+                ->get();
+
+            $allFiles = [];
+            $year = null;
+
+            // Looping prodi generate zip 
+            foreach ($prodi as $item) {
+                $unitId = $item->id;
+
+                $files = $this->generate_zip($jadwalAudit, $unitId, 'prodi');
+
+                if (!$year && isset($files['year'])) {
+                    $year = $files['year'];
+                }
+
+                // Merge
+                if (isset($files['files'])) {
+                    $allFiles[] = [
+                        'prodi_name' => $item->nama,
+                        'files' => $files['files'],
+                    ];
+                }
+            }
+
+            // Get Fakultas
+            $unit = DB::table('fakultas')
+                ->where('id', $fakultas)
+                ->select('id as fakultas_id')
+                ->first();
+
+            $unitData = $this->get_unit($unit);
+
+            // Buat ZIP
+            $zipFileName = 'Hasil Audit ' . ($unitData ? $unitData['unitName'] : 'Fakultas') . ' ' . ($year ?? '') . '.zip';
+            $zipFilePath = storage_path('app/public/' . $zipFileName);
+
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFilePath, \ZipArchive::CREATE) === TRUE) {
+                foreach ($allFiles as $prodiData) {
+                    $prodiName = $prodiData['prodi_name'];
+                    foreach ($prodiData['files'] as $file) {
+                        if ($file && isset($file['file']['filePath'], $file['file']['fileName'])) {
+                            $zip->addFile(
+                                $file['file']['filePath'],
+                                "Program Studi {$prodiName}/" . basename($file['file']['fileName'])
+                            );
+                        }
+                    }
+                }
+                $zip->close();
+            } else {
+                return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+            }
+
+            // Hapus file Word setelah dimasukkan ke dalam ZIP
+            foreach ($allFiles as $prodiData) {
+                foreach ($prodiData['files'] as $file) {
+                    if ($file && isset($file['file']['filePath'])) {
+                        unlink($file['file']['filePath']);
+                    }
+                }
+            }
+
+            return response()->download($zipFilePath, $zipFileName)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+        }
+    }
 }

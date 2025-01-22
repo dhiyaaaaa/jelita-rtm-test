@@ -726,6 +726,9 @@ Route::group(['middleware' => 'auth'], function () {
 
         // Laporan Hasil Zip per Unit
         Route::post('{jadwalAudit}/zip-unit/{unit}/{type}', [DownloadController::class, 'zip_per_unit'])->name('download.zip_unit');
+
+        // Laporan Hasil Zip per fakultas
+        Route::post('{jadwalAudit}/zip-fakultas', [DownloadController::class, 'zip_per_fakultas'])->name('download.zip_fakultas');
     });
 
     // GPM
