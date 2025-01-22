@@ -11,11 +11,44 @@
             @if ($type === 'ps')
                 <div>
                     <h5>Program Studi</h5>
-                    @if (Auth::user()->jabatan->isNotEmpty() && Auth::user()->jabatan->first()->slug === 'rektor')
-                        <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
-                    @else
-                        <a href="{{ route('hasil_audit') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
-                    @endif
+                    <div>
+                        @if (Auth::user()->jabatan->isNotEmpty() && Auth::user()->jabatan->first()->slug === 'rektor')
+                            <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
+                        @else
+                            <a href="{{ route('hasil_audit') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
+                        @endif
+                    </div>
+                    {{-- Download per fakultas --}}
+                    <div>
+                        <div>
+                            <label>Pilih Fakultas</label>
+                            <span class="text-danger">&#42;</span>
+                        </div>
+
+                        <form action="{{ route('download.zip_fakultas', ['jadwalAudit' => $jadwalAudit->id]) }}"
+                            method="post" class="grid-cols-2">
+                            @csrf
+                            <div class="row d-flex" style="display: flex;">
+                                <div class="col-6 form-group" style="flex: 1;">
+
+                                    <select class="select2" data-placeholder="Pilih Fakultas" style="width: 100%;"
+                                        name="fakultas">
+                                        @foreach ($fakultas as $item)
+                                            <option value="{{ $item->id }}">
+                                                {{ $item->nama }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-6">
+                                    <button type="submit" class="btn btn-outline-dark">
+                                        <i class="fa fa-download"></i> Zip
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
 
                     <table id="ps" class="table table-bordered table-striped">
                         <thead>
@@ -194,10 +227,10 @@
                                         <div class="d-flex justify-content-center align-items-center">
                                             {{-- Lihat --}}
                                             <div class="dropdown mr-2">
-                                                <button class="btn btn-primary dropdown-toggle" type="button"
+                                                <button class="btn btn-outline-primary dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
-                                                    Lihat
+                                                    <i class="fa fa-eye"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     <a href="{{ route('hasil_audit.audit_dokumen', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
@@ -217,10 +250,10 @@
 
                                             {{-- Download --}}
                                             <div class="dropdown">
-                                                <button class="btn btn-success dropdown-toggle" type="button"
+                                                <button class="btn btn-outline-dark dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
-                                                    Download
+                                                    <i class="fa fa-download"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     {{-- Download Isian Audit Auditan --}}
@@ -280,15 +313,15 @@
                                                     @endif
 
                                                     {{-- Download Semua --}}
-                                                    {{-- <div class="dropdown-divider"></div>
+                                                    <div class="dropdown-divider"></div>
                                                     <form
-                                                        action="{{ route('download.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
-                                                            All
+                                                            Merge All
                                                         </button>
-                                                    </form> --}}
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
@@ -490,10 +523,10 @@
                                         <div class="d-flex justify-content-center align-items-center">
                                             {{-- Lihat --}}
                                             <div class="dropdown mr-2">
-                                                <button class="btn btn-primary dropdown-toggle" type="button"
+                                                <button class="btn btn-outline-primary dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
-                                                    Lihat
+                                                    <i class="fa fa-eye"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     <a href="{{ route('hasil_audit.audit_dokumen', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
@@ -513,10 +546,10 @@
 
                                             {{-- Download --}}
                                             <div class="dropdown">
-                                                <button class="btn btn-success dropdown-toggle" type="button"
+                                                <button class="btn btn-outline-dark dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
-                                                    Download
+                                                    <i class="fa fa-download"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     {{-- Download Isian Audit Auditan --}}
@@ -576,15 +609,15 @@
                                                     @endif
 
                                                     {{-- Download Semua --}}
-                                                    {{-- <div class="dropdown-divider"></div>
+                                                    <div class="dropdown-divider"></div>
                                                     <form
-                                                        action="{{ route('download.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
-                                                            All
+                                                            Merge All
                                                         </button>
-                                                    </form> --}}
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
@@ -607,6 +640,10 @@
     <link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
 
+    <!-- Select2 -->
+    <link rel="stylesheet" href="{{ asset('plugins/select2/css/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('dist/css/adminlte.min.css') }}">
     <style>
         .list {
             margin: 0;
@@ -622,7 +659,19 @@
     <script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
 
+    <!-- Select2 -->
+    <script src="{{ asset('plugins/select2/js/select2.full.min.js') }}"></script>
+    <script>
+        $(function() {
+            //Initialize Select2 Elements
+            $('.select2').select2()
 
+            //Initialize Select2 Elements
+            $('.select2bs4').select2({
+                theme: 'bootstrap4'
+            })
+        });
+    </script>
 
     <!-- Page specific script -->
     <script>

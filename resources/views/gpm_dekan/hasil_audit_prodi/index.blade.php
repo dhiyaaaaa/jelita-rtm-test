@@ -42,9 +42,38 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
+                                    {{-- Lihat Hasil Audit --}}
                                     <a class="btn btn-outline-primary"
-                                        href="{{ route('hasil_audit_prodi.show', ['jadwalAudit' => $item->id]) }}">Lihat
-                                        Hasil Audit Prodi</a>
+                                        href="{{ route('hasil_audit_prodi.show', ['jadwalAudit' => $item->id]) }}"><i
+                                            class="fa fa-eye"></i>
+                                        Hasil</a>
+
+                                    {{-- Unduh Laporan Hasil Audit --}}
+                                    <div class="d-inline-block">
+                                        <div>
+                                            {{-- Laporan Hasil Audit per fakultas pdf --}}
+                                            <form class="d-inline"
+                                                action="{{ route('download.laporan_hasil', ['jadwalAudit' => $item->id, 'fakultas' => $fakultas]) }}"
+                                                method="post">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-dark">
+                                                    <i class="fa fa-download"></i> PDF
+                                                </button>
+                                            </form>
+
+                                            {{-- Laporan hasil audit per fakultas merge zip  --}}
+                                            <form class="d-inline"
+                                                action="{{ route('download.zip_fakultas', ['jadwalAudit' => $item->id]) }}"
+                                                method="post">
+                                                @csrf
+                                                <input type="text" name="fakultas" id="fakultas"
+                                                    value="{{ $fakultas }}" hidden>
+                                                <button type="submit" class="btn btn-outline-dark">
+                                                    <i class="fa fa-download"></i> Zip
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -69,8 +98,6 @@
     <script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
-
-
 
     <!-- Page specific script -->
     <script>

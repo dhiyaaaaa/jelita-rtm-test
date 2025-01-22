@@ -32,10 +32,21 @@ use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DownloadController extends Controller
 {
-    // Ambil Unit
+    // Global
+    public function __construct()
+    {
+        // Format Tgl
+        \Carbon\Carbon::setLocale('id');
+    }
+
+
+    // Helper
+    // Get Unit
     private function get_unit($query)
     {
         $unit = null;
@@ -43,68 +54,88 @@ class DownloadController extends Controller
         $unitJenjang = null;
         $type = null;
 
-        if ($query->prodi_id) {
-            $unit = Prodi::where('id', $query->prodi_id)->first();
-            $unitName = $unit ? 'Program Studi ' . $unit->nama  . ' ' . $unit->jenjang->nama : null;
-            $unitJenjang = $unit ? $unit->nama  . ' ' . $unit->jenjang->nama : null;
-            $type = "Program Studi";
-        } elseif ($query->fakultas_id) {
-            $unit = Fakultas::where('id', $query->fakultas_id)->first();
-            $unitName = $unit ? 'Fakultas ' . $unit->nama : null;
-            $type = "Fakultas";
-        } elseif ($query->unit_id) {
-            $unit = Unit::where('id', $query->unit_id)->first();
-            $unitName = $unit ? 'Unit ' . $unit->nama : null;
-            $type = "Unit";
+        if (isset($query->prodi_id)) {
+            $unit = DB::table('prodi')
+                ->where('prodi.id', $query->prodi_id)
+                ->leftJoin('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+                ->select('prodi.nama as nama', 'jenjang.nama as jenjang')
+                ->first();
+            if ($unit) {
+                $unitName = "Program Studi {$unit->nama} {$unit->jenjang}";
+                $unitJenjang = "{$unit->nama} {$unit->jenjang}";
+                $type = "Program Studi";
+            }
+        } elseif (isset($query->fakultas_id)) {
+            $unit = DB::table('fakultas')->find($query->fakultas_id);
+            if ($unit) {
+                $unitName = "Fakultas {$unit->nama}";
+                $type = "Fakultas";
+            }
+        } elseif (isset($query->unit_id)) {
+            $unit = DB::table('unit')->find($query->unit_id);
+            if ($unit) {
+                $unitName = $unit->nama;
+                $type = "Unit";
+            }
         }
 
-        return ['unit' => $unit, 'unitName' => $unitName, 'type' => $type, 'unitJenjang' => $unitJenjang];
+        return compact('unit', 'unitName', 'unitJenjang', 'type');
     }
 
-    // Auditee
-    private function auditee($templateProcessor, $auditee, $unit, $titleDokumen)
+    // Auditan
+    private function auditan($templateProcessor, $auditan, $unitData, $title)
     {
-        if ($auditee && $auditee->approve == 1 || $auditee->approve == true) {
-            $createdTime = \Carbon\Carbon::parse($auditee->updated_at);
-            $auditeeData = $titleDokumen . " " . ($unit ? $unit['unitName'] : '') .
-                " telah ditandatangani oleh " . $auditee->auditee->user->name .
-                " | " . $createdTime->format('H:i:s') . " | " . $createdTime->isoFormat('D MMMM YYYY');
+        // Auditan
+        if ($auditan && $auditan->approve) {
+            $auditanData = $auditan->approve
+                ? $title . " " . ($unitData ? $unitData['unitName'] : '') .
+                " telah ditandatangani oleh " . $auditan->nama .
+                " | " . \Carbon\Carbon::parse($auditan->updated_at)->format('H:i:s') .
+                " | " . \Carbon\Carbon::parse($auditan->updated_at)->isoFormat('D MMMM YYYY')
+                : '';
 
-            $this->set_barcode($templateProcessor, 'image_auditee', $auditeeData, $auditee->auditee->id);
+            $this->set_barcode($templateProcessor, 'image_auditee', $auditanData, $auditan->id);
+            $templateProcessor->setValue('auditee', $auditan->nama);
         } else {
             $templateProcessor->setValue('image_auditee', '');
+            $templateProcessor->setValue('auditee', $auditan->nama);
         }
-        $templateProcessor->setValue('auditee', $auditee ? $auditee->auditee->user->name : '');
     }
 
     // Auditor
-    private function auditors($templateProcessor, $auditors, $unit, $titleDokumen)
+    private function auditors($templateProcessor, $auditors, $unitData, $title)
     {
-        foreach ($auditors as $no => $auditor) {
+        foreach ($auditors as $index => $auditor) {
+            $key = $index + 1;
+
             if ($auditor->approve) {
                 $createdTime = \Carbon\Carbon::parse($auditor->updated_at);
-                $auditorData = $titleDokumen . " " . ($unit ? $unit['unitName'] : '') .
-                    " telah ditandatangani oleh " . $auditor->auditor->user->name .
+                $auditorData = $title . " " . ($unitData ? $unitData['unitName'] : '') .
+                    " telah ditandatangani oleh " . $auditor->nama .
                     " | " . $createdTime->format('H:i:s') . " | " . $createdTime->isoFormat('D MMMM YYYY');
 
-                $this->set_barcode($templateProcessor, 'image_auditor#' . ($no + 1), $auditorData, $auditor->auditor->id);
+                $this->set_barcode($templateProcessor, "image_auditor#$key", $auditorData, $auditor->id);
             } else {
-                $templateProcessor->setValue('image_auditor#' . ($no + 1), '');
+                $templateProcessor->setValue("image_auditor#$key", '');
             }
-            $templateProcessor->setValue('nomor#' . ($no + 1), ($no + 1) . '. ');
-            $templateProcessor->setValue('no_auditor#' . ($no + 1), 'Auditor ' . ($no + 1) . ',');
-            $templateProcessor->setValue('auditor#' . ($no + 1), $auditor->auditor->user->name);
+
+            $templateProcessor->setValue("nomor#$key", "$key. ");
+            $templateProcessor->setValue("no_auditor#$key", "Auditor $key,");
+            $templateProcessor->setValue("auditor#$key", $auditor->nama);
         }
 
-        if (count($auditors) <= 2) {
-            $templateProcessor->setValues(['nomor#2' => '', 'no_auditor#2' => '', 'auditor#2' => '', 'image_auditor#2' => '']);
-            $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
-        } else if (count($auditors) <= 3) {
-            $templateProcessor->setValues(['nomor#3' => '', 'no_auditor#3' => '', 'auditor#3' => '', 'image_auditor#3' => '']);
+        $totalAuditors = count($auditors);
+        for ($key = $totalAuditors + 1; $key <= 3; $key++) {
+            $templateProcessor->setValues([
+                "nomor#$key" => '',
+                "no_auditor#$key" => '',
+                "auditor#$key" => '',
+                "image_auditor#$key" => '',
+            ]);
         }
     }
 
-    // QrCode
+    // Set QrCode
     private function set_barcode($templateProcessor, $field, $data, $id)
     {
         $writer = new PngWriter();
@@ -118,29 +149,74 @@ class DownloadController extends Controller
         unlink($tempImagePath);
     }
 
-    // File Name
-    private function nama_file($templateProcessor, $unit, $dateTime, $title)
+    // Return Download Word
+    private function word($templateProcessor, $unit, $date, $title)
     {
-        $fileName = $title . ' ' . ($unit ? $unit['unitName'] : '') . ' ' . $dateTime->isoFormat('D MMMM YYYY') . '.docx';
+        $fileName = $title . ' ' . ($unit ? $unit['unitName'] : '') . ' ' . ($date ? $date->isoFormat('D MMMM YYYY') : '') . '.docx';
         $filePath = storage_path('app/public/' . $fileName);
         $templateProcessor->saveAs($filePath);
 
         return response()->download($filePath)->deleteFileAfterSend(true);
     }
 
-    // Download Berita Acara
-    public function download_berita_acara(BeritaAcara $beritaAcara)
+    // Return Download Zip
+    private function zip($templateProcessor, $unit, $date, $title)
     {
-        $title = "Berita Acara";
-        $auditee = BeritaAcaraAuditee::where('berita_acara_id', $beritaAcara->id)->with(['auditee.user'])->first();
-        $auditors = BeritaAcaraAuditor::where('berita_acara_id', $beritaAcara->id)->with(['auditor.user'])->groupBy('auditor_id', 'created_at', 'id')->orderBy('created_at', 'ASC')->get();
+        $fileName = $title . ' ' . ($unit ? $unit['unitName'] : '') . ' ' . ($date ? $date->isoFormat('D MMMM YYYY') : '') . '.docx';
+        $filePath = storage_path('app/public/' . $fileName);
+        $templateProcessor->saveAs($filePath);
 
+        return [
+            'filePath' => $filePath,
+            'fileName' => $fileName,
+        ];
+    }
+
+    // Berita Acara 
+    private function berita_acara($id)
+    {
+        // Title
+        $title = "Berita Acara";
+
+        // Berita Acara
+        $beritaAcara = DB::table('berita_acara')->where('id', $id)->first();
+
+        // Auditan
+        $auditan = DB::table('berita_acara_auditee as ba_auditan')
+            ->where('ba_auditan.berita_acara_id', $id)
+            ->leftJoin('auditee', 'ba_auditan.auditee_id', '=', 'auditee.id')
+            ->leftJoin('users', 'auditee.user_id', '=', 'users.id')
+            ->select(
+                'auditee.id as id',
+                'users.name as nama',
+                'ba_auditan.approve as approve',
+                'ba_auditan.updated_at as updated_at'
+            )
+            ->first();
+
+        // Auditors
+        $auditors = DB::table('berita_acara_auditor as ba_auditor')
+            ->where('ba_auditor.berita_acara_id', $id)
+            ->leftJoin('auditor', 'ba_auditor.auditor_id', '=', 'auditor.id')
+            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
+            ->select(
+                'auditor.id as id',
+                'users.name as nama',
+                'ba_auditor.approve as approve',
+                'ba_auditor.created_at as created_at',
+                'ba_auditor.updated_at as updated_at',
+            )
+            ->orderBy('ba_auditor.created_at', 'asc')
+            ->get();
+
+        // Unit Data
         $unitData = $this->get_unit($beritaAcara);
         $date = \Carbon\Carbon::parse($beritaAcara->tgl);
 
+        // Template
         $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_berita_acara.docx'));
 
-        \Carbon\Carbon::setLocale('id');
+        // Isi value template
         $templateProcessor->setValues([
             'hari' => $date->isoFormat('dddd'),
             'tanggal' => $date->format('d'),
@@ -151,22 +227,113 @@ class DownloadController extends Controller
             'type' => $unitData ? $unitData['type'] : '',
         ]);
 
-        $this->auditee($templateProcessor, $auditee, $unitData, $title);
+        $this->auditan($templateProcessor, $auditan, $unitData, $title);
         $this->auditors($templateProcessor, $auditors, $unitData, $title);
 
-        return $this->nama_file($templateProcessor, $unitData, $date, $title);
+        return compact('templateProcessor', 'unitData', 'date', 'title');
     }
 
-    // Download PTK
-    public function download_ptk(Ptk $ptk)
+    // Berita Acara Word
+    public function berita_acara_word(string $id)
     {
-        $title = "Temuan Negatif";
-        $ptkForm = PtkForm::where('ptk_id', $ptk->id)->with(['form.instrumen'])->get();
-        $auditors = PtkAuditor::where('ptk_id', $ptk->id)->with(['auditor.user'])->groupBy('auditor_id', 'created_at', 'id')->orderBy('created_at', 'ASC')->get();
-        $auditee = PtkAuditee::where('ptk_id', $ptk->id)->with(['auditee.user'])->first();
+        try {
+            $ba = $this->berita_acara($id);
 
+            return $this->word($ba['templateProcessor'], $ba['unitData'], $ba['date'], $ba['title']);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh Berita Acara!');
+        }
+    }
+
+    // Temuan Negatif
+    private function temuan_negatif($id)
+    {
+        // Title
+        $title = "Temuan Negatif";
+
+        // Ptk
+        $ptk = DB::table('ptk')->where('id', $id)->first();
+
+        // Ptk Form
+        $form = DB::table('ptk_form')
+            ->where('ptk_form.ptk_id', $ptk->id)
+            ->leftJoin('ptk_form_deskripsi', 'ptk_form.form_id', '=', 'ptk_form_deskripsi.form_id')
+            ->leftJoin('ptk_form_rencana', 'ptk_form.ptk_id', '=', 'ptk_form_rencana.ptk_id')
+            ->leftJoin('form', 'ptk_form.form_id', '=', 'form.id')
+            ->leftJoin('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+            ->select(
+                'instrumen.kode as kode',
+                'ptk_form_deskripsi.deskripsi as deskripsi',
+                'ptk_form_rencana.rencana as rencana',
+                'ptk_form.analisis as analisis',
+                'ptk_form.akibat as akibat',
+                'ptk_form.kategori_temuan as kategori_temuan',
+                'ptk_form.target as target',
+                'ptk_form.pic as pic'
+            )
+            ->get();
+
+        // Auditan
+        $auditan = DB::table('ptk_auditee as ptk_auditan')
+            ->where('ptk_auditan.ptk_id', $id)
+            ->leftJoin('auditee', 'ptk_auditan.auditee_id', '=', 'auditee.id')
+            ->leftJoin('users', 'auditee.user_id', '=', 'users.id')
+            ->select(
+                'auditee.id as id',
+                'users.name as nama',
+                'ptk_auditan.approve as approve',
+                'ptk_auditan.updated_at as updated_at'
+            )
+            ->first();
+
+        // Auditors
+        $auditors = DB::table('ptk_auditor as ptk_auditor')
+            ->where('ptk_auditor.ptk_id', $id)
+            ->leftJoin('auditor', 'ptk_auditor.auditor_id', '=', 'auditor.id')
+            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
+            ->select(
+                'auditor.id as id',
+                'users.name as nama',
+                'ptk_auditor.approve as approve',
+                'ptk_auditor.created_at as created_at',
+                'ptk_auditor.updated_at as updated_at',
+            )
+            ->orderBy('ptk_auditor.created_at', 'asc')
+            ->get();
+
+        // Group PTK Form
+        $group = [];
+
+        foreach ($form as $row) {
+            $key = $row->kode;
+
+            if (!isset($group[$key])) {
+                $group[$key] = [
+                    'kode' => $row->kode,
+                    'deskripsi' => [],
+                    'rencana' => [],
+                    'analisis' => htmlspecialchars($row->analisis, ENT_QUOTES, 'UTF-8'),
+                    'akibat' => htmlspecialchars($row->akibat, ENT_QUOTES, 'UTF-8'),
+                    'kategori_temuan' => $row->kategori_temuan,
+                    'target' => htmlspecialchars($row->target, ENT_QUOTES, 'UTF-8'),
+                    'pic' => htmlspecialchars($row->pic, ENT_QUOTES, 'UTF-8'),
+                ];
+            }
+
+            // Gabungkan deskripsi dan rencana ke dalam array
+            if ($row->deskripsi && !in_array($row->deskripsi, $group[$key]['deskripsi'])) {
+                $group[$key]['deskripsi'][] = htmlspecialchars($row->deskripsi, ENT_QUOTES, 'UTF-8');
+            }
+
+            if ($row->rencana && !in_array($row->rencana, $group[$key]['rencana'])) {
+                $group[$key]['rencana'][] = htmlspecialchars($row->rencana, ENT_QUOTES, 'UTF-8');
+            }
+        }
+
+        // Unit Data
         $unitData = $this->get_unit($ptk);
 
+        // Template
         $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_ptk.docx'));
 
         \Carbon\Carbon::setLocale('id');
@@ -176,498 +343,492 @@ class DownloadController extends Controller
             'unit' => $unitData ? $unitData['unit']->nama : ''
         ]);
 
-        // Referensi Butir Mutu
-        $referensi = [];
-        foreach ($ptkForm as $form) {
-            $referensi[] = $form->form->instrumen->kode;
-        }
-        $referensiString = implode(", ", $referensi);
-        $templateProcessor->setValue('referensi', $referensiString);
-
-
-        // Form - Deskripsi
-        $groupedDescriptions = [];
-        $no = 1;
-
-        foreach ($ptkForm as $index => $form) {
-            $instrumenKode = $form->form->instrumen->kode;
-            $deskripsis = PtkFormDeskripsi::where('ptk_id', $ptk->id)
-                ->where('form_id', $form->form_id)
-                ->get();
-
-            foreach ($deskripsis as $deskripsi) {
-                if (!isset($groupedDescriptions[$instrumenKode])) {
-                    $groupedDescriptions[$instrumenKode] = [
-                        'noDeskripsi' => $no++ . '. ',
-                        'kodeDeskripsi' => 'Instrumen ' . $instrumenKode,
-                        'deskripsi' => []
-                    ];
-                }
-                $groupedDescriptions[$instrumenKode]['deskripsi'][] = '- ' . htmlspecialchars($deskripsi->deskripsi, ENT_QUOTES, 'UTF-8');
-            }
-        }
-
-        $valuesFormDeskripsi = [];
-        foreach ($groupedDescriptions as $group) {
-            $valuesFormDeskripsi[] = [
-                'noDeskripsi' => $group['noDeskripsi'] . '. ',
-                'kodeDeskripsi' => 'Instrumen ' . $group['kodeDeskripsi'],
-                'deskripsi' => implode("<w:br/>", $group['deskripsi'])
-            ];
-        }
-
-        if (!empty($valuesFormDeskripsi)) {
-            $templateProcessor->cloneRowAndSetValues('noDeskripsi', $valuesFormDeskripsi);
-        } else {
-            $templateProcessor->cloneRowAndSetValues('noDeskripsi', [['noDeskripsi' => '', 'kodeDeskripsi' => '', 'deskripsi' => '']]);
-        }
-
-
-        // Form - Analisis
-        $valuesFormAnalisis = [];
+        // Isi Value di template
+        $noDesc = 1;
+        $noRencana = 1;
         $noAnalisis = 1;
-        foreach ($ptkForm as $index => $form) {
-            $valuesFormAnalisis[] = [
-                'noAnalisis' => $noAnalisis++ . '. ',
-                'kodeAnalisis' => 'Instrumen ' . $form->form->instrumen->kode,
-                'analisis' => htmlspecialchars($form->analisis, ENT_QUOTES, 'UTF-8'),
-            ];
-        }
-        $templateProcessor->cloneRowAndSetValues('noAnalisis', $valuesFormAnalisis);
-
-        // Form - Akibat
-        $valuesFormAkibat = [];
         $noAkibat = 1;
-        foreach ($ptkForm as $index => $form) {
-            $valuesFormAkibat[] = [
-                'noAkibat' => $noAkibat++ . '. ',
-                'kodeAkibat' => 'Instrumen ' . $form->form->instrumen->kode,
-                'akibat' => htmlspecialchars($form->akibat, ENT_QUOTES, 'UTF-8'),
+        $noTarget = 1;
+        $noPic = 1;
+        $valueDesc = [];
+        $valueRencana = [];
+        $valueAnalisis = [];
+        $valueAkibat = [];
+        $valueTarget = [];
+        $valuePic = [];
+        $valueTemuan = [];
+        $referensi = [];
+
+        foreach ($group as $key => $item) {
+            // Referensi
+            $referensi[] = $key;
+
+            // Temuan
+            $observasi = $item['kategori_temuan'] == 'observasi' ? '✔' : '';
+            $minor = $item['kategori_temuan'] == 'minor' ? '✔' : '';
+            $mayor = $item['kategori_temuan'] == 'mayor' ? '✔' : '';
+
+            foreach ($item['deskripsi'] as $index => $row) {
+                $valueTemuan[] = [
+                    'noTemuan' => $index + 1,
+                    'temuan' => $row,
+                    'observasi' => $observasi,
+                    'minor' => $minor,
+                    'mayor' => $mayor,
+                ];
+            }
+
+            // Desc
+            $valueDesc[] = [
+                'noDeskripsi' => ($noDesc++) . '. ',
+                'kodeDeskripsi' => 'Instrumen ' . $key,
+                'deskripsi' => '- ' . implode("<w:br/>", $item['deskripsi'])
+            ];
+
+            // Analisis
+            $valueAnalisis[] = [
+                'noAnalisis' => ($noAnalisis++) . '. ',
+                'kodeAnalisis' => 'Instrumen ' . $key,
+                'analisis' => $item['analisis'],
+            ];
+
+            // Akibat
+            $valueAkibat[] = [
+                'noAkibat' => ($noAkibat++) . '. ',
+                'kodeAkibat' => 'Instrumen ' . $key,
+                'akibat' => $item['akibat'],
+            ];
+
+            // Rencana
+            $valueRencana[] = [
+                'noRencana' => ($noRencana++) . '. ',
+                'kodeRencana' => 'Instrumen ' . $key,
+                'rencana' => '- ' . implode("<w:br/>", $item['rencana'])
+            ];
+
+            // Target
+            $valueTarget[] = [
+                'noTarget' => ($noTarget++) . '. ',
+                'kodeTarget' => 'Instrumen ' . $key,
+                'target' => $item['target'],
+            ];
+
+            // PIC
+            $valuePic[] = [
+                'noPic' => ($noPic++) . '. ',
+                'kodePic' => 'Instrumen ' . $key,
+                'pic' => $item['pic'],
             ];
         }
-        $templateProcessor->cloneRowAndSetValues('noAkibat', $valuesFormAkibat);
+
+        // Referensi
+        $templateProcessor->setValue('referensi', implode(", ", $referensi));
 
         // Temuan
-        if ($ptk) {
-            $valuesTemuan = [];
-            $noTemuan = 1;
-
-            foreach ($ptkForm as $jawabans) {
-                $jawabanTemuanDeskripsi = PtkFormDeskripsi::where('ptk_id', $ptk->id)->where('form_id', $jawabans->form_id)->get();
-
-                foreach ($jawabanTemuanDeskripsi as $jawaban) {
-                    if ($jawaban && !empty($jawaban->deskripsi)) {
-                        $observasi = $jawabans->kategori_temuan == 'observasi' ? '✔' : '';
-                        $minor = $jawabans->kategori_temuan == 'minor' ? '✔' : '';
-                        $mayor = $jawabans->kategori_temuan == 'mayor' ? '✔' : '';
-
-                        $valuesTemuan[] = [
-                            'noTemuan' => $noTemuan++,
-                            'temuan' => $jawaban->deskripsi,
-                            'observasi' => $observasi,
-                            'minor' => $minor,
-                            'mayor' => $mayor,
-                        ];
-                    }
-                }
-            }
-
-            if (!empty($valuesTemuan)) {
-                $templateProcessor->cloneRowAndSetValues('noTemuan', $valuesTemuan);
-            } else {
-                $valuesTemuan[] = [
-                    'noTemuan' => 1,
-                    'temuan' => '',
-                    'observasi' => '',
-                    'minor' => '',
-                    'mayor' => '',
-                ];
-                $templateProcessor->cloneRowAndSetValues('noTemuan', $valuesTemuan);
-            }
+        if (!empty($valueTemuan)) {
+            $templateProcessor->cloneRowAndSetValues('noTemuan', $valueTemuan);
         } else {
-            $valuesTemuan[] = [
+            $templateProcessor->cloneRowAndSetValues('noTemuan', [[
                 'noTemuan' => 1,
                 'temuan' => '',
                 'observasi' => '',
                 'minor' => '',
                 'mayor' => '',
-            ];
-            $templateProcessor->cloneRowAndSetValues('noTemuan', $valuesTemuan);
+            ]]);
         }
 
-        // Form - Rencana
-        $groupedRencanas = [];
-        $noRencana = 1;
-
-        foreach ($ptkForm as $index => $form) {
-            $instrumenKode = $form->form->instrumen->kode;
-            $rencanas = PtkFormRencana::where('ptk_id', $ptk->id)
-                ->where('form_id', $form->form_id)
-                ->get();
-
-            foreach ($rencanas as $rencana) {
-                if (!isset($groupedRencanas[$instrumenKode])) {
-                    $groupedRencanas[$instrumenKode] = [
-                        'noRencana' => $noRencana++ . '. ',
-                        'kodeRencana' => 'Instrumen ' . $instrumenKode,
-                        'rencana' => []
-                    ];
-                }
-                $groupedRencanas[$instrumenKode]['rencana'][] = '- ' . htmlspecialchars($rencana->rencana, ENT_QUOTES, 'UTF-8');
-            }
+        // Deskripsi
+        if (!empty($valueDesc)) {
+            $templateProcessor->cloneRowAndSetValues('noDeskripsi', $valueDesc);
+        } else {
+            $templateProcessor->cloneRowAndSetValues('noDeskripsi', [['noDeskripsi' => '', 'kodeDeskripsi' => '', 'deskripsi' => '']]);
         }
 
-        $valuesFormRencana = [];
-        foreach ($groupedRencanas as $group) {
-            $valuesFormRencana[] = [
-                'noRencana' => $group['noRencana'],
-                'kodeRencana' => $group['kodeRencana'],
-                'rencana' => implode("<w:br/>", $group['rencana'])
-            ];
-        }
+        // Analisis
+        $templateProcessor->cloneRowAndSetValues('noAnalisis', $valueAnalisis);
 
-        if (!empty($valuesFormRencana)) {
-            $templateProcessor->cloneRowAndSetValues('noRencana', $valuesFormRencana);
+        // Akibat
+        $templateProcessor->cloneRowAndSetValues('noAkibat', $valueAkibat);
+
+        // Rencana
+        if (!empty($valueRencana)) {
+            $templateProcessor->cloneRowAndSetValues('noRencana', $valueRencana);
         } else {
             $templateProcessor->cloneRowAndSetValues('noRencana', [['noRencana' => '', 'kodeRencana' => '', 'rencana' => '']]);
         }
 
-        // Form - Target
-        $valuesFormTarget = [];
-        $noTarget = 1;
-        foreach ($ptkForm as $index => $form) {
-            $valuesFormTarget[] = [
-                'noTarget' => $noTarget++ . '. ',
-                'kodeTarget' => 'Instrumen ' . $form->form->instrumen->kode,
-                'target' => htmlspecialchars($form->target, ENT_QUOTES, 'UTF-8'),
-            ];
-        }
+        // Target
+        $templateProcessor->cloneBlock('block_name', 0, true, false, $valueTarget);
 
-        $templateProcessor->cloneBlock('block_name', 0, true, false, $valuesFormTarget);
+        // Pic
+        $templateProcessor->cloneBlock('block_pic', 0, true, false, $valuePic);
 
-        // Form - PIC
-        $valuesFormPic = [];
-        $noPic = 1;
-        foreach ($ptkForm as $index => $form) {
-            $valuesFormPic[] = [
-                'noPic' => $noPic++ . '. ',
-                'kodePic' => 'Instrumen ' . $form->form->instrumen->kode,
-                'pic' => htmlspecialchars($form->pic, ENT_QUOTES, 'UTF-8'),
-            ];
-        }
-
-        $templateProcessor->cloneBlock('block_pic', 0, true, false, $valuesFormPic);
-
-        $this->auditee($templateProcessor, $auditee, $unitData, $title);
+        $this->auditan($templateProcessor, $auditan, $unitData, $title);
         $this->auditors($templateProcessor, $auditors, $unitData, $title);
 
-        return $this->nama_file($templateProcessor, $unitData, $date, $title);
+        return compact('templateProcessor', 'unitData', 'date', 'title');
     }
 
-    // Download Laporan
-    public function download_laporan(Laporan $laporan)
+    // Temuan Negatif Word
+    public function temuan_negatif_word(string $id)
     {
+        try {
+            $tn = $this->temuan_negatif($id);
+
+            return $this->word($tn['templateProcessor'], $tn['unitData'], $tn['date'], $tn['title']);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh Temuan Negatif!');
+        }
+    }
+
+    // Temuan Positif
+    private function temuan_positif($id)
+    {
+        // Title
         $title = "Temuan Positif";
-        $auditors = LaporanAuditor::where('laporan_id', $laporan->id)->with(['auditor.user'])->groupBy('auditor_id', 'created_at', 'id')->orderBy('created_at', 'ASC')->get();
-        $auditee = LaporanAuditee::where('laporan_id', $laporan->id)->with(['auditee.user'])->first();
-        $laporanForm = LaporanForm::where('laporan_id', $laporan->id)->get();
 
-        $unitData = $this->get_unit($laporan);
+        // Berita Acara
+        $tp = DB::table('laporan')->where('id', $id)->first();
 
+        // Laporan Form
+        $form = DB::table('laporan_form')->where('laporan_id', $id)->get();
+
+        // Auditan
+        $auditan = DB::table('laporan_auditee as laporan_auditan')
+            ->where('laporan_auditan.laporan_id', $id)
+            ->leftJoin('auditee', 'laporan_auditan.auditee_id', '=', 'auditee.id')
+            ->leftJoin('users', 'auditee.user_id', '=', 'users.id')
+            ->select(
+                'auditee.id as id',
+                'users.name as nama',
+                'laporan_auditan.approve as approve',
+                'laporan_auditan.updated_at as updated_at'
+            )
+            ->first();
+
+        // Auditors
+        $auditors = DB::table('laporan_auditor as laporan_auditor')
+            ->where('laporan_auditor.laporan_id', $id)
+            ->leftJoin('auditor', 'laporan_auditor.auditor_id', '=', 'auditor.id')
+            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
+            ->select(
+                'auditor.id as id',
+                'users.name as nama',
+                'laporan_auditor.approve as approve',
+                'laporan_auditor.created_at as created_at',
+                'laporan_auditor.updated_at as updated_at',
+            )
+            ->orderBy('laporan_auditor.created_at', 'asc')
+            ->get();
+
+        // Unit Data
+        $unitData = $this->get_unit($tp);
+        $date = \Carbon\Carbon::parse($tp->tgl);
+
+        // Template
         $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_laporan.docx'));
 
-        \Carbon\Carbon::setLocale('id');
-        $date = \Carbon\Carbon::parse($laporan->tgl);
+        // Isi value template
         $templateProcessor->setValues([
             'date' => $date->isoFormat('D MMMM YYYY'),
             'unit' => $unitData ? $unitData['unit']->nama : ''
         ]);
 
-        // Isi
-        // Jawaban Positif
-        $valuesPositif = [];
         $no = 1;
-        foreach ($laporanForm as $jawaban) {
-            if ($jawaban && !empty($jawaban->kelebihan) || $jawaban && !empty($jawaban->ruang_peningkatan)) {
-                $valuesPositif[] = [
-                    'no' => $no++,
-                    'kelebihan' => htmlspecialchars($jawaban->kelebihan, ENT_QUOTES, 'UTF-8'),
-                    'ruang' => htmlspecialchars($jawaban->ruang_peningkatan, ENT_QUOTES, 'UTF-8'),
-                ];
-            }
+        $values = [];
+        foreach ($form as $item) {
+            $values[] = [
+                'no' => $no++,
+                'kelebihan' => htmlspecialchars($item->kelebihan, ENT_QUOTES, 'UTF-8'),
+                'ruang' => htmlspecialchars($item->ruang_peningkatan, ENT_QUOTES, 'UTF-8'),
+            ];
         }
+
         if (!empty($valuesPositif)) {
             $templateProcessor->cloneRowAndSetValues('no', $valuesPositif);
         } else {
-            $valuesPositif[] = [
+            $templateProcessor->cloneRowAndSetValues('no', [[
                 'no' => 1,
                 'kelebihan' => null,
                 'ruang' => null,
-            ];
-            $templateProcessor->cloneRowAndSetValues('no', $valuesPositif);
+            ]]);
         }
 
-
-        $this->auditee($templateProcessor, $auditee, $unitData, $title);
+        $this->auditan($templateProcessor, $auditan, $unitData, $title);
         $this->auditors($templateProcessor, $auditors, $unitData, $title);
 
-        return $this->nama_file($templateProcessor, $unitData, $date, $title);
+        return compact('templateProcessor', 'unitData', 'date', 'title');
     }
 
-    // Download All Instrumen
-    public function download_instrumen()
+    // Temuan Positif Word
+    public function temuan_positif_word(string $laporan)
     {
-        $instrumen = Instrumen::with(['kriteria', 'jenjang', 'prodi', 'unit', 'level', 'standar', 'kategori'])
-            ->orderBy('level_id', 'asc')
-            ->orderBy('standar_id', 'asc')
-            ->orderBy('kategori_id', 'asc')
-            ->orderByRaw("REGEXP_REPLACE(kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(kode, '[0-9]', '', 'g') ASC")
-            ->get();
-        $kriterias = Kriteria::all();
+        try {
+            $tp = $this->temuan_positif($laporan);
 
-        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_instrumen.docx'));
-
-        $kriteriaArray = [];
-        foreach ($kriterias as $kriteria) {
-            $kriteriaArray[] = $kriteria->nama;
+            return $this->word($tp['templateProcessor'], $tp['unitData'], $tp['date'], $tp['title']);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh Temuan Positif!');
         }
-
-        for ($i = 0; $i < count($kriteriaArray); $i++) {
-            $templateProcessor->setValue('kriteria#' . ($i + 1), $kriteriaArray[$i]);
-        }
-
-        // Instrumen
-        $valuesInstrumen = [];
-        $no = 1;
-        foreach ($instrumen as $item) {
-            // dd($item->standar->KategoriController);
-            $instrumenData = [
-                // 'no' => $no++,
-                'no' => $item->standar->nama . ' ' . $item->kategori->nama,
-                'kode' => $item->kode,
-                'indikator' => $item->indikator,
-                'level' => $item->level->nama,
-            ];
-
-            $jenjangNames = [];
-            if ($item->jenjang->isNotEmpty()) {
-                foreach ($item->jenjang as $jenjang) {
-                    $jenjangNames[] = $jenjang->nama;
-                }
-            } elseif ($item->prodi->isNotEmpty()) {
-                foreach ($item->prodi as $prodi) {
-                    $jenjangNames[] = $prodi->nama;
-                }
-            } elseif ($item->jabatan->isNotEmpty()) {
-                foreach ($item->jabatan as $jabatan) {
-                    $jenjangNames[] = $jabatan->nama;
-                }
-            }
-
-            foreach ($item->kriteria as $i => $kriteria) {
-                if (isset($kriteria->pivot->isi)) {
-                    $instrumenData['instrumenKriteria' . ($i + 1)] = htmlspecialchars($kriteria->pivot->isi, ENT_QUOTES, 'UTF-8');
-                } else {
-                    $instrumenData['instrumenKriteria' . ($i + 1)] = '-';
-                }
-            }
-
-            $instrumenData['jenjang'] = implode(', ', $jenjangNames);
-
-            $valuesInstrumen[] = $instrumenData;
-        }
-
-        // dd($valuesInstrumen);
-
-        $templateProcessor->cloneRowAndSetValues('no', $valuesInstrumen);
-
-        $fileName = 'Instrumen Pengukuran Standar DIKTI Universitas Jenderal Soedirman' . '.docx';
-        $filePath = storage_path('app/public/' . $fileName);
-        $templateProcessor->saveAs($filePath);
-
-        return response()->download($filePath)->deleteFileAfterSend(true);
     }
 
-    // Download Daftar Tilik
-    public function download_daftar_tilik(string $jadwalId, string $unitId, string $type)
+
+    // Daftar Tilik
+    private function daftar_tilik($jadwalId, $unitId, $type)
     {
+        // Title
         $title = "Daftar Tilik";
-        $jawaban_auditor = JawabanAuditor::where('jadwal_audit_id', $jadwalId)
-            ->where('daftar_tilik', 1)
-            ->where(get_type($type), $unitId)
-            ->with(['form.instrumen'])
-            ->orderBy('created_at', 'ASC')->get();
 
-        if ($jawaban_auditor->isEmpty()) {
-            return back()->with('error', 'Daftar Tilik masih kosong.');
-        }
+        $returnType = get_type($type);
 
-        $unitData = $this->get_unit($jawaban_auditor->first());
+        // Jawaban Auditor
+        $jawaban = DB::table('jawaban_auditor')
+            ->where('jawaban_auditor.jadwal_audit_id', $jadwalId)
+            ->where('jawaban_auditor.daftar_tilik', 1)
+            ->where('jawaban_auditor.' . $returnType, $unitId)
+            ->leftJoin('form', 'jawaban_auditor.form_id', '=', 'form.id')
+            ->leftJoin('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+            ->select(
+                'instrumen.kode as kode',
+                'instrumen.pernyataan as pernyataan',
+                'jawaban_auditor.catatan as catatan',
+                'jawaban_auditor.prodi_id as prodi_id',
+                'jawaban_auditor.fakultas_id as fakultas_id',
+                'jawaban_auditor.unit_id as unit_id',
+                'jawaban_auditor.created_at as created_at',
+            )
+            ->orderBy('jawaban_auditor.created_at', 'ASC')
+            ->get();
 
-        $auditors = AuditeeAuditor::where(['jadwal_audit_id' => $jadwalId, get_type($type) => $unitId])
-            ->with('auditor.user')
-            ->get()
-            ->pluck('auditor.user.name')
-            ->unique()->values();
+        // Unit Data
+        $unitData = $jawaban->isNotEmpty()
+            ? $this->get_unit($jawaban->first())
+            : $this->get_unit(
+                DB::table($type === 'universitas' ? 'unit' : $type)
+                    ->where('id', $unitId)
+                    ->select("id as " . ($type === 'universitas' ? 'unit_id' : "{$type}_id"))
+                    ->first()
+            );
 
+        // Date diambil dr status
+        $status = DB::table('status_audit_auditor')->where('jadwal_audit_id', $jadwalId)->where($returnType, $unitId)->select('updated_at')->first();
+
+        $date = $status ? \Carbon\Carbon::parse($status->updated_at) : null;
+
+        // Template
         $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_daftar_tilik.docx'));
 
-        \Carbon\Carbon::setLocale('id');
-        $status = StatusAuditAuditor::where(['jadwal_audit_id' => $jadwalId, get_type($type) => $unitId])->pluck('updated_at')->first();
-        $date = \Carbon\Carbon::parse($status);
+        // Isi auditor template
+        // Auditor
+        $auditors = DB::table('auditee_auditor')
+            ->where('auditee_auditor.jadwal_audit_id', $jadwalId)
+            ->where('auditee_auditor.' . get_type($type), $unitId)
+            ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
+            ->select(
+                'users.id as id',
+                'users.name as nama',
+                'auditee_auditor.created_at as created_at',
+            )
+            ->orderBy('auditee_auditor.created_at', 'asc')
+            ->get()
+            ->unique('id')
+            ->values();
 
+        if ($auditors->isNotEmpty()) {
+            foreach (range(1, 3) as $index) {
+                $auditor = $auditors->get($index - 1);
+                $templateProcessor->setValue(
+                    'auditor#' . $index,
+                    $auditor ? $index . '. ' . $auditor->nama : ''
+                );
+            }
+        } else {
+            // Jika tidak ada auditor
+            foreach (range(1, 3) as $index) {
+                $templateProcessor->setValue('auditor#' . $index, $index === 1 ? '-' : '');
+            }
+        }
+
+        // Isi value template
         $templateProcessor->setValues([
-            'date' => $date->isoFormat('D MMMM YYYY'),
-            'unit' => $unitData ? $unitData['unitName'] : ''
+            'date' => $date ? $date->isoFormat('D MMMM YYYY') : '-',
+            'unit' => $unitData['unitName'] ?? ''
         ]);
 
-        // Auditor
-        foreach ($auditors as $index => $auditor) {
-            $templateProcessor->setValue('auditor#' . ($index + 1), ($index + 1) . '. ' . $auditor);
-        }
-
-        if (count($auditors) <= 2) {
-            $templateProcessor->setValues(['auditor#2' => '']);
-            $templateProcessor->setValues(['auditor#3' => '']);
-        } else if (count($auditors) <= 3) {
-            $templateProcessor->setValues(['auditor#3' => '']);
-        }
-
-        // Isi
-        $values = [];
         $no = 1;
-        foreach ($jawaban_auditor as $jawaban) {
+        $values = [];
+        foreach ($jawaban as $item) {
             $values[] = [
                 'no' => $no++,
-                'kode' => $jawaban->form->instrumen->kode,
-                'pernyataan' => $jawaban->form->instrumen->pernyataan,
-                'catatan' => $jawaban->catatan,
+                'kode' => $item->kode,
+                'pernyataan' => $item->pernyataan,
+                'catatan' => $item->catatan,
             ];
         }
 
         if (!empty($values)) {
             $templateProcessor->cloneRowAndSetValues('no', $values);
         } else {
-            $values[] = [
-                'no' => 1,
+            $templateProcessor->cloneRowAndSetValues('no', [[
+                'no' => null,
                 'kode' => null,
                 'pernyataan' => null,
                 'catatan' => null,
-            ];
-            $templateProcessor->cloneRowAndSetValues('no', $values);
+            ]]);
         }
 
-        $fileName = $title . ' ' . strtoupper($unitData ? $unitData['unitName'] : '') . ' ' . $date->isoFormat('D MMMM YYYY') . '.docx';
-        $filePath = storage_path('app/public/' . $fileName);
-        $templateProcessor->saveAs($filePath);
+        return compact('templateProcessor', 'unitData', 'date', 'title');
+    }
+    // Daftar Tilik Word
+    public function daftar_tilik_word(string $jadwalId, string $unitId, string $type)
+    {
+        try {
+            $daftar_tilik = $this->daftar_tilik($jadwalId, $unitId, $type);
 
-        return response()->download($filePath)->deleteFileAfterSend(true);
+            return $this->word($daftar_tilik['templateProcessor'], $daftar_tilik['unitData'], $daftar_tilik['date'], $daftar_tilik['title']);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh Daftar Tilik!');
+        }
     }
 
-    // Download Isian Auditee
-    public function download_isi_audit_auditee(string $jadwalId, string $unitId, string $type)
+    // Jawaban Auditan
+    private function jawaban_auditan($jadwalId, $unitId, $type)
     {
+        // Title
         $title = "Hasil Pengisian Audit";
-        $jawabanAuditee = JawabanAuditee::where('jadwal_audit_id', $jadwalId)
-            ->where(get_type($type), $unitId)
-            ->join('form', 'jawaban_auditee.form_id', '=', 'form.id')
+
+        $returnType = get_type($type);
+
+        // Jawaban Auditan
+        $jawaban = DB::table('jawaban_auditee')
+            ->join('form', function ($join) use ($jadwalId) {
+                $join->on('jawaban_auditee.form_id', '=', 'form.id')
+                    ->where('form.jadwal_id', '=', $jadwalId);
+            })
+            ->leftJoin('link', function ($join) use ($jadwalId, $unitId, $returnType) {
+                $join->on('jawaban_auditee.form_id', '=', 'link.form_id')
+                    ->where('link.jadwal_audit_id', '=', $jadwalId)
+                    ->where('link.' . $returnType, $unitId);
+            })
             ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
-            ->with(['form.instrumen'])
+            ->where('jawaban_auditee.jadwal_audit_id', $jadwalId)
+            ->where('jawaban_auditee.' . $returnType, $unitId)
             ->orderBy('instrumen.standar_id', 'asc')
             ->orderBy('instrumen.kategori_id', 'asc')
             ->orderByRaw("REGEXP_REPLACE(instrumen.kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(instrumen.kode, '[0-9]', '', 'g') ASC")
-            ->select('jawaban_auditee.*')
+            ->select(
+                'instrumen.kode as kode',
+                'instrumen.pernyataan as pernyataan',
+                'jawaban_auditee.jawaban as jawaban',
+                'link.link as link',
+                'jawaban_auditee.prodi_id as prodi_id',
+                'jawaban_auditee.fakultas_id as fakultas_id',
+                'jawaban_auditee.unit_id as unit_id',
+            )
             ->get();
 
-        if (!$jawabanAuditee || $jawabanAuditee->isEmpty()) {
-            return back()->with('error', 'Jawaban masih kosong.');
-        }
+        // Group link
+        $group = [];
+        foreach ($jawaban as $row) {
+            $key = $row->kode;
 
-        $unitData = $this->get_unit($jawabanAuditee->first());
-
-        $auditors = AuditeeAuditor::where(['jadwal_audit_id' => $jadwalId, get_type($type) => $unitId])
-            ->with('auditor.user')
-            ->get()
-            ->pluck('auditor.user.name')
-            ->unique()->values();
-
-        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_isi_audit_auditee.docx'));
-
-        \Carbon\Carbon::setLocale('id');
-
-        $status = StatusAuditAuditee::where(['jadwal_audit_id' => $jadwalId, get_type($type) => $unitId])->pluck('updated_at')->first();
-
-        $date = \Carbon\Carbon::parse($status);
-
-        $templateProcessor->setValues([
-            'date' => $date->isoFormat('D MMMM YYYY'),
-            'unit' => $unitData ? $unitData['unitName'] : ''
-        ]);
-
-        // Auditor
-        if ($auditors->isEmpty()) {
-            $templateProcessor->setValues(['auditor#1' => '']);
-            $templateProcessor->setValues(['auditor#2' => '']);
-            $templateProcessor->setValues(['auditor#3' => '']);
-        } else {
-            foreach ($auditors as $index => $auditor) {
-                $templateProcessor->setValue('auditor#' . ($index + 1), ($index + 1) . '. ' . $auditor);
+            if (!isset($group[$key])) {
+                $group[$key] = [
+                    'kode' => $row->kode,
+                    'pernyataan' => htmlspecialchars($row->pernyataan, ENT_QUOTES, 'UTF-8'),
+                    'jawaban' => htmlspecialchars($row->jawaban, ENT_QUOTES, 'UTF-8'),
+                    'link' => [],
+                    'prodi_id' => $row->prodi_id,
+                    'fakultas_id' => $row->fakultas_id,
+                    'unit_id' => $row->unit_id,
+                ];
             }
 
-            if (count($auditors) <= 2) {
-                $templateProcessor->setValues(['auditor#2' => '']);
-                $templateProcessor->setValues(['auditor#3' => '']);
-            } else if (count($auditors) <= 3) {
-                $templateProcessor->setValues(['auditor#3' => '']);
+            // Gabungkan link ke dalam array
+            if ($row->link && !in_array($row->link, $group[$key]['link'])) {
+                $group[$key]['link'][] = '- ' . htmlspecialchars($row->link, ENT_QUOTES, 'UTF-8');
+            }
+        }
+
+        // Unit Data
+        $unitData = $jawaban->isNotEmpty()
+            ? $this->get_unit($jawaban->first())
+            : $this->get_unit(
+                DB::table($type === 'universitas' ? 'unit' : $type)
+                    ->where('id', $unitId)
+                    ->select("id as " . ($type === 'universitas' ? 'unit_id' : "{$type}_id"))
+                    ->first()
+            );
+
+        // Template
+        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_isi_audit_auditee.docx'));
+
+        // Date diambil dr status
+        $status = DB::table('status_audit_auditee')->where('jadwal_audit_id', $jadwalId)->where($returnType, $unitId)->select('updated_at')->first();
+        $date = $status ? \Carbon\Carbon::parse($status->updated_at) : null;
+
+        // Isi value template
+        $templateProcessor->setValues([
+            'date' => $date ? $date->isoFormat('D MMMM YYYY') : '-',
+            'unit' => $unitData['unitName'] ?? ''
+        ]);
+
+        // Isi auditor template
+        // Auditor
+        $auditors = DB::table('auditee_auditor')
+            ->where('auditee_auditor.jadwal_audit_id', $jadwalId)
+            ->where('auditee_auditor.' . get_type($type), $unitId)
+            ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
+            ->select(
+                'users.id as id',
+                'users.name as nama',
+                'auditee_auditor.created_at as created_at',
+            )
+            ->orderBy('auditee_auditor.created_at', 'asc')
+            ->get()
+            ->unique('id')
+            ->values();
+
+        // Isi nilai auditor dalam template
+        if ($auditors->isNotEmpty()) {
+            foreach (range(1, 3) as $index) {
+                $auditor = $auditors->get($index - 1);
+                $templateProcessor->setValue(
+                    'auditor#' . $index,
+                    $auditor ? $index . '. ' . $auditor->nama : ''
+                );
+            }
+        } else {
+            // Jika tidak ada auditor
+            foreach (range(1, 3) as $index) {
+                $templateProcessor->setValue('auditor#' . $index, $index === 1 ? '-' : '');
             }
         }
 
         // Isi
-        $groupedValues = [];
         $no = 1;
-        foreach ($jawabanAuditee as $index => $form) {
-            $instrumenKode = $form->form->instrumen->kode;
-            $links = Link::where('jadwal_audit_id', $jadwalId)
-                ->where(function ($query) use ($unitId, $type) {
-                    $query->where(get_type($type), $unitId);
-                })
-                ->where('form_id', $form->form_id)
-                ->with(['form.instrumen'])
-                ->get();
-
-            if (!isset($groupedValues[$instrumenKode])) {
-                $groupedValues[$instrumenKode] = [
-                    'no' => $no++ . '. ',
-                    'kode' => $instrumenKode,
-                    'pernyataan' => $form->form->instrumen->pernyataan,
-                    'jawaban' => $form->jawaban,
-                    'link' => []
-                ];
-            }
-            foreach ($links as $link) {
-                $trimLink = htmlspecialchars($link->link);
-                $groupedValues[$instrumenKode]['link'][] = '- ' . $trimLink;
-            }
-        }
-
         $values = [];
-        foreach ($groupedValues as $group) {
+
+        foreach ($group as $key => $item) {
             $values[] = [
-                'no' => $group['no'],
-                'kode' => $group['kode'],
-                'pernyataan' => $group['pernyataan'],
-                'jawaban' => $group['jawaban'],
-                'link' => implode("<w:br/>", $group['link'])
+                'no' => $no++,
+                'kode' => $item['kode'],
+                'pernyataan' => $item['pernyataan'],
+                'jawaban' => $item['jawaban'],
+                'link' => implode("<w:br/>", $item['link'])
             ];
         }
 
-        if (empty($values) && $jawabanAuditee->isNotEmpty()) {
-            foreach ($jawabanAuditee as $index => $form) {
+        // Jika belum ada link tp ada jawaban
+        if (empty($values) && $jawaban->isNotEmpty()) {
+            foreach ($group as $key => $item) {
                 $values[] = [
-                    'no' => $no++ . '. ',
-                    'kode' => $form->form->instrumen->kode,
-                    'pernyataan' => $form->form->instrumen->pernyataan,
-                    'jawaban' => $form->jawaban,
+                    'no' => $no++,
+                    'kode' => $item['kode'],
+                    'pernyataan' => $item['pernyataan'],
+                    'jawaban' => $item['jawaban'],
                     'link' => ''
                 ];
             }
@@ -679,81 +840,849 @@ class DownloadController extends Controller
             $templateProcessor->cloneRowAndSetValues('no', [['no' => '', 'kode' => '', 'pernyataan' => '', 'jawaban' => '', 'link' => '']]);
         }
 
-        $fileName = $title . ' ' . ($unitData ? $unitData['unitName'] : '') . ' Tanggal ' . $date->isoFormat('D MMMM YYYY') . '.docx';
+        return compact('templateProcessor', 'unitData', 'date', 'title');
+    }
+
+    // Jawaban Auditan Word
+    public function jawaban_auditan_word(string $jadwalId, string $unitId, string $type)
+    {
+        $jawaban_auditan = $this->jawaban_auditan($jadwalId, $unitId, $type);
+
+        return $this->word($jawaban_auditan['templateProcessor'], $jawaban_auditan['unitData'], $jawaban_auditan['date'], $jawaban_auditan['title']);
+    }
+
+    // Download All Instrumen
+    public function download_instrumen()
+    {
+        // Instrumen
+        $instrumen = DB::table('instrumen')
+            ->leftJoin('standar', 'instrumen.standar_id', '=', 'standar.id')
+            ->leftJoin('kategori', 'instrumen.standar_id', '=', 'kategori.standar_id')
+            ->leftJoin('instrumen_kriteria', 'instrumen.id', '=', 'instrumen_kriteria.instrumen_id')
+            ->leftJoin('kriteria', 'instrumen_kriteria.kriteria_id', '=', 'kriteria.id')
+            ->leftJoin('instrumen_jenjang', 'instrumen.id', '=', 'instrumen_jenjang.instrumen_id')
+            ->leftJoin('prodi', 'instrumen_jenjang.prodi_id', '=', 'prodi.id')
+            ->leftJoin('unit', 'instrumen_jenjang.unit_id', '=', 'unit.id')
+            ->leftJoin('jenjang', 'instrumen_jenjang.jenjang_id', '=', 'jenjang.id')
+            ->leftJoin('instrumen_jabatan', 'instrumen.id', '=', 'instrumen_jabatan.instrumen_id')
+            ->leftJoin('jabatan', 'instrumen_jabatan.jabatan_id', '=', 'jabatan.id')
+            ->leftJoin('level', 'instrumen.level_id', '=', 'level.id')
+            ->orderBy('instrumen.level_id', 'asc')
+            ->orderBy('instrumen.standar_id', 'asc')
+            ->orderBy('instrumen.kategori_id', 'asc')
+            ->orderByRaw("REGEXP_REPLACE(instrumen.kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(instrumen.kode, '[0-9]', '', 'g') ASC")
+            ->select(
+                'instrumen.kode as kode',
+                DB::raw("CONCAT(standar.nama, ' ', kategori.nama) as standar"),
+                'instrumen.indikator as indikator',
+                'level.nama as level',
+                'kriteria.nama as jenis_kriteria',
+                'instrumen_kriteria.isi as isi_kriteria',
+                'jenjang.nama as jenjang',
+                'prodi.nama as prodi',
+                'unit.nama as unit',
+                'jabatan.nama as jabatan',
+            )
+            ->get();
+
+        // Group Instrumen
+        $group = $instrumen->groupBy('kode')->map(function ($items, $kode) {
+            return [
+                'kode' => $kode,
+                'standar' => $items->first()->standar,
+                'indikator' => $items->first()->indikator,
+                'level' => $items->first()->level,
+                'prodi' => $items->first()->prodi,
+                'unit' => $items->first()->unit,
+                'jabatan' => $items->first()->jabatan,
+                'kriteria' => [
+                    'Belum Memenuhi' => $items->where('jenis_kriteria', 'Belum Memenuhi')->pluck('isi_kriteria')->first(),
+                    'Memenuhi' => $items->where('jenis_kriteria', 'Memenuhi')->pluck('isi_kriteria')->first(),
+                    'Melampaui' => $items->where('jenis_kriteria', 'Melampaui')->pluck('isi_kriteria')->first(),
+                ],
+                'jenjang_audience' => [
+                    'jenjang' => $items->pluck('jenjang')->filter()->unique()->values()->toArray(),
+                    'prodi' => $items->pluck('prodi')->filter()->unique()->values()->toArray(),
+                    'unit' => $items->pluck('unit')->filter()->unique()->values()->toArray(),
+                    'jabatan' => $items->pluck('jabatan')->filter()->unique()->values()->toArray(),
+                ],
+            ];
+        })->values();
+
+        // Template
+        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_instrumen.docx'));
+
+        // Kriteria
+        $kriteria = DB::table('kriteria')->select('id', 'nama')->orderBy('id')->get();
+
+        $no = 1;
+        foreach ($kriteria as $item) {
+            $templateProcessor->setValue('kriteria#' . $no, $item->nama);
+            $no++;
+        }
+
+        // Isi value template
+        $values = [];
+        $no = 1;
+
+        foreach ($group as $item) {
+            // Data
+            $data = [
+                'no' => htmlspecialchars($item['standar'], ENT_QUOTES, 'UTF-8'),
+                'kode' => htmlspecialchars($item['kode'], ENT_QUOTES, 'UTF-8'),
+                'indikator' => htmlspecialchars($item['indikator'], ENT_QUOTES, 'UTF-8'),
+                'level' => htmlspecialchars($item['level'], ENT_QUOTES, 'UTF-8'),
+            ];
+
+            // Kriteria
+            $noKriteria = 1;
+            foreach ($item['kriteria'] as $key => $kriteria) {
+                if ($kriteria) {
+                    $data['instrumenKriteria' . $noKriteria] = htmlspecialchars($kriteria, ENT_QUOTES, 'UTF-8');
+                } else {
+                    $data['instrumenKriteria' . $noKriteria] = '-';
+                }
+                $noKriteria++;
+            }
+
+            // Jenjang
+            foreach ($item['jenjang_audience'] as $key => $jenjang) {
+                if (!empty($jenjang)) {
+                    $data['jenjang'][] = implode(', ', $jenjang);
+                }
+            }
+
+            if (!empty($data['jenjang'])) {
+                $data['jenjang'] = implode(' | ', $data['jenjang']);
+            } else {
+                $data['jenjang'] = '-';
+            }
+
+
+            $values[] = $data;
+        }
+
+        $templateProcessor->cloneRowAndSetValues('no', $values);
+
+        // Nama File
+        $fileName = 'Instrumen Pengukuran Standar DIKTI Universitas Jenderal Soedirman' . '.docx';
         $filePath = storage_path('app/public/' . $fileName);
         $templateProcessor->saveAs($filePath);
 
         return response()->download($filePath)->deleteFileAfterSend(true);
+
+        dd($group);
+
+
+        return view('login_pusjamu');
     }
 
-    public function download_auditee_auditor(JadwalAudit $jadwalAudit)
+    // Download Daftar Auditan dan Auditor
+    public function download_auditan_auditor(string $jadwalAudit)
     {
+        // Title
         $title = "Daftar Auditee dan Auditor";
-        $prodi = Prodi::with(['jenjang', 'fakultas'])->get();
-        $fakultas = Fakultas::all();
-        $unit = Unit::all();
 
-        foreach ($fakultas as $f) {
-            $f->nama = 'Fakultas ' . $f->nama;
-        }
+        // Jadwal Audit
+        $jadwalAudit = DB::table('jadwal_audit')->where('id', $jadwalAudit)->first();
 
-        $mergedUnit = $prodi->concat($fakultas)->concat($unit);
+        // Prodi
+        $auditorProdi = DB::table('prodi')
+            ->join('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+            ->join('fakultas', 'prodi.fakultas_id', '=', 'fakultas.id')
+            ->leftJoin('auditee_auditor', 'prodi.id', '=', 'auditee_auditor.prodi_id')
+            ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
+            ->select(
+                'prodi.id as id',
+                DB::raw("CONCAT(prodi.nama, ' ', jenjang.nama) as nama"),
+                'fakultas.nama as fakultas',
+                'users.id as auditor_id',
+                'users.name as auditor',
+                'auditee_auditor.created_at as auditor_created_at'
+            )
+            ->orderBy('prodi.created_at')
+            ->orderBy('auditee_auditor.created_at')
+            ->get()
+            ->groupBy('id')
+            ->map(function ($items) {
+                return [
+                    'auditan' => $items->first()->nama,
+                    'auditors' => $items->unique('auditor_id')->map(function ($auditor) {
+                        return [
+                            'auditor_id' => $auditor->auditor_id,
+                            'auditor_name' => $auditor->auditor,
+                            'created_at' => $auditor->auditor_created_at,
+                        ];
+                    })->values(),
+                    'fakultas' => $items->first()->fakultas,
+                ];
+            });
 
+        // Fakultas
+        $auditorFakultas = DB::table('fakultas')
+            ->leftJoin('auditee_auditor', 'fakultas.id', '=', 'auditee_auditor.fakultas_id')
+            ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
+            ->select(
+                'fakultas.id as id',
+                DB::raw("CONCAT('Fakultas ', fakultas.nama) as nama"),
+                'users.id as auditor_id',
+                'users.name as auditor',
+                'auditee_auditor.created_at as auditor_created_at'
+            )
+            ->orderBy('fakultas.created_at')
+            ->orderBy('auditee_auditor.created_at')
+            ->get()
+            ->groupBy('id')
+            ->map(function ($items) {
+                return [
+                    'auditan' => $items->first()->nama,
+                    'auditors' => $items->unique('auditor_id')->map(function ($auditor) {
+                        return [
+                            'auditor_id' => $auditor->auditor_id,
+                            'auditor_name' => $auditor->auditor,
+                            'created_at' => $auditor->auditor_created_at,
+                        ];
+                    })->values(),
+                    'fakultas' => null,
+                ];
+            });
+
+        // Unit
+        $auditorUnit = DB::table('unit')
+            ->leftJoin('auditee_auditor', 'unit.id', '=', 'auditee_auditor.unit_id')
+            ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
+            ->select(
+                'unit.id as id',
+                'unit.nama as nama',
+                'users.id as auditor_id',
+                'users.name as auditor',
+                'auditee_auditor.created_at as auditor_created_at'
+            )
+            ->orderBy('unit.created_at')
+            ->orderBy('auditee_auditor.created_at')
+            ->get()
+            ->groupBy('id')
+            ->map(function ($items) {
+                return [
+                    'auditan' => $items->first()->nama,
+                    'auditors' => $items->unique('auditor_id')->map(function ($auditor) {
+                        return [
+                            'auditor_id' => $auditor->auditor_id,
+                            'auditor_name' => $auditor->auditor,
+                            'created_at' => $auditor->auditor_created_at,
+                        ];
+                    })->values(),
+                    'fakultas' => null,
+                ];
+            });
+
+        // Merge 
+        $merge = $auditorProdi
+            ->merge($auditorFakultas)
+            ->merge($auditorUnit)
+            ->values();
+
+
+        // Template
         $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_daftar_auditor.docx'));
 
-        \Carbon\Carbon::setLocale('id');
+        // Date
         $date = \Carbon\Carbon::parse($jadwalAudit->created_at);
 
         $templateProcessor->setValues([
             'tahun' => $date->isoFormat('YYYY'),
         ]);
 
+        // Isi value template
         $no = 1;
-        $groupedValues = [];
-
-        foreach ($mergedUnit as $u) {
-            $auditorIds = AuditeeAuditor::where('jadwal_audit_id', $jadwalAudit->id)
-                ->where(function ($query) use ($u) {
-                    $query->where('prodi_id', $u->id)
-                        ->orWhere('fakultas_id', $u->id)
-                        ->orWhere('unit_id', $u->id);
-                })
-                ->distinct('auditor_id')
-                ->pluck('auditor_id');
-
-            $auditors = Auditor::where('jadwal_audit_id', $jadwalAudit->id)->whereIn('id', $auditorIds)
-                ->with('user')
-                ->get();
-
-            $nama = $auditors->map(function ($auditor) {
-                return '- ' . $auditor->user->name;
+        $values = [];
+        foreach ($merge as $item) {
+            // Mapping Auditor
+            $nama_auditor = $item['auditors']->map(function ($auditor) {
+                return $auditor['auditor_name'];
             })->implode(PHP_EOL);
 
-
-            $groupedValues[] = [
+            // Values
+            $values[] = [
                 'no' => $no++,
-                'auditor' => $nama ? $nama : 'Belum ada auditor',
-                'auditee' => optional($u->jenjang)->nama ? $u->nama . ' ' . $u->jenjang->nama : $u->nama,
-                'fakultas' => optional($u->fakultas)->nama ? $u->fakultas->nama : '-',
+                'auditor' => $nama_auditor ? '- ' . str_replace(PHP_EOL, PHP_EOL . '- ', $nama_auditor) : 'Belum ada auditor',
+                'auditee' => $item['auditan'] ? $item['auditan'] : 'Belum ada Auditor',
+                'fakultas' => $item['fakultas'] ? $item['fakultas'] : '-',
             ];
         }
 
-        if (!empty($groupedValues)) {
-            $templateProcessor->cloneRowAndSetValues('no', $groupedValues);
+        // Cek jika kosong
+        if (!empty($values)) {
+            $templateProcessor->cloneRowAndSetValues('no', $values);
         } else {
-            $groupedValues[] = [
+            $templateProcessor->cloneRowAndSetValues('no', [[
                 'no' => 1,
                 'auditor' => null,
                 'auditee' => null,
                 'fakultas' => null,
-            ];
-            $templateProcessor->cloneRowAndSetValues('no', $groupedValues);
+            ]]);
         }
 
+        // Nama File
         $fileName = $title . ' ' . $date->isoFormat('YYYY') . '.docx';
         $filePath = storage_path('app/public/' . $fileName);
         $templateProcessor->saveAs($filePath);
 
         return response()->download($filePath)->deleteFileAfterSend(true);
+    }
+
+    // Download user berdasarkan role
+    public function download_user(Request $request)
+    {
+        // Validasi
+        $request->validate([
+            'role' => 'required|exists:roles,id'
+        ]);
+
+        // Tgl
+        \Carbon\Carbon::setLocale('id');
+
+        $jam = \Carbon\Carbon::now()->translatedFormat('H:i');
+        $tgl = \Carbon\Carbon::now()->translatedFormat('d F Y');
+
+        // Nama File
+        $fileNames = [
+            2 => "Daftar GKM (JELITA)" . $tgl . ".xls",
+            3 => "Daftar GPM (JELITA) " . $tgl . ".xls",
+            5 => "Daftar Pimpinan Universitas (JELITA) " . $tgl . ".xls",
+            4 => "Daftar Auditor (JELITA) " . $tgl . ".xls",
+            6 => "Daftar Dekan dan Wakil Dekan (JELITA) " . $tgl . ".xls",
+            7 => "Daftar Ketua Program Studi (JELITA) " . $tgl . ".xls",
+        ];
+
+        $fileName = $fileNames[$request->role] ?? "Daftar Pengguna (JELITA) " . $tgl . ".xls";
+
+        // Query
+        $query = DB::table('model_has_roles')
+            ->join('users', 'model_has_roles.model_id', '=', 'users.id')
+            ->leftJoin('jabatan_user', 'jabatan_user.user_id', '=', 'users.id')
+            ->leftJoin('jabatan', 'jabatan_user.jabatan_id', '=', 'jabatan.id')
+            ->where('model_has_roles.role_id', $request->role)
+            ->select('users.name', 'users.email', 'users.no_telepon', 'jabatan.nama as jabatan');
+
+        // Join berdasarkan role
+        if ($request->role == 7 || $request->role == 2 || $request->role == 4 || $request->role == 3) {
+            $query->leftJoin('prodi', 'jabatan_user.prodi_id', '=', 'prodi.id')
+                ->leftJoin('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+                ->addSelect(DB::raw("CASE WHEN jabatan.id IS NULL THEN NULL ELSE CONCAT('Program Studi ', prodi.nama, ' ', jenjang.nama) END as prodi"));
+        } elseif ($request->role == 6) {
+            $query->join('fakultas', 'jabatan_user.fakultas_id', '=', 'fakultas.id')
+                ->addSelect(DB::raw("CONCAT('Fakultas ', fakultas.nama) as fakultas"));
+        } elseif ($request->role == 5) {
+            $query->join('unit', 'jabatan_user.unit_id', '=', 'unit.id')
+                ->addSelect('unit.nama as unit');
+        }
+
+        $users = $query->get();
+
+        // PHP Spreadsheet
+        $templatePath = storage_path('app/public/template/template_user.xlsx');
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($templatePath);
+
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        $title = [
+            2 => "Daftar GKM (JELITA)",
+            3 => "Daftar GPM (JELITA)",
+            5 => "Daftar Pimpinan Universitas (JELITA)",
+            4 => "Daftar Auditor (JELITA)",
+            6 => "Daftar Dekan dan Wakil Dekan (JELITA)",
+            7 => "Daftar Ketua Program Studi (JELITA)",
+        ];
+
+        $worksheet->getCell('A1')->setValue($title[$request->role]);
+        $worksheet->getCell('A2')->setValue("Diunduh pada pukul " . $jam . " tanggal " . $tgl);
+
+        $baris = 5;
+        $no = 1;
+        foreach ($users as $user) {
+            $worksheet->getCell('A' . $baris)->setValue($no++);
+            $worksheet->getCell('B' . $baris)->setValue($user->name);
+            $worksheet->getCell('C' . $baris)->setValue($user->email);
+            $worksheet->getCell('D' . $baris)->setValue($user->jabatan ?? '-');
+            $worksheet->getCell('E' . $baris)->setValue($user->prodi ?? $user->fakultas ?? $user->unit ?? '-');
+            $worksheet->getCell('F' . $baris)->setValue($user->no_telepon ?? '-');
+            $baris++;
+        }
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xls');
+        $writer->save($fileName);
+
+        return response()->download($fileName)->deleteFileAfterSend(true);
+    }
+
+    // Laporan Hasil PDF
+    public function download_laporan_hasil(JadwalAudit $jadwalAudit, Fakultas $fakultas)
+    {
+        // Data Cover
+        $dataCover = [
+            'tahun' => \Carbon\Carbon::parse($jadwalAudit->tgl_mulai)->year,
+        ];
+
+        // Data Isi
+        $dataIsi = [
+            'prodis' => DB::table('prodi')
+                ->join('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+                ->leftJoin('berita_acara', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'berita_acara.prodi_id')
+                        ->where('berita_acara.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditee', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'auditee.prodi_id')
+                        ->where('auditee.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('users as auditee_users', 'auditee.user_id', '=', 'auditee_users.id')
+                ->leftJoin('auditee_auditor', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'auditee_auditor.prodi_id')
+                        ->where('auditee_auditor.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+                ->leftJoin('users as auditor_users', 'auditor.user_id', '=', 'auditor_users.id')
+                ->where('prodi.fakultas_id', $fakultas->id)
+                ->select([
+                    'prodi.id as id',
+                    'prodi.nama as nama',
+                    'jenjang.id as jenjang_id',
+                    'jenjang.nama as jenjang',
+                    'berita_acara.tgl as tgl_audit',
+                    DB::raw('STRING_AGG(DISTINCT auditee_users.name, \'|\') as auditan'),
+                    DB::raw('STRING_AGG(DISTINCT auditor_users.name, \'|\') as auditor'),
+                    DB::raw('STRING_AGG(DISTINCT TO_CHAR(auditee_auditor.created_at, \'YYYY-MM-DD HH24:MI:SS\'), \'|\') as auditors_created_at'),
+                ])
+                ->groupBy('prodi.id', 'jenjang.id', 'berita_acara.tgl')
+                ->orderBy('auditors_created_at', 'asc')
+                ->get()
+                ->map(function ($prodi) use ($jadwalAudit) {
+                    // Instrumen Form
+                    $instrumen = DB::table('form')
+                        ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+                        ->join('instrumen_jenjang', 'instrumen.id', '=', 'instrumen_jenjang.instrumen_id')
+                        ->leftJoin('jawaban_auditee', function ($join) use ($prodi) {
+                            $join->on('jawaban_auditee.form_id', '=', 'form.id')
+                                ->where('jawaban_auditee.prodi_id', $prodi->id);
+                        })
+                        ->leftJoin('jawaban_auditor', function ($join) use ($prodi) {
+                            $join->on('jawaban_auditor.form_id', '=', 'form.id')
+                                ->where('jawaban_auditor.prodi_id', $prodi->id);
+                        })
+                        ->leftJoin('ptk', function ($join) use ($prodi) {
+                            $join->on('ptk.jadwal_audit_id', '=', 'form.jadwal_id')
+                                ->where('ptk.prodi_id', $prodi->id);
+                        })
+                        ->leftJoin('ptk_form', function ($join) use ($prodi) {
+                            $join->on('ptk_form.ptk_id', '=', 'ptk.id')
+                                ->on('ptk_form.form_id', '=', 'form.id');
+                        })
+                        ->where('form.jadwal_id', $jadwalAudit->id)
+                        ->where('instrumen_jenjang.jenjang_id', $prodi->jenjang_id)
+                        ->orWhere('instrumen_jenjang.prodi_id', $prodi->id)
+                        ->select(
+                            'instrumen.pernyataan as pernyataan',
+                            'jawaban_auditee.jawaban as jawaban',
+                            'jawaban_auditor.catatan as catatan',
+                            'ptk_form.kategori_temuan as kategori_temuan',
+                            'ptk_form.analisis as analisis',
+                        )
+                        ->get();
+
+
+                    $prodi->instrumen = $instrumen;
+
+                    return $prodi;
+                }),
+        ];
+
+        // MPDF
+        $mpdf = new \Mpdf\Mpdf([
+            'tempDir' => storage_path('app/tmp'),
+        ]);
+
+        // Halaman Cover (Portrait)
+        $cover = view('pdf.laporan_fakultas.cover', $dataCover)->render();
+        $mpdf->AddPage('P');
+        $mpdf->WriteHTML($cover);
+
+        // Page Number
+        $mpdf->PageNumSubstitutions[] = [
+            'from' => 2,
+            'reset' => 1,
+            'type' => '1',
+            'suppress' => 'off',
+        ];
+
+        // Tambahkan halaman baru dengan nomor halaman dimulai dari 1
+        $mpdf->AddPage('L'); // landscape
+        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
+
+        // Halaman Isi 
+        $isi = view('pdf.laporan_fakultas.isi', $dataIsi)->render();
+        $mpdf->WriteHTML($isi);
+
+        // Download
+        $namaFile = "Laporan Hasil Audit Fakultas " . $fakultas->nama . " Tahun " . $dataCover['tahun'] . ".pdf";
+
+        return response($mpdf->Output($namaFile, \Mpdf\Output\Destination::STRING_RETURN), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"$namaFile\"",
+            'X-Filename' => $namaFile,
+        ]);
+    }
+
+    // Generate Zip
+    private function generate_zip(string $jadwalAudit, string $unitId, string $type)
+    {
+        // Jadwal Audit
+        $jadwal = DB::table('jadwal_audit')->where('id', $jadwalAudit)->select('id', 'tgl_mulai')->first();
+
+        // Daftar Tilik
+        $daftarTilik = $this->daftar_tilik($jadwal->id, $unitId, $type);
+        $daftarTilikFile = $this->zip($daftarTilik['templateProcessor'], $daftarTilik['unitData'], $daftarTilik['date'], $daftarTilik['title']);
+
+        // Jawaban Auditan
+        $jawabanAuditan = $this->jawaban_auditan($jadwal->id, $unitId, $type);
+        $jawabanAuditanFile = $this->zip($jawabanAuditan['templateProcessor'], $jawabanAuditan['unitData'], $jawabanAuditan['date'], $jawabanAuditan['title']);
+
+        // Temuan Negatif
+        $tn = DB::table('ptk')->where('jadwal_audit_id', $jadwal->id)->where(get_type($type), $unitId)->select('id')->first();
+        $temuanNegatif = $tn ? $this->temuan_negatif($tn->id) : null;
+        $temuanNegatifFile = $temuanNegatif ? $this->zip($temuanNegatif['templateProcessor'], $temuanNegatif['unitData'], $temuanNegatif['date'], $temuanNegatif['title']) : null;
+
+        // Temuan Positif
+        $tp = DB::table('laporan')->where('jadwal_audit_id', $jadwal->id)->where(get_type($type), $unitId)->select('id')->first();
+        $temuanPositif = $tp ? $this->temuan_positif($tp->id) : null;
+        $temuanPositifFile = $tp ? $this->zip($temuanPositif['templateProcessor'], $temuanPositif['unitData'], $temuanPositif['date'], $temuanPositif['title']) : null;
+
+        // Berita Acara
+        $ba = DB::table('berita_acara')->where('jadwal_audit_id', $jadwal->id)->where(get_type($type), $unitId)->select('id')->first();
+        $beritaAcara = $ba ? $this->berita_acara($ba->id) : null;
+        $beritaAcaraFile = $ba ? $this->zip($beritaAcara['templateProcessor'], $beritaAcara['unitData'], $beritaAcara['date'], $beritaAcara['title']) : null;
+
+        return [
+            'year' => \Carbon\Carbon::parse($jadwal->tgl_mulai)->isoFormat('YYYY'),
+            'files' => [
+                [
+                    'title' => $daftarTilik['title'],
+                    'file' => $daftarTilikFile,
+                ],
+                [
+                    'title' => $jawabanAuditan['title'],
+                    'file' => $jawabanAuditanFile,
+                ],
+                $temuanNegatifFile ? [
+                    'title' => $temuanNegatif['title'],
+                    'file' => $temuanNegatifFile,
+                ] : null,
+                $temuanPositifFile ? [
+                    'title' => $temuanPositif['title'],
+                    'file' => $temuanPositifFile,
+                ] : null,
+                $beritaAcaraFile ? [
+                    'title' => $beritaAcara['title'],
+                    'file' => $beritaAcaraFile,
+                ] : null,
+            ],
+        ];
+    }
+    // Laporan Hasil Zip Per Unit
+    public function zip_per_unit(string $jadwalAudit, string $unitId, string $type)
+    {
+        try {
+            // Generate Zip
+            $files = $this->generate_zip($jadwalAudit, $unitId, $type);
+
+            // Get Unit
+            $unit = DB::table($type === 'universitas' ? 'unit' : $type)
+                ->where('id', $unitId)
+                ->select("id as " . ($type === 'universitas' ? 'unit_id' : "{$type}_id"))
+                ->first();
+
+            $unitData = $this->get_unit($unit);
+
+            // Buat ZIP 
+            $zipFileName = 'Hasil Audit ' . ($unitData ? $unitData['unitName'] : '') . ' ' . $files['year'] . '.zip';
+            $zipFilePath = storage_path('app/public/' . $zipFileName);
+
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFilePath, \ZipArchive::CREATE) === TRUE) {
+                foreach ($files['files'] as $file) {
+                    if ($file && isset($file['file']['filePath'], $file['file']['fileName'])) {
+                        $zip->addFile($file['file']['filePath'], basename($file['file']['fileName']));
+                    }
+                }
+                $zip->close();
+            } else {
+                return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+            }
+
+            // Hapus file Word setelah dimasukkan ke dalam ZIP
+            foreach ($files['files'] as $file) {
+                if ($file && isset($file['file']['filePath'])) {
+                    unlink($file['file']['filePath']);
+                }
+            }
+
+            return response()->download($zipFilePath, $zipFileName)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+        }
+    }
+
+    // Laporan Hasil Zip per fakultas
+    public function zip_per_fakultas(Request $request, string $jadwalAudit)
+    {
+        try {
+            $request->validate([
+                'fakultas' => 'required|uuid|exists:fakultas,id'
+            ]);
+
+            $fakultas = $request->fakultas;
+
+            // Ambil semua prodi berdasarkan fakultas
+            $prodi = DB::table('fakultas')
+                ->join('prodi', 'fakultas.id', '=', 'prodi.fakultas_id')
+                ->join('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+                ->where('fakultas.id', $fakultas)
+                ->select('prodi.id as id',  DB::raw("CONCAT(prodi.nama, ' ', jenjang.nama) as nama"))
+                ->get();
+
+            $allFiles = [];
+            $year = null;
+
+            // Looping prodi generate zip 
+            foreach ($prodi as $item) {
+                $unitId = $item->id;
+
+                $files = $this->generate_zip($jadwalAudit, $unitId, 'prodi');
+
+                if (!$year && isset($files['year'])) {
+                    $year = $files['year'];
+                }
+
+                // Merge
+                if (isset($files['files'])) {
+                    $allFiles[] = [
+                        'prodi_name' => $item->nama,
+                        'files' => $files['files'],
+                    ];
+                }
+            }
+
+            // Get Fakultas
+            $unit = DB::table('fakultas')
+                ->where('id', $fakultas)
+                ->select('id as fakultas_id')
+                ->first();
+
+            $unitData = $this->get_unit($unit);
+
+            // Buat ZIP
+            $zipFileName = 'Hasil Audit ' . ($unitData ? $unitData['unitName'] : 'Fakultas') . ' ' . ($year ?? '') . '.zip';
+            $zipFilePath = storage_path('app/public/' . $zipFileName);
+
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFilePath, \ZipArchive::CREATE) === TRUE) {
+                foreach ($allFiles as $prodiData) {
+                    $prodiName = $prodiData['prodi_name'];
+                    foreach ($prodiData['files'] as $file) {
+                        if ($file && isset($file['file']['filePath'], $file['file']['fileName'])) {
+                            $zip->addFile(
+                                $file['file']['filePath'],
+                                "Program Studi {$prodiName}/" . basename($file['file']['fileName'])
+                            );
+                        }
+                    }
+                }
+                $zip->close();
+            } else {
+                return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+            }
+
+            // Hapus file Word setelah dimasukkan ke dalam ZIP
+            foreach ($allFiles as $prodiData) {
+                foreach ($prodiData['files'] as $file) {
+                    if ($file && isset($file['file']['filePath'])) {
+                        unlink($file['file']['filePath']);
+                    }
+                }
+            }
+
+            return response()->download($zipFilePath, $zipFileName)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+        }
+    }
+
+    // Zip PS
+    public function zip_ps(string $jadwalAudit)
+    {
+        try {
+            // Ambil semua fakultas
+            $fakultasList = DB::table('fakultas')->select('id', 'nama')->get();
+
+            $allFiles = [];
+            $year = null;
+
+            // Looping setiap fakultas untuk generate zip
+            foreach ($fakultasList as $fakultas) {
+                $fakultasId = $fakultas->id;
+
+                // Ambil semua prodi berdasarkan fakultas
+                $prodi = DB::table('fakultas')
+                    ->join('prodi', 'fakultas.id', '=', 'prodi.fakultas_id')
+                    ->join('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+                    ->where('fakultas.id', $fakultasId)
+                    ->select('prodi.id as id', DB::raw("CONCAT(prodi.nama, ' ', jenjang.nama) as nama"))
+                    ->get();
+
+                // Looping prodi untuk generate zip
+                foreach ($prodi as $item) {
+                    $unitId = $item->id;
+
+                    // Generate zip untuk tiap prodi
+                    $files = $this->generate_zip($jadwalAudit, $unitId, 'prodi');
+
+                    if (!$year && isset($files['year'])) {
+                        $year = $files['year'];
+                    }
+
+                    // Merge files ke dalam allFiles
+                    if (isset($files['files'])) {
+                        $allFiles[] = [
+                            'fakultas_name' => $fakultas->nama,
+                            'prodi_name' => $item->nama,
+                            'files' => $files['files'],
+                        ];
+                    }
+                }
+            }
+
+            // Nama file ZIP yang akan dihasilkan
+            $zipFileName = 'Hasil Audit PS ' . ($year ?? '') . '.zip';
+            $zipFilePath = storage_path('app/public/' . $zipFileName);
+
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFilePath, \ZipArchive::CREATE) === TRUE) {
+                // Menambahkan file ke dalam ZIP berdasarkan fakultas dan prodi
+                foreach ($allFiles as $fakultasData) {
+                    $fakultasName = $fakultasData['fakultas_name'];
+                    $prodiName = $fakultasData['prodi_name'];
+                    foreach ($fakultasData['files'] as $file) {
+                        if ($file && isset($file['file']['filePath'], $file['file']['fileName'])) {
+                            $zip->addFile(
+                                $file['file']['filePath'],
+                                "Fakultas {$fakultasName}/Program Studi {$prodiName}/" . basename($file['file']['fileName'])
+                            );
+                        }
+                    }
+                }
+                $zip->close();
+            } else {
+                return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+            }
+
+            // Hapus file Word setelah dimasukkan ke dalam ZIP
+            foreach ($allFiles as $fakultasData) {
+                foreach ($fakultasData['files'] as $file) {
+                    if ($file && isset($file['file']['filePath'])) {
+                        unlink($file['file']['filePath']);
+                    }
+                }
+            }
+
+            // Kembalikan file ZIP untuk diunduh
+            return response()->download($zipFilePath, $zipFileName)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+        }
+    }
+
+    // Zip UPPS
+    public function zip_upps(string $jadwalAudit)
+    {
+        try {
+            // Ambil semua fakultas
+            $fakultas = DB::table('fakultas')
+                ->select('id', 'nama')
+                ->get()
+                ->map(function ($item) {
+                    $item->type = 'fakultas';
+                    return $item;
+                });
+
+            $unit = DB::table('unit')
+                ->select('id', 'nama')
+                ->get()
+                ->map(function ($item) {
+                    $item->type = 'universitas';
+                    return $item;
+                });
+
+            $merge = $fakultas->merge($unit);
+
+            $allFiles = [];
+            $year = null;
+
+            // Looping setiap fakultas untuk generate zip
+            foreach ($merge as $item) {
+                // Generate zip
+                $files = $this->generate_zip($jadwalAudit, $item->id, $item->type);
+
+                if (!$year && isset($files['year'])) {
+                    $year = $files['year'];
+                }
+
+                // Merge files ke dalam allFiles
+                if (isset($files['files'])) {
+                    $allFiles[] = [
+                        'unit_name' => ($item->type == 'fakultas' ? "Fakultas {$item->nama}" : $item->nama),
+                        'files' => $files['files'],
+                    ];
+                }
+            }
+
+            // Nama file ZIP yang akan dihasilkan
+            $zipFileName = 'Hasil Audit UPPS ' . ($year ?? '') . '.zip';
+            $zipFilePath = storage_path('app/public/' . $zipFileName);
+
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFilePath, \ZipArchive::CREATE) === TRUE) {
+                foreach ($allFiles as $data) {
+                    $unitName = $data['unit_name'];
+                    foreach ($data['files'] as $file) {
+                        if ($file && isset($file['file']['filePath'], $file['file']['fileName'])) {
+                            $zip->addFile(
+                                $file['file']['filePath'],
+                                "{$unitName}/" . basename($file['file']['fileName'])
+                            );
+                        }
+                    }
+                }
+                $zip->close();
+            } else {
+                return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+            }
+
+            // Hapus file Word setelah dimasukkan ke dalam ZIP
+            foreach ($allFiles as $data) {
+                foreach ($data['files'] as $file) {
+                    if ($file && isset($file['file']['filePath'])) {
+                        unlink($file['file']['filePath']);
+                    }
+                }
+            }
+
+            // Kembalikan file ZIP untuk diunduh
+            return response()->download($zipFilePath, $zipFileName)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+        }
     }
 }
