@@ -697,27 +697,28 @@ Route::group(['middleware' => 'auth'], function () {
 
     // Download Berita Acara, PTK, Laporan, Daftar Tilik, Isian Audit
     Route::prefix('download')->group(function () {
-        // Download Berita Acara
-        Route::post('beritaacara/{beritaAcara}', [DownloadController::class, 'download_berita_acara'])->name('download.berita-acara');
-
-        // Download PTK
-        Route::post('ptk/{ptk}', [DownloadController::class, 'download_ptk'])->name('download.ptk');
-
-        // Download Laporan
-        Route::post('laporan/{laporan}', [DownloadController::class, 'download_laporan'])->name('download.laporan');
-
+        // Instrumen
         Route::post('instrumen', [DownloadController::class, 'download_instrumen'])->name('download.instrumen');
 
+        // Download Berita Acara
+        Route::post('berita-acara/{beritaAcara}', [DownloadController::class, 'berita_acara_word'])->name('download.berita-acara');
+
+        // Download PTK
+        Route::post('temuan-negatif/{ptk}', [DownloadController::class, 'temuan_negatif_word'])->name('download.ptk');
+
+        // Download Laporan
+        Route::post('temuan-positif/{laporan}', [DownloadController::class, 'temuan_positif_word'])->name('download.laporan');
+
         // Daftar Tilik
-        Route::post('{jadwalAudit}/daftar_tilik/{unit}/{type}', [DownloadController::class, 'download_daftar_tilik'])->name('download.daftar_tilik');
+        Route::post('{jadwalAudit}/daftar-tilik/{unit}/{type}', [DownloadController::class, 'daftar_tilik_word'])->name('download.daftar_tilik');
 
         // Isi Audit Auditee
-        Route::post('{jadwalAudit}/isi_audit_auditee/{unit}/{type}', [DownloadController::class, 'download_isi_audit_auditee'])->name('download.isi_audit_auditee');
+        Route::post('{jadwalAudit}/jawaban-auditan/{unit}/{type}', [DownloadController::class, 'jawaban_auditan_word'])->name('download.isi_audit_auditee');
 
         // Daftar Auditee Auditor
-        Route::post('{jadwalAudit}/auditee_auditor', [DownloadController::class, 'download_auditee_auditor'])->name('download.auditee_auditor');
+        Route::post('{jadwalAudit}/auditan_auditor', [DownloadController::class, 'download_auditan_auditor'])->name('download.auditee_auditor');
 
-        // Download User
+        // Download User by role
         Route::post('user', [DownloadController::class, 'download_user'])->name('download.user');
     });
 

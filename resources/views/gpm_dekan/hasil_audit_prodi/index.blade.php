@@ -42,9 +42,11 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
+                                    {{-- Lihat Hasil Audit --}}
                                     <a class="btn btn-outline-primary"
-                                        href="{{ route('hasil_audit_prodi.show', ['jadwalAudit' => $item->id]) }}">Lihat
-                                        Hasil Audit Prodi</a>
+                                        href="{{ route('hasil_audit_prodi.show', ['jadwalAudit' => $item->id]) }}"><i
+                                            class="fa fa-eye"></i>
+                                        Hasil</a>
                                 </td>
                             </tr>
                         @endforeach
@@ -69,8 +71,6 @@
     <script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
-
-
 
     <!-- Page specific script -->
     <script>
