@@ -227,10 +227,10 @@
                                         <div class="d-flex justify-content-center align-items-center">
                                             {{-- Lihat --}}
                                             <div class="dropdown mr-2">
-                                                <button class="btn btn-primary dropdown-toggle" type="button"
+                                                <button class="btn btn-outline-primary dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
-                                                    Lihat
+                                                    <i class="fa fa-eye"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     <a href="{{ route('hasil_audit.audit_dokumen', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
@@ -250,10 +250,10 @@
 
                                             {{-- Download --}}
                                             <div class="dropdown">
-                                                <button class="btn btn-success dropdown-toggle" type="button"
+                                                <button class="btn btn-outline-dark dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
-                                                    Download
+                                                    <i class="fa fa-download"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     {{-- Download Isian Audit Auditan --}}
@@ -523,10 +523,10 @@
                                         <div class="d-flex justify-content-center align-items-center">
                                             {{-- Lihat --}}
                                             <div class="dropdown mr-2">
-                                                <button class="btn btn-primary dropdown-toggle" type="button"
+                                                <button class="btn btn-outline-primary dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
-                                                    Lihat
+                                                    <i class="fa fa-eye"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     <a href="{{ route('hasil_audit.audit_dokumen', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
@@ -546,10 +546,10 @@
 
                                             {{-- Download --}}
                                             <div class="dropdown">
-                                                <button class="btn btn-success dropdown-toggle" type="button"
+                                                <button class="btn btn-outline-dark dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
-                                                    Download
+                                                    <i class="fa fa-download"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     {{-- Download Isian Audit Auditan --}}
