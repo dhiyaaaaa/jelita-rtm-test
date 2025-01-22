@@ -40,23 +40,9 @@
                     Untuk sementara, Anda dapat <a href="{{ route('dashboard') }}">kembali ke dashboard.</a>
                 </p>
 
-                <pre style="background: #f8f8f8; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto;">
-                    @php
-                        $logFile = storage_path('logs/laravel.log');
-
-                        if (file_exists($logFile)) {
-                            $logs = file($logFile, FILE_IGNORE_NEW_LINES);
-                            $lastLog = end($logs);
-                            echo e($lastLog);
-                        } else {
-                            echo 'Log file tidak ditemukan.';
-                        }
-                    @endphp
-                </pre>
-
-                {{-- <pre style="background: #f8f8f8; padding: 10px; border: 1px solid #ccc;">
+                <pre style="background: #f8f8f8; padding: 10px; border: 1px solid #ccc;">
                     {{ file_get_contents(storage_path('logs/laravel.log')) }}
-                </pre> --}}
+                </pre>
             </div>
         </div>
         <!-- /.error-page -->
