@@ -2,32 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditeeAuditor;
-use App\Models\Auditor;
-use App\Models\BeritaAcara;
-use App\Models\BeritaAcaraAuditee;
-use App\Models\BeritaAcaraAuditor;
 use App\Models\Fakultas;
-use App\Models\Instrumen;
 use App\Models\JadwalAudit;
-use App\Models\JawabanAuditee;
-use App\Models\JawabanAuditor;
-use App\Models\Kriteria;
-use App\Models\Laporan;
-use App\Models\LaporanAuditee;
-use App\Models\LaporanAuditor;
-use App\Models\LaporanForm;
-use App\Models\Link;
-use App\Models\Prodi;
-use App\Models\Ptk;
-use App\Models\PtkAuditee;
-use App\Models\PtkAuditor;
-use App\Models\PtkForm;
-use App\Models\PtkFormDeskripsi;
-use App\Models\PtkFormRencana;
-use App\Models\StatusAuditAuditee;
-use App\Models\StatusAuditAuditor;
-use App\Models\Unit;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\QrCode;
@@ -255,12 +231,17 @@ class DownloadController extends Controller
         $ptk = DB::table('ptk')->where('id', $id)->first();
 
         // Ptk Form
-        $form = DB::table('ptk_form')
-            ->where('ptk_form.ptk_id', $ptk->id)
-            ->leftJoin('ptk_form_deskripsi', 'ptk_form.form_id', '=', 'ptk_form_deskripsi.form_id')
-            ->leftJoin('ptk_form_rencana', 'ptk_form.ptk_id', '=', 'ptk_form_rencana.ptk_id')
-            ->leftJoin('form', 'ptk_form.form_id', '=', 'form.id')
-            ->leftJoin('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+        $form = DB::table('ptk_form')->where('ptk_form.ptk_id', $ptk->id)
+            ->leftJoin('ptk_form_deskripsi', function ($join) use ($ptk) {
+                $join->on('ptk_form.form_id', '=', 'ptk_form_deskripsi.form_id')
+                    ->where('ptk_form_deskripsi.ptk_id', $ptk->id);
+            })
+            ->leftJoin('ptk_form_rencana', function ($join) use ($ptk) {
+                $join->on('ptk_form.form_id', '=', 'ptk_form_rencana.form_id')
+                    ->where('ptk_form_rencana.ptk_id', $ptk->id);
+            })
+            ->join('form', 'ptk_form.form_id', '=', 'form.id')
+            ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
             ->select(
                 'instrumen.kode as kode',
                 'ptk_form_deskripsi.deskripsi as deskripsi',
@@ -350,6 +331,7 @@ class DownloadController extends Controller
         $noAkibat = 1;
         $noTarget = 1;
         $noPic = 1;
+        $noTemuan = 1;
         $valueDesc = [];
         $valueRencana = [];
         $valueAnalisis = [];
@@ -370,7 +352,7 @@ class DownloadController extends Controller
 
             foreach ($item['deskripsi'] as $index => $row) {
                 $valueTemuan[] = [
-                    'noTemuan' => $index + 1,
+                    'noTemuan' => $noTemuan++,
                     'temuan' => $row,
                     'observasi' => $observasi,
                     'minor' => $minor,
