@@ -35,8 +35,31 @@
                                 <td class="text-center">{{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
                                 </td>
                                 <td class="text-center">
-                                    <a class="btn btn-outline-info" href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">Lihat PS</a>
-                                    <a class="btn btn-outline-primary" href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}">Lihat UPPS</a>
+                                    <a class="btn btn-outline-primary"
+                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'ps']) }}">
+                                        <i class="fa fa-eye"></i> PS</a>
+
+                                    <a class="btn btn-outline-primary"
+                                        href="{{ route('hasil_audit.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}"><i
+                                            class="fa fa-eye"></i> UPPS</a>
+
+                                    {{-- Download Zip PS --}}
+                                    <form action="{{ route('download.zip_ps', ['jadwalAudit' => $item->id]) }}"
+                                        method="post" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-dark">
+                                            <i class="fa fa-download"></i> Zip PS
+                                        </button>
+                                    </form>
+
+                                    {{-- Download Zip UPPS --}}
+                                    <form action="{{ route('download.zip_upps', ['jadwalAudit' => $item->id]) }}"
+                                        method="post" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-dark">
+                                            <i class="fa fa-download"></i> Zip UPPS
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach
