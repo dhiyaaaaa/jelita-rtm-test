@@ -28,9 +28,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // if (config('app.env') === 'production') {
-        //     URL::forceScheme('https');
-        // }
+        if (config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
 
         View::composer('components.layout.partials.sidebar', function ($view) {
             $user = Auth::user();
