@@ -280,15 +280,15 @@
                                                     @endif
 
                                                     {{-- Download Semua --}}
-                                                    {{-- <div class="dropdown-divider"></div>
+                                                    <div class="dropdown-divider"></div>
                                                     <form
-                                                        action="{{ route('download.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
-                                                            All
+                                                            Merge All
                                                         </button>
-                                                    </form> --}}
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
@@ -576,15 +576,15 @@
                                                     @endif
 
                                                     {{-- Download Semua --}}
-                                                    {{-- <div class="dropdown-divider"></div>
+                                                    <div class="dropdown-divider"></div>
                                                     <form
-                                                        action="{{ route('download.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
-                                                            All
+                                                            Merge All
                                                         </button>
-                                                    </form> --}}
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>

@@ -1335,4 +1335,103 @@ class DownloadController extends Controller
             'X-Filename' => $namaFile,
         ]);
     }
+
+    // Generate Zip
+    private function generate_zip(string $jadwalAudit, string $unitId, string $type)
+    {
+        // Jadwal Audit
+        $jadwal = DB::table('jadwal_audit')->where('id', $jadwalAudit)->select('id', 'tgl_mulai')->first();
+
+        // Daftar Tilik
+        $daftarTilik = $this->daftar_tilik($jadwal->id, $unitId, $type);
+        $daftarTilikFile = $this->zip($daftarTilik['templateProcessor'], $daftarTilik['unitData'], $daftarTilik['date'], $daftarTilik['title']);
+
+        // Jawaban Auditan
+        $jawabanAuditan = $this->jawaban_auditan($jadwal->id, $unitId, $type);
+        $jawabanAuditanFile = $this->zip($jawabanAuditan['templateProcessor'], $jawabanAuditan['unitData'], $jawabanAuditan['date'], $jawabanAuditan['title']);
+
+        // Temuan Negatif
+        $tn = DB::table('ptk')->where('jadwal_audit_id', $jadwal->id)->where(get_type($type), $unitId)->select('id')->first();
+        $temuanNegatif = $tn ? $this->temuan_negatif($tn->id) : null;
+        $temuanNegatifFile = $temuanNegatif ? $this->zip($temuanNegatif['templateProcessor'], $temuanNegatif['unitData'], $temuanNegatif['date'], $temuanNegatif['title']) : null;
+
+        // Temuan Positif
+        $tp = DB::table('laporan')->where('jadwal_audit_id', $jadwal->id)->where(get_type($type), $unitId)->select('id')->first();
+        $temuanPositif = $tp ? $this->temuan_positif($tp->id) : null;
+        $temuanPositifFile = $tp ? $this->zip($temuanPositif['templateProcessor'], $temuanPositif['unitData'], $temuanPositif['date'], $temuanPositif['title']) : null;
+
+        // Berita Acara
+        $ba = DB::table('berita_acara')->where('jadwal_audit_id', $jadwal->id)->where(get_type($type), $unitId)->select('id')->first();
+        $beritaAcara = $ba ? $this->berita_acara($ba->id) : null;
+        $beritaAcaraFile = $ba ? $this->zip($beritaAcara['templateProcessor'], $beritaAcara['unitData'], $beritaAcara['date'], $beritaAcara['title']) : null;
+
+        return [
+            'year' => \Carbon\Carbon::parse($jadwal->tgl_mulai)->isoFormat('YYYY'),
+            'files' => [
+                [
+                    'title' => $daftarTilik['title'],
+                    'file' => $daftarTilikFile,
+                ],
+                [
+                    'title' => $jawabanAuditan['title'],
+                    'file' => $jawabanAuditanFile,
+                ],
+                $temuanNegatifFile ? [
+                    'title' => $temuanNegatif['title'],
+                    'file' => $temuanNegatifFile,
+                ] : null,
+                $temuanPositifFile ? [
+                    'title' => $temuanPositif['title'],
+                    'file' => $temuanPositifFile,
+                ] : null,
+                $beritaAcaraFile ? [
+                    'title' => $beritaAcara['title'],
+                    'file' => $beritaAcaraFile,
+                ] : null,
+            ],
+        ];
+    }
+    // Laporan Hasil Zip Per Unit
+    public function zip_per_unit(string $jadwalAudit, string $unitId, string $type)
+    {
+        try {
+            // Generate Zip
+            $files = $this->generate_zip($jadwalAudit, $unitId, $type);
+
+            // Get Unit
+            $unit = DB::table($type === 'universitas' ? 'unit' : $type)
+                ->where('id', $unitId)
+                ->select("id as " . ($type === 'universitas' ? 'unit_id' : "{$type}_id"))
+                ->first();
+
+            $unitData = $this->get_unit($unit);
+
+            // Buat ZIP 
+            $zipFileName = 'Hasil Audit ' . ($unitData ? $unitData['unitName'] : '') . ' ' . $files['year'] . '.zip';
+            $zipFilePath = storage_path('app/public/' . $zipFileName);
+
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFilePath, \ZipArchive::CREATE) === TRUE) {
+                foreach ($files['files'] as $file) {
+                    if ($file && isset($file['file']['filePath'], $file['file']['fileName'])) {
+                        $zip->addFile($file['file']['filePath'], basename($file['file']['fileName']));
+                    }
+                }
+                $zip->close();
+            } else {
+                return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+            }
+
+            // Hapus file Word setelah dimasukkan ke dalam ZIP
+            foreach ($files['files'] as $file) {
+                if ($file && isset($file['file']['filePath'])) {
+                    unlink($file['file']['filePath']);
+                }
+            }
+
+            return response()->download($zipFilePath, $zipFileName)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
+        }
+    }
 }

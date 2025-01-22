@@ -249,6 +249,17 @@
                                                         </button>
                                                     </form>
                                                 @endif
+
+                                                {{-- Download Semua --}}
+                                                <div class="dropdown-divider"></div>
+                                                <form
+                                                    action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => 'prodi']) }}"
+                                                    method="post" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="dropdown-item">
+                                                        Merge All
+                                                    </button>
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
