@@ -526,8 +526,8 @@ class DownloadController extends Controller
             ];
         }
 
-        if (!empty($valuesPositif)) {
-            $templateProcessor->cloneRowAndSetValues('no', $valuesPositif);
+        if (!empty($values)) {
+            $templateProcessor->cloneRowAndSetValues('no', $values);
         } else {
             $templateProcessor->cloneRowAndSetValues('no', [[
                 'no' => 1,
