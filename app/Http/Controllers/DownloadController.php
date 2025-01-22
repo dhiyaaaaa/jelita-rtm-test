@@ -1259,7 +1259,7 @@ class DownloadController extends Controller
                             $join->on('ptk.jadwal_audit_id', '=', 'form.jadwal_id')
                                 ->where('ptk.prodi_id', $prodi->id);
                         })
-                        ->leftJoin('ptk_form', function ($join) use ($prodi) {
+                        ->join('ptk_form', function ($join) use ($prodi) {
                             $join->on('ptk_form.ptk_id', '=', 'ptk.id')
                                 ->on('ptk_form.form_id', '=', 'form.id');
                         })
@@ -1307,6 +1307,7 @@ class DownloadController extends Controller
         // Halaman Isi 
         $isi = view('pdf.laporan_fakultas.isi', $dataIsi)->render();
         $mpdf->WriteHTML($isi);
+        // $this->writeInChunks($mpdf, $isi);
 
         // Download
         $namaFile = "Laporan Hasil Audit Fakultas " . $fakultas->nama . " Tahun " . $dataCover['tahun'] . ".pdf";
@@ -1316,6 +1317,14 @@ class DownloadController extends Controller
             'Content-Disposition' => "attachment; filename=\"$namaFile\"",
             'X-Filename' => $namaFile,
         ]);
+    }
+
+    private function writeInChunks(\Mpdf\Mpdf $mpdf, $html, $chunkSize = 5000)
+    {
+        $length = strlen($html);
+        for ($start = 0; $start < $length; $start += $chunkSize) {
+            $mpdf->WriteHTML(substr($html, $start, $chunkSize));
+        }
     }
 
     // Generate Zip

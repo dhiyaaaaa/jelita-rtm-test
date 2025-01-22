@@ -196,11 +196,13 @@
                                 <td>{{ $item->catatan }}</td>
                                 <td style="text-align: center;">
                                     @if ($item->kategori_temuan == 'observasi')
-                                        <span>Observasi</span>
+                                    <span>Observasi</span>
                                     @elseif($item->kategori_temuan == 'mayor')
-                                        <span>KTS Mayor</span>
+                                    <span>KTS Mayor</span>
                                     @elseif($item->kategori_temuan == 'minor')
-                                        <span>KTS Minor</span>
+                                    <span>KTS Minor</span>
+                                    @else
+                                    <span>-</span>
                                     @endif
                                 </td>
                                 <td>{{ $item->analisis }}</td>
