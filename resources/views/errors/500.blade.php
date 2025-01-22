@@ -32,13 +32,27 @@
         <div class="error-page">
             <h2 class="headline text-danger">500</h2>
 
-            <div class="error-content" >
+            <div class="error-content">
                 <h3><i class="fas fa-exclamation-triangle text-danger"></i> Oops! Terjadi kesalahan.</h3>
 
                 <p class="error" style="font-size: 18px;">
                     Kami akan segera memperbaikinya.
                     Untuk sementara, Anda dapat <a href="{{ route('dashboard') }}">kembali ke dashboard.</a>
                 </p>
+
+                <pre style="background: #f8f8f8; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto;">
+                    @php
+                        $logFile = storage_path('logs/laravel.log');
+
+                        if (file_exists($logFile)) {
+                            $logs = file($logFile, FILE_IGNORE_NEW_LINES);
+                            $lastLog = end($logs);
+                            echo e($lastLog);
+                        } else {
+                            echo 'Log file tidak ditemukan.';
+                        }
+                    @endphp
+                </pre>
 
                 {{-- <pre style="background: #f8f8f8; padding: 10px; border: 1px solid #ccc;">
                     {{ file_get_contents(storage_path('logs/laravel.log')) }}
