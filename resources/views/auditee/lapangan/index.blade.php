@@ -19,6 +19,7 @@
                         <th class="text-center">Berita Acara</th>
                         <th class="text-center">Temuan Negatif</th>
                         <th class="text-center">Temuan Positif</th>
+                        <th class="text-center">Laporan</th>
 
                     </tr>
                 </thead>
@@ -95,8 +96,7 @@
                                                 <a href="{{ route('auditee.lapangan.create_ptk', $ptk->id) }}"
                                                     class="btn btn-info">Sudah Isi</a>
                                             @else
-                                                <form
-                                                    action="{{ route('auditee.lapangan.isi_ptk', ['ptk' => $ptk->id]) }}"
+                                                <form action="{{ route('auditee.lapangan.isi_ptk', ['ptk' => $ptk->id]) }}"
                                                     method="post" class="d-inline">
                                                     @csrf
                                                     <button type="submit" class="btn btn-outline-info">Isi</button>
@@ -196,8 +196,16 @@
                                 @else
                                     <a href="#" class="btn disabled">Belum Ada</a>
                                 @endif
-
-
+                            </td>
+                            <td class="text-center align-middle">
+                                <form
+                                    action="{{ route('download.laporan_hasil_per_unit', ['jadwalAudit' => $item->id, 'unit' => $unit->id, 'type' => $type]) }}"
+                                    method="post" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline-dark">
+                                        <i class="fa fa-download p-1"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     @endforeach
@@ -248,12 +256,16 @@
                         "targets": [3]
                     },
                     {
-                        "width": "30%",
+                        "width": "20%",
                         "targets": [4]
                     },
                     {
                         "width": "20%",
                         "targets": [5]
+                    },
+                    {
+                        "width": "10%",
+                        "targets": [6]
                     },
                 ]
             });

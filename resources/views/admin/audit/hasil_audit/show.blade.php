@@ -315,6 +315,14 @@
                                                     {{-- Download Semua --}}
                                                     <div class="dropdown-divider"></div>
                                                     <form
+                                                        action="{{ route('download.laporan_hasil_per_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        method="post" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="dropdown-item">
+                                                            Laporan Hasil Audit
+                                                        </button>
+                                                    </form>
+                                                    <form
                                                         action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
@@ -610,6 +618,14 @@
 
                                                     {{-- Download Semua --}}
                                                     <div class="dropdown-divider"></div>
+                                                    <form
+                                                        action="{{ route('download.laporan_hasil_per_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        method="post" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="dropdown-item">
+                                                            Laporan Hasil Audit
+                                                        </button>
+                                                    </form>
                                                     <form
                                                         action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
                                                         method="post" class="d-inline">

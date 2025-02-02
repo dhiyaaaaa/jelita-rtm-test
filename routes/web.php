@@ -724,6 +724,9 @@ Route::group(['middleware' => 'auth'], function () {
         // Laporan hasil PDF
         Route::post('{jadwalAudit}/laporan/{fakultas}', [DownloadController::class, 'download_laporan_hasil'])->name('download.laporan_hasil');
 
+        // Laporan hasil Merge per unit
+        Route::post('{jadwalAudit}/laporan/{unit}/{type}', [DownloadController::class, 'download_laporan_hasil_per_unit'])->name('download.laporan_hasil_per_unit');
+
         // Laporan Hasil Zip per Unit
         Route::post('{jadwalAudit}/zip-unit/{unit}/{type}', [DownloadController::class, 'zip_per_unit'])->name('download.zip_unit');
 
