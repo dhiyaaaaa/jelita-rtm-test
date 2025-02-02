@@ -45,9 +45,6 @@ use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'guest'], function () {
-    // Login Pusjamu
-    Route::get('pusjamu', [AuthController::class, 'pusjamu'])->name('login.pusjamu');
-
     // Login
     Route::get('', [AuthController::class, 'index'])->name('login');
     Route::post('login', [AuthController::class, 'login'])->name('login.store');
