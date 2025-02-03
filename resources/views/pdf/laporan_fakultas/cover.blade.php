@@ -1,100 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Laporan Audit</title>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>{{ $title }}</title>
 
-    <style>
-        /* General */
-        body {
-            font-family: 'Times New Roman', Times, serif;
-            display: flex
-        }
+        <style>
+            /* General */
+            body,
+            div,
+            p {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+            }
 
-        p {
-            margin: 0;
-            padding: 0;
-        }
+            /* Cover */
+            #cover {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                background-image: url({{ public_path('dist/img/cover_with_footer.png') }});
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+            }
 
-        #container {
-            height: 100%;
+            #title {
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 10;
+                width: 470px;
+                margin: 70px 0 0 100px;
+            }
 
-        }
+            .laporan {
+                font-size: 50px;
+                font-weight: bold;
+            }
 
-        /* Title */
-        #title {
-            text-align: center;
-            padding-top: 50px;
-        }
+            .audit {
+                font-size: 24px;
+                font-weight: 600;
+                margin: 10px 0;
+            }
 
-        #title p {
-            font-size: 22px;
-            font-weight: bold;
-            margin: 10px;
-        }
+            .tahun {
+                margin: 12px 0;
+                background-color: #ba2552;
+                color: white;
+                width: 130px;
+                padding: 10px;
+                font-size: 20px;
+                font-weight: bold;
+            }
 
-        /* Image */
-        #img {
-            text-align: center;
-            margin: 100px 0;
-        }
+            .unit {
+                font-size: 24px;
+                font-weight: bold;
+                margin: 15px 0;
+            }
 
-        /* Lembaga */
-        #lembaga {
-            text-align: center;
-        }
+            #line {
+                margin-top: 15px;
+                width: 100%;
+                height: 2px;
+                background-color: #ba2552;
+            }
+        </style>
 
-        #lembaga p {
-            font-size: 16px;
-            font-weight: bold;
-            margin: 8px;
-        }
+    <body>
+        {{-- Cover --}}
+        <div id="cover"></div>
 
-        /* Footer */
-        #footer {
-            text-align: center;
-            margin-top: 200px;
-        }
-
-        #footer p {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 8px;
-        }
-    </style>
-</head>
-
-<body>
-    {{-- Page Cover --}}
-    <div id="container">
         {{-- Title --}}
         <div id="title">
-            <p>LAPORAN</p>
-            <p>AUDIT INTERNAL MUTU AKADEMIK </p>
-            <p>TAHUN {{ $tahun }}</p>
+            <div>
+                <p class="laporan">Laporan Hasil</p>
+            </div>
+            <div>
+                <p class="audit">Audit Mutu Internal Akademik</p>
+            </div>
+            <div style="text-align: center;">
+                <p class="tahun">Tahun {{ $tahun }}</p>
+            </div>
+            <div id="line"></div>
+            <div>
+                <p class="unit">{{ $fakultas }}</p>
+            </div>
         </div>
-
-        {{-- Image --}}
-        <div id="img">
-            <img src="{{ public_path('dist/img/logo_unsoed.png') }}" alt="Logo" style="width:180px; height:180px;">
-        </div>
-
-        <div id="lembaga">
-            <p>PUSAT PENJAMINAN MUTU</p>
-            <p>LEMBAGA PENGEMBANGAN PEMBELAJARAN DAN PENJAMINAN MUTU</p>
-        </div>
-
-        {{-- Footer --}}
-        <div id="footer">
-            <p>KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI</p>
-            <p>UNIVERSITAS JENDERAL SOEDIRMAN</p>
-            <p>PURWOKERTO</p>
-            <p>{{ $tahun }}</p>
-        </div>
-    </div>
-</body>
+    </body>
 
 </html>

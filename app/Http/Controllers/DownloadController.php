@@ -1217,124 +1217,194 @@ class DownloadController extends Controller
     // Laporan Hasil PDF
     public function download_laporan_hasil(JadwalAudit $jadwalAudit, Fakultas $fakultas)
     {
-        try {
-            // Data Cover
-            $dataCover = [
-                'tahun' => \Carbon\Carbon::parse($jadwalAudit->tgl_mulai)->year,
-            ];
+        // Data Cover
+        $tahun = \Carbon\Carbon::parse($jadwalAudit->tgl_mulai)->year;
+        $namaFile = "Laporan Hasil Audit Fakultas " . $fakultas->nama . " Tahun " . $tahun . ".pdf";
 
-            // Data Isi
-            $dataIsi = [
-                'prodis' => DB::table('prodi')
-                    ->join('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
-                    ->leftJoin('berita_acara', function ($join) use ($jadwalAudit) {
-                        $join->on('prodi.id', '=', 'berita_acara.prodi_id')
-                            ->where('berita_acara.jadwal_audit_id', $jadwalAudit->id);
-                    })
-                    ->leftJoin('auditee', function ($join) use ($jadwalAudit) {
-                        $join->on('prodi.id', '=', 'auditee.prodi_id')
-                            ->where('auditee.jadwal_audit_id', $jadwalAudit->id);
-                    })
-                    ->leftJoin('users as auditee_users', 'auditee.user_id', '=', 'auditee_users.id')
-                    ->leftJoin('auditee_auditor', function ($join) use ($jadwalAudit) {
-                        $join->on('prodi.id', '=', 'auditee_auditor.prodi_id')
-                            ->where('auditee_auditor.jadwal_audit_id', $jadwalAudit->id);
-                    })
-                    ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
-                    ->leftJoin('users as auditor_users', 'auditor.user_id', '=', 'auditor_users.id')
-                    ->where('prodi.fakultas_id', $fakultas->id)
-                    ->select([
-                        'prodi.id as id',
-                        'prodi.nama as nama',
-                        'jenjang.id as jenjang_id',
-                        'jenjang.nama as jenjang',
-                        'berita_acara.tgl as tgl_audit',
-                        DB::raw('STRING_AGG(DISTINCT auditee_users.name, \'|\') as auditan'),
-                        DB::raw('STRING_AGG(DISTINCT auditor_users.name, \'|\') as auditor'),
-                        DB::raw('STRING_AGG(DISTINCT TO_CHAR(auditee_auditor.created_at, \'YYYY-MM-DD HH24:MI:SS\'), \'|\') as auditors_created_at'),
-                    ])
-                    ->groupBy('prodi.id', 'jenjang.id', 'berita_acara.tgl')
-                    ->orderBy('auditors_created_at', 'asc')
-                    ->get()
-                    ->map(function ($prodi) use ($jadwalAudit) {
-                        // Instrumen Form
-                        $instrumen = DB::table('form')
-                            ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
-                            ->join('instrumen_jenjang', 'instrumen.id', '=', 'instrumen_jenjang.instrumen_id')
-                            ->leftJoin('jawaban_auditee', function ($join) use ($prodi) {
-                                $join->on('jawaban_auditee.form_id', '=', 'form.id')
-                                    ->where('jawaban_auditee.prodi_id', $prodi->id);
-                            })
-                            ->leftJoin('jawaban_auditor', function ($join) use ($prodi) {
-                                $join->on('jawaban_auditor.form_id', '=', 'form.id')
-                                    ->where('jawaban_auditor.prodi_id', $prodi->id);
-                            })
-                            ->leftJoin('ptk', function ($join) use ($prodi) {
-                                $join->on('ptk.jadwal_audit_id', '=', 'form.jadwal_id')
-                                    ->where('ptk.prodi_id', $prodi->id);
-                            })
-                            ->join('ptk_form', function ($join) use ($prodi) {
-                                $join->on('ptk_form.ptk_id', '=', 'ptk.id')
-                                    ->on('ptk_form.form_id', '=', 'form.id');
-                            })
-                            ->where('form.jadwal_id', $jadwalAudit->id)
-                            ->where('instrumen_jenjang.jenjang_id', $prodi->jenjang_id)
-                            ->orWhere('instrumen_jenjang.prodi_id', $prodi->id)
-                            ->select(
-                                'instrumen.pernyataan as pernyataan',
-                                'jawaban_auditee.jawaban as jawaban',
-                                'jawaban_auditor.catatan as catatan',
-                                'ptk_form.kategori_temuan as kategori_temuan',
-                                'ptk_form.analisis as analisis',
-                            )
-                            ->get();
+        $dataCover = [
+            'tahun' => $tahun,
+            'title' => $namaFile,
+            'fakultas' => 'Fakultas ' . $fakultas->nama
+        ];
+
+        // Data Isi
+        $dataIsi = [
+            'faks' => DB::table('fakultas')
+                ->where('fakultas.id', $fakultas->id)
+                ->leftJoin('berita_acara', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'berita_acara.fakultas_id')
+                        ->where('berita_acara.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditee', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'auditee.fakultas_id')
+                        ->where('auditee.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('users as auditee_users', 'auditee.user_id', '=', 'auditee_users.id')
+                ->leftJoin('auditee_auditor', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'auditee_auditor.fakultas_id')
+                        ->where('auditee_auditor.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+                ->leftJoin('users as auditor_users', 'auditor.user_id', '=', 'auditor_users.id')
+                ->select([
+                    'fakultas.id as id',
+                    'fakultas.nama as nama',
+                    'berita_acara.tgl as tgl_audit',
+                    DB::raw('STRING_AGG(DISTINCT auditee_users.name, \'|\') as auditan'),
+                    DB::raw('STRING_AGG(DISTINCT auditor_users.name, \'|\') as auditor'),
+                    DB::raw('STRING_AGG(DISTINCT TO_CHAR(auditee_auditor.created_at, \'YYYY-MM-DD HH24:MI:SS\'), \'|\') as auditors_created_at'),
+                ])
+                ->groupBy('fakultas.id', 'berita_acara.tgl')
+                ->orderBy('auditors_created_at', 'asc')
+                ->get()
+                ->map(function ($fak) use ($jadwalAudit) {
+                    // Instrumen Form
+                    $instrumen = DB::table('form')
+                        ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+                        ->join('instrumen_jabatan', function ($join) use ($fak) {
+                            $join->on('instrumen_jabatan.instrumen_id', '=', 'instrumen.id');
+                        })
+                        ->join('jabatan', function ($join) use ($fak) {
+                            $join->on('jabatan.id', '=', 'instrumen_jabatan.jabatan_id')
+                                ->where('jabatan.type', 'fakultas');
+                        })
+                        ->leftJoin('jawaban_auditee', function ($join) use ($fak) {
+                            $join->on('jawaban_auditee.form_id', '=', 'form.id')
+                                ->where('jawaban_auditee.fakultas_id', $fak->id);
+                        })
+                        ->leftJoin('jawaban_auditor', function ($join) use ($fak) {
+                            $join->on('jawaban_auditor.form_id', '=', 'form.id')
+                                ->where('jawaban_auditor.fakultas_id', $fak->id);
+                        })
+                        ->join('ptk', function ($join) use ($fak) {
+                            $join->on('ptk.jadwal_audit_id', '=', 'form.jadwal_id')
+                                ->where('ptk.fakultas_id', $fak->id);
+                        })
+                        ->join('ptk_form', function ($join) use ($fak) {
+                            $join->on('ptk_form.ptk_id', '=', 'ptk.id')
+                                ->on('ptk_form.form_id', '=', 'form.id');
+                        })
+                        ->where('form.jadwal_id', $jadwalAudit->id)
+                        ->select(
+                            'instrumen.pernyataan as pernyataan',
+                            'jawaban_auditee.jawaban as jawaban',
+                            'jawaban_auditor.catatan as catatan',
+                            'ptk_form.kategori_temuan as kategori_temuan',
+                            'ptk_form.analisis as analisis',
+                        )
+                        ->distinct()
+                        ->get();
 
 
-                        $prodi->instrumen = $instrumen;
+                    $fak->instrumen = $instrumen;
 
-                        return $prodi;
-                    }),
-            ];
+                    return $fak;
+                }),
+            'prodis' => DB::table('prodi')
+                ->join('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+                ->leftJoin('berita_acara', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'berita_acara.prodi_id')
+                        ->where('berita_acara.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditee', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'auditee.prodi_id')
+                        ->where('auditee.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('users as auditee_users', 'auditee.user_id', '=', 'auditee_users.id')
+                ->leftJoin('auditee_auditor', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'auditee_auditor.prodi_id')
+                        ->where('auditee_auditor.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+                ->leftJoin('users as auditor_users', 'auditor.user_id', '=', 'auditor_users.id')
+                ->where('prodi.fakultas_id', $fakultas->id)
+                ->select([
+                    'prodi.id as id',
+                    'prodi.nama as nama',
+                    'jenjang.id as jenjang_id',
+                    'jenjang.nama as jenjang',
+                    'berita_acara.tgl as tgl_audit',
+                    DB::raw('STRING_AGG(DISTINCT auditee_users.name, \'|\') as auditan'),
+                    DB::raw('STRING_AGG(DISTINCT auditor_users.name, \'|\') as auditor'),
+                    DB::raw('STRING_AGG(DISTINCT TO_CHAR(auditee_auditor.created_at, \'YYYY-MM-DD HH24:MI:SS\'), \'|\') as auditors_created_at'),
+                ])
+                ->groupBy('prodi.id', 'jenjang.id', 'berita_acara.tgl')
+                ->orderBy('auditors_created_at', 'asc')
+                ->get()
+                ->map(function ($prodi) use ($jadwalAudit) {
+                    // Instrumen Form
+                    $instrumen = DB::table('form')
+                        ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+                        ->join('instrumen_jenjang', 'instrumen.id', '=', 'instrumen_jenjang.instrumen_id')
+                        ->leftJoin('jawaban_auditee', function ($join) use ($prodi) {
+                            $join->on('jawaban_auditee.form_id', '=', 'form.id')
+                                ->where('jawaban_auditee.prodi_id', $prodi->id);
+                        })
+                        ->leftJoin('jawaban_auditor', function ($join) use ($prodi) {
+                            $join->on('jawaban_auditor.form_id', '=', 'form.id')
+                                ->where('jawaban_auditor.prodi_id', $prodi->id);
+                        })
+                        ->join('ptk', function ($join) use ($prodi) {
+                            $join->on('ptk.jadwal_audit_id', '=', 'form.jadwal_id')
+                                ->where('ptk.prodi_id', $prodi->id);
+                        })
+                        ->join('ptk_form', function ($join) use ($prodi) {
+                            $join->on('ptk_form.ptk_id', '=', 'ptk.id')
+                                ->on('ptk_form.form_id', '=', 'form.id');
+                        })
+                        ->where('form.jadwal_id', $jadwalAudit->id)
+                        ->where('instrumen_jenjang.jenjang_id', $prodi->jenjang_id)
+                        ->orWhere('instrumen_jenjang.prodi_id', $prodi->id)
+                        ->select(
+                            'instrumen.pernyataan as pernyataan',
+                            'jawaban_auditee.jawaban as jawaban',
+                            'jawaban_auditor.catatan as catatan',
+                            'ptk_form.kategori_temuan as kategori_temuan',
+                            'ptk_form.analisis as analisis',
+                        )
+                        ->get();
 
-            // MPDF
-            $mpdf = new \Mpdf\Mpdf([
-                'tempDir' => storage_path('app/tmp'),
-            ]);
 
-            // Halaman Cover (Portrait)
-            $cover = view('pdf.laporan_fakultas.cover', $dataCover)->render();
-            $mpdf->AddPage('P');
-            $mpdf->WriteHTML($cover);
+                    $prodi->instrumen = $instrumen;
 
-            // Page Number
-            $mpdf->PageNumSubstitutions[] = [
-                'from' => 2,
-                'reset' => 1,
-                'type' => '1',
-                'suppress' => 'off',
-            ];
+                    return $prodi;
+                }),
+        ];
 
-            // Tambahkan halaman baru dengan nomor halaman dimulai dari 1
-            $mpdf->AddPage('L'); // landscape
-            $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
+        // dd($dataIsi['faks']);
 
-            // Halaman Isi 
-            $isi = view('pdf.laporan_fakultas.isi', $dataIsi)->render();
-            $mpdf->WriteHTML($isi);
-            // $this->writeInChunks($mpdf, $isi);
+        // MPDF
+        $mpdf = new \Mpdf\Mpdf([
+            'tempDir' => storage_path('app/tmp'),
+        ]);
 
-            // Download
-            $namaFile = "Laporan Hasil Audit Fakultas " . $fakultas->nama . " Tahun " . $dataCover['tahun'] . ".pdf";
+        // Halaman Cover (Portrait)
+        $cover = view('pdf.laporan_fakultas.cover', $dataCover)->render();
+        $mpdf->AddPage('P', '', '', '', '', 0, 0, 0, 0, 0);
+        $mpdf->WriteHTML($cover);
 
-            return response($mpdf->Output($namaFile, \Mpdf\Output\Destination::STRING_RETURN), 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => "attachment; filename=\"$namaFile\"",
-                'X-Filename' => $namaFile,
-            ]);
-        } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
-            // return back()->with('error', 'Terjadi kesalahan saat mengunduh file!');
-        }
+        // Page Number
+        $mpdf->PageNumSubstitutions[] = [
+            'from' => 2,
+            'reset' => 1,
+            'type' => '1',
+            'suppress' => 'off',
+        ];
+
+        // Tambahkan halaman baru dengan nomor halaman dimulai dari 1
+        $mpdf->AddPage('L', '', '', '', '', 10, 10, 10, 10, 10);
+        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
+
+        // Halaman Isi 
+        $isi = view('pdf.laporan_fakultas.isi', $dataIsi)->render();
+        $mpdf->WriteHTML($isi);
+
+        // Download
+        return response($mpdf->Output($namaFile, \Mpdf\Output\Destination::STRING_RETURN), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"$namaFile\"",
+            'X-Filename' => $namaFile,
+        ]);
     }
 
     private function writeInChunks(\Mpdf\Mpdf $mpdf, $html, $chunkSize = 5000)
