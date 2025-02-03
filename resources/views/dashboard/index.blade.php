@@ -145,6 +145,7 @@
                                     <th class="text-center">No</th>
                                     <th class="text-center">Jadwal</th>
                                     <th class="text-center">Periode</th>
+                                    <th class="text-center">Status</th>
                                     <th class="text-center">Auditan</th>
                                     <th class="text-center">Prodi/Fakultas/Unit</th>
                                 </tr>
@@ -152,26 +153,45 @@
                             <tbody>
                                 @forelse ($jadwalAuditor as $item)
                                     <tr>
-                                        <td class="text-center">{{ $loop->iteration }}</td>
-                                        <td class="text-center">{{ $item['jadwal'] }}</td>
-                                        <td class="text-center">
+                                        <td class="text-center align-middle">{{ $loop->iteration }}</td>
+                                        <td class="text-center align-middle">{{ $item['jadwal'] }}</td>
+                                        <td class="text-center align-middle">
                                             {{ \Carbon\Carbon::parse($item['tgl_mulai'])->translatedFormat('j F Y') }}
                                             -
                                             {{ \Carbon\Carbon::parse($item['tgl_selesai'])->translatedFormat('j F Y') }}
                                         </td>
+                                        {{-- Status --}}
+                                        <td class="text-center align-middle">
+                                            @if (!$item['expired'])
+                                                <span class="badge badge-success">Terbuka</span>
+                                            @else
+                                                <span class="badge badge-danger">Tertutup</span>
+                                            @endif
+                                        </td>
                                         <td class="align-middle">
                                             @if (!empty($item['units']) && count($item['units']) > 0)
                                                 @foreach ($item['units'] as $unit)
-                                                    <div class="mb-3">
-                                                        <p class="list">
-                                                            {{ $loop->iteration }}. {{ $unit['unitType'] }}
-                                                            {{ $unit['unitName'] }}
-                                                        </p>
-                                                        @foreach ($unit['auditees'] as $aud)
-                                                            Auditor {{ $loop->iteration }}&nbsp;:&nbsp; {{ $aud->name }}
-                                                            {{ '(' . $aud->no_telepon . ')' }}
+                                                    <div class="row align-items-center w-100 mb-3">
+                                                        <div class="col-md-8">
+                                                            <p class="list">
+                                                                {{ $loop->iteration }}. {{ $unit['unitType'] }}
+                                                                {{ $unit['unitName'] }}
+                                                            </p>
+                                                            <div>
+                                                                @foreach ($unit['auditees'] as $aud)
+                                                                    Auditor {{ $loop->iteration }}&nbsp;:&nbsp;
+                                                                    {{ $aud->name }} {{ '(' . $aud->no_telepon . ')' }}
+                                                                    <br>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4 text-md-end">
+                                                            <a href="{{ route('auditor.dokumen.show', $item['id']) }}"
+                                                                class="btn btn-outline-primary my-1">Audit Dokumen</a>
                                                             <br>
-                                                        @endforeach
+                                                            <a href="{{ route('auditor.lapangan.show', $item['id']) }}"
+                                                                class="btn btn-outline-info my-1">Audit Lapangan</a>
+                                                        </div>
                                                     </div>
                                                 @endforeach
                                             @else
@@ -180,13 +200,13 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="text-center">
+                                        <td class="text-center align-middle">
                                             @if (!$item['expired'])
                                                 @if ($item['fitur_auditor'])
                                                     <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'prodi']) }}"
-                                                        class="btn btn-outline-info">Pilih Prodi</a>
+                                                        class="btn btn-outline-info my-1">Pilih Prodi</a>
                                                     <a href="{{ route('auditor.unit.show', ['jadwalAudit' => $item['id'], 'type' => 'upps']) }}"
-                                                        class="btn btn-outline-primary">Pilih Fakultas/Unit</a>
+                                                        class="btn btn-outline-primary my-1">Pilih Fakultas/Unit</a>
                                                 @else
                                                     <a class="btn disabled">Tidak Tersedia</a>
                                                 @endif
@@ -450,20 +470,24 @@
                         "targets": [0]
                     },
                     {
-                        "width": "20%",
+                        "width": "10%",
                         "targets": [1]
                     },
                     {
-                        "width": "20%",
+                        "width": "15%",
                         "targets": [2]
                     },
                     {
-                        "width": "30%",
+                        "width": "10%",
                         "targets": [3]
                     },
                     {
-                        "width": "25%",
+                        "width": "40%",
                         "targets": [4]
+                    },
+                    {
+                        "width": "20%",
+                        "targets": [5]
                     },
                 ]
             });

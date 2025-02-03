@@ -7,6 +7,7 @@
         </div>
         <!-- /.card-header -->
         <div class="card-body">
+            <a href="{{ route('menu.create') }}" class="btn btn-outline-primary mb-3">+ Tambah Menu</a>
             <table id="menu" class="table table-bordered table-striped">
                 <thead>
                     <tr>
@@ -32,7 +33,18 @@
                                 @endif
                             </td>
                             <td class="text-center">
-                                <a class="btn btn-info" href="{{ route('menu.show', $menu->id) }}">Lihat</a>
+                                <div class="dropdown">
+                                    <button class="btn btn-success dropdown-toggle" type="button" id="dropdownMenuButton"
+                                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        Actions
+                                    </button>
+                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                        <a class="dropdown-item" href="{{ route('menu.show', $menu->id) }}">Lihat</a>
+                                        <a class="dropdown-item" href="{{ route('menu.edit', $menu->id) }}">Edit</a>
+                                        <a href="{{ route('menu.delete', $menu->id) }}" class="dropdown-item"
+                                            data-confirm-delete="true">Hapus</a>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     @endforeach

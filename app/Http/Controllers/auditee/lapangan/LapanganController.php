@@ -95,6 +95,8 @@ class LapanganController extends Controller
         $data = [
             'title' => 'Audit Lapangan',
             'jadwal' => $jadwal,
+            'unit' => $prodi ?? $fakultas ?? $unit,
+            'type' => ($prodi ? 'prodi' : ($fakultas ? 'fakultas' : ($unit ? 'unit' : null))),
 
         ];
 

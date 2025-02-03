@@ -8,6 +8,8 @@
         <div class="card-body">
             <div class="mb-3">
                 <a href="{{ route('menu') }}" class="btn btn-outline-secondary">Kembali</a>
+                <a href="{{ route('submenu.create', $menu->id) }}" class="btn btn-outline-primary">+ Tambah
+                    Submenu</a>
             </div>
 
             {{-- Detail Menu --}}
@@ -51,6 +53,7 @@
                         <th class="text-center">No</th>
                         <th class="text-center">Submenu</th>
                         <th class="text-center">Status</th>
+                        <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -68,8 +71,15 @@
                                     <span class="badge bg-danger">Tidak Aktif</span>
                                 @endif
                             </td>
+                            <td class="text-center">
+                                <a href="{{ route('submenu.edit', ['menu' => $menu->id, 'submenu' => $submenu->id]) }}"
+                                    class="btn btn-warning">Edit</a>
+                                <a href="{{ route('submenu.delete', ['menu' => $menu->id, 'submenu' => $submenu->id]) }}"
+                                    class="btn btn-danger" data-confirm-delete="true">Hapus</a>
+                            </td>
                         </tr>
                     @endforeach
+
                 </tbody>
             </table>
         </div>

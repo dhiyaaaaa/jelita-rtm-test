@@ -19,6 +19,7 @@ use App\Http\Controllers\admin\dokumen\PeraturanController;
 use App\Http\Controllers\admin\dokumen\PasalController;
 use App\Http\Controllers\admin\dokumen\StandarController;
 use App\Http\Controllers\admin\menu\MenuController;
+use App\Http\Controllers\admin\menu\SubmenuController;
 use App\Http\Controllers\admin\user\AuditeeController;
 use App\Http\Controllers\admin\user\AuditorController;
 use App\Http\Controllers\admin\user\JabatanController;
@@ -45,9 +46,6 @@ use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'guest'], function () {
-    // Login Pusjamu
-    Route::get('pusjamu', [AuthController::class, 'pusjamu'])->name('login.pusjamu');
-
     // Login
     Route::get('', [AuthController::class, 'index'])->name('login');
     Route::post('login', [AuthController::class, 'login'])->name('login.store');
@@ -431,6 +429,24 @@ Route::group(['middleware' => 'auth'], function () {
             // Lihat
             Route::get('', [MenuController::class, 'index'])->name('menu');
             Route::get('{menu}/show', [MenuController::class, 'show'])->name('menu.show');
+            // Create
+            Route::get('create', [MenuController::class, 'create'])->name('menu.create');
+            Route::post('store', [MenuController::class, 'store'])->name('menu.store');
+            // Update
+            Route::get('{menu}/edit', [MenuController::class, 'edit'])->name('menu.edit');
+            Route::put('{menu}/update', [MenuController::class, 'update'])->name('menu.update');
+            // Delete
+            Route::delete('{menu}/destroy', [MenuController::class, 'destroy'])->name('menu.delete');
+
+            // SubMenu
+            // Create
+            Route::get('{menu}/create', [SubmenuController::class, 'create'])->name('submenu.create');
+            Route::post('{menu}/store', [SubmenuController::class, 'store'])->name('submenu.store');
+            // Update
+            Route::get('{menu}/edit/{submenu}', [SubmenuController::class, 'edit'])->name('submenu.edit');
+            Route::put('{menu}/update/{submenu}', [SubmenuController::class, 'update'])->name('submenu.update');
+            // Delete
+            Route::delete('{menu}/destroy/{submenu}', [SubmenuController::class, 'destroy'])->name('submenu.delete');
         });
     });
 
@@ -723,6 +739,9 @@ Route::group(['middleware' => 'auth'], function () {
 
         // Laporan hasil PDF
         Route::post('{jadwalAudit}/laporan/{fakultas}', [DownloadController::class, 'download_laporan_hasil'])->name('download.laporan_hasil');
+
+        // Laporan hasil Merge per unit
+        Route::post('{jadwalAudit}/laporan/{unit}/{type}', [DownloadController::class, 'download_laporan_hasil_per_unit'])->name('download.laporan_hasil_per_unit');
 
         // Laporan Hasil Zip per Unit
         Route::post('{jadwalAudit}/zip-unit/{unit}/{type}', [DownloadController::class, 'zip_per_unit'])->name('download.zip_unit');
