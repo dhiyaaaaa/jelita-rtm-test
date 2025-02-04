@@ -185,16 +185,16 @@
                                         @endphp
 
                                         @if ($laporan_selesai)
-                                            <p class="list badge badge-success p-1" style="font-size: 14px">Temuan Positif
+                                            <p class="list badge badge-success p-1" style="font-size: 14px">Praktik Baik
                                                 berhasil
                                                 dibuat</p>
                                         @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && $laporan_mulai && !$laporan_selesai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                                mengisi Temuan Positif</p>
+                                                mengisi Praktik Baik</p>
                                         @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && !$laporan_mulai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
                                                 selesai,
-                                                menunggu pembuatan Temuan Positif</p>
+                                                menunggu pembuatan Praktik Baik</p>
                                         @elseif ($buat_ptk)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
                                                 berhasil
@@ -213,7 +213,7 @@
                                                 Auditor sedang mengisi Temuan Negatif</p>
                                         @elseif ($status_laporan && !$laporan_selesai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                                mengisi Temuan Positif</p>
+                                                mengisi Praktik Baik</p>
                                         @elseif ($berita_acara)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Berita Acara
                                                 berhasil dibuat</p>
@@ -243,7 +243,7 @@
                                                     @endif
                                                     @if ($item->laporan->isNotEmpty())
                                                         <a href="{{ route('hasil_audit.laporan', $item->laporan->first()->id) }}"
-                                                            class="dropdown-item">Temuan Positif</a>
+                                                            class="dropdown-item">Praktik Baik</a>
                                                     @endif
                                                 </div>
                                             </div>
@@ -300,14 +300,14 @@
                                                         </form>
                                                     @endif
 
-                                                    {{-- Download Temuan Positif --}}
+                                                    {{-- Download Praktik Baik --}}
                                                     @if ($item->laporan->isNotEmpty())
                                                         <form
                                                             action="{{ route('download.laporan', $item->laporan->first()->id) }}"
                                                             method="post" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
-                                                                Temuan Positif
+                                                                Praktik Baik
                                                             </button>
                                                         </form>
                                                     @endif
@@ -489,16 +489,16 @@
                                         @endphp
 
                                         @if ($laporan_selesai)
-                                            <p class="list badge badge-success p-1" style="font-size: 14px">Temuan Positif
+                                            <p class="list badge badge-success p-1" style="font-size: 14px">Praktik Baik
                                                 berhasil
                                                 dibuat</p>
                                         @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && $laporan_mulai && !$laporan_selesai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                                mengisi Temuan Positif</p>
+                                                mengisi Praktik Baik</p>
                                         @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && !$laporan_mulai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
                                                 selesai,
-                                                menunggu pembuatan Temuan Positif</p>
+                                                menunggu pembuatan Praktik Baik</p>
                                         @elseif ($buat_ptk)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
                                                 berhasil
@@ -517,7 +517,7 @@
                                                 Auditor sedang mengisi Temuan Negatif</p>
                                         @elseif ($status_laporan && !$laporan_selesai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                                mengisi Temuan Positif</p>
+                                                mengisi Praktik Baik</p>
                                         @elseif ($berita_acara)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Berita Acara
                                                 berhasil dibuat</p>
@@ -547,7 +547,7 @@
                                                     @endif
                                                     @if ($item->laporan->isNotEmpty())
                                                         <a href="{{ route('hasil_audit.laporan', $item->laporan->first()->id) }}"
-                                                            class="dropdown-item">Temuan Positif</a>
+                                                            class="dropdown-item">Praktik Baik</a>
                                                     @endif
                                                 </div>
                                             </div>
@@ -604,14 +604,14 @@
                                                         </form>
                                                     @endif
 
-                                                    {{-- Download Temuan Positif --}}
+                                                    {{-- Download Praktik Baik --}}
                                                     @if ($item->laporan->isNotEmpty())
                                                         <form
                                                             action="{{ route('download.laporan', $item->laporan->first()->id) }}"
                                                             method="post" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
-                                                                Temuan Positif
+                                                                Praktik Baik
                                                             </button>
                                                         </form>
                                                     @endif

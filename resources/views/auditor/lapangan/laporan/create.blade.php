@@ -45,7 +45,7 @@
                 <!-- /.form-group -->
                 <div>
                     <a href="{{ route('auditor.lapangan.show', $jadwalId) }}" class="btn btn-outline-secondary">Kembali</a>
-                    <x-button-submit text="Tambah Temuan Positif" formId="create-form" />
+                    <x-button-submit text="Tambah Praktik Baik" formId="create-form" />
                 </div>
             </div>
         </form>

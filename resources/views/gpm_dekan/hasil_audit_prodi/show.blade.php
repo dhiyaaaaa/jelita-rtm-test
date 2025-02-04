@@ -131,10 +131,10 @@
                                             Selesai</p>
                                     @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && $laporan_mulai && !$laporan_selesai)
                                         <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                            mengisi Temuan Positif</p>
+                                            mengisi Praktik Baik</p>
                                     @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && !$laporan_mulai)
                                         <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
-                                            selesai, menunggu pembuatan Temuan Positif</p>
+                                            selesai, menunggu pembuatan Praktik Baik</p>
                                     @elseif ($buat_ptk)
                                         <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
                                             berhasil dibuat</p>
@@ -152,7 +152,7 @@
                                             sedang mengisi Temuan Negatif</p>
                                     @elseif ($laporan_mulai && !$laporan_selesai)
                                         <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                            mengisi Temuan Positif</p>
+                                            mengisi Praktik Baik</p>
                                     @elseif ($laporan_selesai)
                                         <p class="list badge badge-success p-1" style="font-size: 14px">Laporan selesai</p>
                                     @else
@@ -182,7 +182,7 @@
                                                 @endif
                                                 @if ($item->laporan_id)
                                                     <a href="{{ route('hasil_audit_prodi.laporan', $item->laporan_id) }}"
-                                                        class="dropdown-item">Temuan Positif</a>
+                                                        class="dropdown-item">Praktik Baik</a>
                                                 @endif
                                             </div>
                                         </div>
@@ -239,13 +239,13 @@
                                                 @endif
 
 
-                                                {{-- Download Temuan Positif --}}
+                                                {{-- Download Praktik Baik --}}
                                                 @if ($item->laporan_id)
                                                     <form action="{{ route('download.laporan', $item->laporan_id) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
-                                                            Temuan Positif
+                                                            Praktik Baik
                                                         </button>
                                                     </form>
                                                 @endif

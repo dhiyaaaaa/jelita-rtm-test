@@ -464,11 +464,11 @@ class DownloadController extends Controller
         }
     }
 
-    // Temuan Positif
+    // Praktik Baik
     private function temuan_positif($id)
     {
         // Title
-        $title = "Temuan Positif";
+        $title = "Praktik Baik";
 
         // Berita Acara
         $tp = DB::table('laporan')->where('id', $id)->first();
@@ -543,7 +543,7 @@ class DownloadController extends Controller
         return compact('templateProcessor', 'unitData', 'date', 'title');
     }
 
-    // Temuan Positif Word
+    // Praktik Baik Word
     public function temuan_positif_word(string $laporan)
     {
         try {
@@ -551,7 +551,7 @@ class DownloadController extends Controller
 
             return $this->word($tp['templateProcessor'], $tp['unitData'], $tp['date'], $tp['title']);
         } catch (\Exception $e) {
-            return back()->with('error', 'Terjadi kesalahan saat mengunduh Temuan Positif!');
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh Praktik Baik!');
         }
     }
 
@@ -1699,10 +1699,10 @@ class DownloadController extends Controller
         $this->auditan($templateProcessor, $auditanPtk, $unitData, 'Temuan Negatif', 'TN');
         $this->auditors($templateProcessor, $auditorsPtk, $unitData, 'Temuan Negatif', 'TN');
 
-        // Find Temuan Positif
+        // Find Praktik Baik
         $tp = DB::table('laporan')->where('jadwal_audit_id', $jadwalAudit->id)->where($newType, $unit)->first();
 
-        if (!$tp) return back()->with('error', 'Temuan Positif belum dibuat');
+        if (!$tp) return back()->with('error', 'Praktik Baik belum dibuat');
 
         // Laporan Form
         $formTp = DB::table('laporan_form')->where('laporan_id', $tp->id)->get();
@@ -1762,8 +1762,8 @@ class DownloadController extends Controller
             ]]);
         }
 
-        $this->auditan($templateProcessor, $auditanTp, $unitData, 'Temuan Positif', 'TP');
-        $this->auditors($templateProcessor, $auditorsTp, $unitData, 'Temuan Positif', 'TP');
+        $this->auditan($templateProcessor, $auditanTp, $unitData, 'Praktik Baik', 'TP');
+        $this->auditors($templateProcessor, $auditorsTp, $unitData, 'Praktik Baik', 'TP');
 
         // // File Path
         $filePath = storage_path('app/public/' . $fileName);
@@ -1792,7 +1792,7 @@ class DownloadController extends Controller
         $temuanNegatif = $tn ? $this->temuan_negatif($tn->id) : null;
         $temuanNegatifFile = $temuanNegatif ? $this->zip($temuanNegatif['templateProcessor'], $temuanNegatif['unitData'], $temuanNegatif['date'], $temuanNegatif['title']) : null;
 
-        // Temuan Positif
+        // Praktik Baik
         $tp = DB::table('laporan')->where('jadwal_audit_id', $jadwal->id)->where(get_type($type), $unitId)->select('id')->first();
         $temuanPositif = $tp ? $this->temuan_positif($tp->id) : null;
         $temuanPositifFile = $tp ? $this->zip($temuanPositif['templateProcessor'], $temuanPositif['unitData'], $temuanPositif['date'], $temuanPositif['title']) : null;

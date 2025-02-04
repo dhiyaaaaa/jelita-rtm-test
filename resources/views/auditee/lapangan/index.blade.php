@@ -18,7 +18,7 @@
                         <th class="text-center">Periode</th>
                         <th class="text-center">Berita Acara</th>
                         <th class="text-center">Temuan Negatif</th>
-                        <th class="text-center">Temuan Positif</th>
+                        <th class="text-center">Praktik Baik</th>
                         <th class="text-center">Laporan</th>
 
                     </tr>

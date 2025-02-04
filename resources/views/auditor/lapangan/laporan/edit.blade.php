@@ -43,7 +43,7 @@
                 <!-- /.form-group -->
                 <div>
                     <a href="{{ route('auditor.lapangan.show', $laporan->jadwal_audit_id) }}" class="btn btn-outline-secondary">Kembali</a>
-                    <x-button-submit text="Edit Temuan Positif" formId="create-form" />
+                    <x-button-submit text="Edit Praktik Baik" formId="create-form" />
                 </div>
             </div>
         </form>
