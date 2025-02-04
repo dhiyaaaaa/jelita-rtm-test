@@ -38,8 +38,8 @@ class DownloadController extends Controller
                 ->select('prodi.nama as nama', 'jenjang.nama as jenjang')
                 ->first();
             if ($unit) {
-                $unitName = "Program Studi {$unit->nama} {$unit->jenjang}";
-                $unitJenjang = "{$unit->nama} {$unit->jenjang}";
+                $unitName = "Program Studi {$unit->jenjang} {$unit->nama}";
+                $unitJenjang = "{$unit->jenjang} {$unit->nama}";
                 $type = "Program Studi";
             }
         } elseif (isset($query->fakultas_id)) {
