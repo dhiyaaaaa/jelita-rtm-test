@@ -41,7 +41,7 @@ class LaporanController extends Controller
         $auditees = Auditee::where(['jadwal_audit_id' => $jadwalAudit, get_type($type) => $unit])->get();
 
         $data = [
-            'title' => 'Tambah Temuan Positif',
+            'title' => 'Tambah Praktik Baik',
             'auditees' => $auditees,
             'jadwalId' => $jadwalAudit,
             'unitId' => $unit,
@@ -80,7 +80,7 @@ class LaporanController extends Controller
         }
 
         return redirect()->route('auditor.lapangan.show', ['jadwalAudit' => $jadwalAudit])
-            ->with('success', 'Temuan Positif berhasil dibuat.');
+            ->with('success', 'Praktik Baik berhasil dibuat.');
     }
 
     /**
@@ -95,7 +95,7 @@ class LaporanController extends Controller
         $auditeeSelected = LaporanAuditee::where('laporan_id', $laporan->id)->pluck('auditee_id');
 
         $data = [
-            'title' => 'Edit Temuan Positif',
+            'title' => 'Edit Praktik Baik',
             'auditees' => $auditees,
             'auditeeSelected' => $auditeeSelected,
             'laporan' => $laporan,
@@ -155,7 +155,7 @@ class LaporanController extends Controller
         return redirect()->route('auditor.lapangan.show', [
             'jadwalAudit' => $laporan->jadwal_audit_id,
         ])
-            ->with('success', 'Temuan Positif berhasil diubah.');
+            ->with('success', 'Praktik Baik berhasil diubah.');
     }
 
     /**
@@ -165,7 +165,7 @@ class LaporanController extends Controller
     {
         $laporan->delete();
 
-        return back()->with('success', 'Temuan Positif berhasil dihapus.');
+        return back()->with('success', 'Praktik Baik berhasil dihapus.');
     }
 
     // Isi Laporan
@@ -200,7 +200,7 @@ class LaporanController extends Controller
 
 
         if (!$jawaban_auditor) {
-            return back()->with('error', 'Belum ada instrumen yang masuk ke dalam Temuan Positif.');
+            return back()->with('error', 'Belum ada instrumen yang masuk ke dalam Praktik Baik.');
         }
 
         $order_by_kode = DB::raw("
@@ -250,7 +250,7 @@ class LaporanController extends Controller
         $status = StatusLaporan::where('laporan_id', $laporan->id)->first();
 
         $data = [
-            'title' => 'Temuan Positif',
+            'title' => 'Praktik Baik',
             'paginatedForms' => $paginatedForms,
             'laporan' => $laporan,
             'auditor' => $auditor,

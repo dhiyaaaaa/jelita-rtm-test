@@ -347,7 +347,7 @@ class HasilAuditProdiController extends Controller
         $jawabanLaporan = LaporanForm::where('laporan_id', $laporan->id)->get();
 
         $data = [
-            'title' => 'Temuan Positif',
+            'title' => 'Praktik Baik',
             'paginatedForms' => $paginatedForms,
             'laporan' => $laporan,
             'jadwal' => $laporan->jadwal_audit_id,

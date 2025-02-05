@@ -38,8 +38,8 @@ class DownloadController extends Controller
                 ->select('prodi.nama as nama', 'jenjang.nama as jenjang')
                 ->first();
             if ($unit) {
-                $unitName = "Program Studi {$unit->nama} {$unit->jenjang}";
-                $unitJenjang = "{$unit->nama} {$unit->jenjang}";
+                $unitName = "Program Studi {$unit->jenjang} {$unit->nama}";
+                $unitJenjang = "{$unit->jenjang} {$unit->nama}";
                 $type = "Program Studi";
             }
         } elseif (isset($query->fakultas_id)) {
@@ -464,11 +464,11 @@ class DownloadController extends Controller
         }
     }
 
-    // Temuan Positif
+    // Praktik Baik
     private function temuan_positif($id)
     {
         // Title
-        $title = "Temuan Positif";
+        $title = "Praktik Baik";
 
         // Berita Acara
         $tp = DB::table('laporan')->where('id', $id)->first();
@@ -543,7 +543,7 @@ class DownloadController extends Controller
         return compact('templateProcessor', 'unitData', 'date', 'title');
     }
 
-    // Temuan Positif Word
+    // Praktik Baik Word
     public function temuan_positif_word(string $laporan)
     {
         try {
@@ -551,7 +551,7 @@ class DownloadController extends Controller
 
             return $this->word($tp['templateProcessor'], $tp['unitData'], $tp['date'], $tp['title']);
         } catch (\Exception $e) {
-            return back()->with('error', 'Terjadi kesalahan saat mengunduh Temuan Positif!');
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh Praktik Baik!');
         }
     }
 
@@ -1493,91 +1493,6 @@ class DownloadController extends Controller
         $this->auditan($templateProcessor, $auditanBa, $unitData, 'Berita Acara', 'BA');
         $this->auditors($templateProcessor, $auditorsBa, $unitData, 'Berita Acara', 'BA');
 
-        // Daftar Tilik
-        // Jawaban Auditor
-        $jawabanDt = DB::table('jawaban_auditor')
-            ->where('jawaban_auditor.jadwal_audit_id', $jadwalAudit->id)
-            ->where('jawaban_auditor.daftar_tilik', 1)
-            ->where('jawaban_auditor.' . $newType, $unit)
-            ->leftJoin('form', 'jawaban_auditor.form_id', '=', 'form.id')
-            ->leftJoin('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
-            ->select(
-                'instrumen.kode as kode',
-                'instrumen.pernyataan as pernyataan',
-                'jawaban_auditor.catatan as catatan',
-                'jawaban_auditor.prodi_id as prodi_id',
-                'jawaban_auditor.fakultas_id as fakultas_id',
-                'jawaban_auditor.unit_id as unit_id',
-                'jawaban_auditor.created_at as created_at',
-            )
-            ->orderBy('jawaban_auditor.created_at', 'ASC')
-            ->get();
-
-        // Date diambil dr status
-        $statusDt = DB::table('status_audit_auditor')->where('jadwal_audit_id', $jadwalAudit->id)->where($newType, $unit)->select('updated_at')->first();
-
-        $dateDt = $statusDt ? \Carbon\Carbon::parse($statusDt->updated_at) : null;
-
-        // Isi auditor template Daftar Tilik
-        // Auditor Daftar Tilik
-        $auditorsDt = DB::table('auditee_auditor')
-            ->where('auditee_auditor.jadwal_audit_id', $jadwalAudit->id)
-            ->where('auditee_auditor.' . $newType, $unit)
-            ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
-            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
-            ->select(
-                'users.id as id',
-                'users.name as nama',
-                'auditee_auditor.created_at as created_at',
-            )
-            ->orderBy('auditee_auditor.created_at', 'asc')
-            ->get()
-            ->unique('id')
-            ->values();
-
-        if ($auditorsDt->isNotEmpty()) {
-            foreach (range(1, 3) as $index) {
-                $auditor = $auditorsDt->get($index - 1);
-                $templateProcessor->setValue(
-                    'auditorDT#' . $index,
-                    $auditor ? $index . '. ' . $auditor->nama : ''
-                );
-            }
-        } else {
-            // Jika tidak ada auditor
-            foreach (range(1, 3) as $index) {
-                $templateProcessor->setValue('auditorDT#' . $index, $index === 1 ? '-' : '');
-            }
-        }
-
-        // Isi value template Daftar Tilik
-        $templateProcessor->setValues([
-            'dateDT' => $dateDt ? $dateDt->isoFormat('D MMMM YYYY') : '-',
-            'unit' => $unitData['unitName'] ?? ''
-        ]);
-
-        $noDt = 1;
-        $valuesDt = [];
-        foreach ($jawabanDt as $item) {
-            $valuesDt[] = [
-                'noDT' => $noDt++,
-                'kodeDT' => $item->kode,
-                'pernyataanDT' => $item->pernyataan,
-                'catatanDT' => $item->catatan,
-            ];
-        }
-
-        if (!empty($valuesDt)) {
-            $templateProcessor->cloneRowAndSetValues('noDT', $valuesDt);
-        } else {
-            $templateProcessor->cloneRowAndSetValues('noDT', [[
-                'noDT' => null,
-                'kodeDT' => null,
-                'pernyataanDT' => null,
-                'catatanDT' => null,
-            ]]);
-        }
-
         // Find Temuan Negatif
         $ptk = DB::table('ptk')->where('jadwal_audit_id', $jadwalAudit->id)->where($newType, $unit)->first();
 
@@ -1784,10 +1699,10 @@ class DownloadController extends Controller
         $this->auditan($templateProcessor, $auditanPtk, $unitData, 'Temuan Negatif', 'TN');
         $this->auditors($templateProcessor, $auditorsPtk, $unitData, 'Temuan Negatif', 'TN');
 
-        // Find Temuan Positif
+        // Find Praktik Baik
         $tp = DB::table('laporan')->where('jadwal_audit_id', $jadwalAudit->id)->where($newType, $unit)->first();
 
-        if (!$tp) return back()->with('error', 'Temuan Positif belum dibuat');
+        if (!$tp) return back()->with('error', 'Praktik Baik belum dibuat');
 
         // Laporan Form
         $formTp = DB::table('laporan_form')->where('laporan_id', $tp->id)->get();
@@ -1847,8 +1762,8 @@ class DownloadController extends Controller
             ]]);
         }
 
-        $this->auditan($templateProcessor, $auditanTp, $unitData, 'Temuan Positif', 'TP');
-        $this->auditors($templateProcessor, $auditorsTp, $unitData, 'Temuan Positif', 'TP');
+        $this->auditan($templateProcessor, $auditanTp, $unitData, 'Praktik Baik', 'TP');
+        $this->auditors($templateProcessor, $auditorsTp, $unitData, 'Praktik Baik', 'TP');
 
         // // File Path
         $filePath = storage_path('app/public/' . $fileName);
@@ -1877,7 +1792,7 @@ class DownloadController extends Controller
         $temuanNegatif = $tn ? $this->temuan_negatif($tn->id) : null;
         $temuanNegatifFile = $temuanNegatif ? $this->zip($temuanNegatif['templateProcessor'], $temuanNegatif['unitData'], $temuanNegatif['date'], $temuanNegatif['title']) : null;
 
-        // Temuan Positif
+        // Praktik Baik
         $tp = DB::table('laporan')->where('jadwal_audit_id', $jadwal->id)->where(get_type($type), $unitId)->select('id')->first();
         $temuanPositif = $tp ? $this->temuan_positif($tp->id) : null;
         $temuanPositifFile = $tp ? $this->zip($temuanPositif['templateProcessor'], $temuanPositif['unitData'], $temuanPositif['date'], $temuanPositif['title']) : null;

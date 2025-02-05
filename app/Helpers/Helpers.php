@@ -15,6 +15,7 @@ if (!function_exists('get_type')) {
             'prodi' => 'prodi_id',
             'fakultas' => 'fakultas_id',
             'universitas' => 'unit_id',
+            'unit' => 'unit_id',
             default => abort(404),
         };
     }

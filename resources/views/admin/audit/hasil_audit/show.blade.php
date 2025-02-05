@@ -63,142 +63,119 @@
                             </tr>
                         </thead>
                         <tbody>
-
-
-                            @foreach ($ps as $item)
+                            @forelse ($ps as $item)
                                 <tr>
                                     {{-- No --}}
                                     <td class="text-center align-middle">{{ $loop->iteration }}</td>
 
                                     {{-- Prodi --}}
-                                    <td class="align-middle">{{ $item->nama }} {{ $item->jenjang->nama }}</td>
+                                    <td class="align-middle">{{ $item->nama }} {{ $item->jenjang }}</td>
 
                                     {{-- Auditee --}}
                                     <td class="align-middle">
-                                        @if ($item->auditee->isNotEmpty())
-                                            @foreach ($item->auditee as $auditee)
-                                                <p style="margin:0; padding:0;">{{ $loop->iteration }}.
-                                                    {{ $auditee->user->name }}
+                                        @php
+                                            if ($item->auditees) {
+                                                $item->auditees = explode('|', $item->auditees);
+                                            }
+                                        @endphp
+
+                                        @if (is_array($item->auditees) && count($item->auditees) > 0)
+                                            @foreach ($item->auditees as $index => $auditee)
+                                                <p style="margin:0; padding:0;">{{ $index + 1 }}. {{ $auditee }}
                                                 </p>
                                             @endforeach
                                         @else
-                                            -
+                                            <div class="text-center">
+                                                <a class="btn disabled">-</a>
+                                            </div>
                                         @endif
                                     </td>
 
                                     {{-- Auditor --}}
                                     <td class="align-middle">
-                                        @if ($item->auditee->isNotEmpty())
-                                            @php
-                                                $uniqueAuditors = collect();
-                                                $noAuditorDisplayed = false;
-                                            @endphp
-                                            @foreach ($item->auditee as $auditee)
-                                                @if ($auditee->auditor->isNotEmpty())
-                                                    @foreach ($auditee->auditor as $auditor)
-                                                        @if (!$uniqueAuditors->contains('user_id', $auditor->user_id))
-                                                            <p style="margin:0; padding:0;">{{ $loop->iteration }}.
-                                                                {{ $auditor->user->name }}</p>
-                                                            @php
-                                                                $uniqueAuditors->push($auditor);
-                                                            @endphp
-                                                        @endif
-                                                    @endforeach
-                                                @else
-                                                    @if (!$noAuditorDisplayed)
-                                                        <a class="btn disabled text-center">Belum ada Auditor</a>
-                                                        @php
-                                                            $noAuditorDisplayed = true;
-                                                        @endphp
-                                                    @endif
-                                                @endif
+                                        @php
+                                            if ($item->auditors) {
+                                                $item->auditors = explode('|', $item->auditors);
+                                            }
+                                        @endphp
+
+                                        @if (is_array($item->auditors) && count($item->auditors) > 0)
+                                            @foreach ($item->auditors as $index => $auditor)
+                                                <p style="margin:0; padding:0;">{{ $index + 1 }}.
+                                                    {{ $auditor }}
+                                                </p>
                                             @endforeach
                                         @else
-                                            <a class="btn disabled text-center">Belum ada Auditor</a>
+                                            <div class="text-center">
+                                                <a class="btn disabled">Belum ada Auditor</a>
+                                            </div>
                                         @endif
                                     </td>
 
                                     {{-- Status Audit Dokumen --}}
                                     <td class="text-center align-middle">
-                                        @php
-                                            $status_audit_auditee = $item->status_audit_auditee->first();
-                                            $status_audit_auditor = $item->status_audit_auditor->first();
-                                        @endphp
-                                        @if ($status_audit_auditee && $status_audit_auditor)
-                                            @if ($status_audit_auditee->status === 'completed' && $status_audit_auditor->status === 'completed')
-                                                <p class="list badge badge-success p-1" style="font-size: 14px;">Audit
-                                                    Dokumen selesai</p>
-                                            @else
-                                                <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditan dan
-                                                    Auditor sedang mengisi audit</p>
-                                            @endif
-                                        @elseif ($status_audit_auditee)
-                                            @if ($status_audit_auditee->status === 'completed')
+                                        {{-- Jika belum keduanya --}}
+                                        @if (!$item->status_audit_auditee && !$item->status_audit_auditor)
+                                            <a class="btn disabled">Belum Mulai</a>
+                                        @endif
+
+                                        {{-- Status Auditan --}}
+                                        @if ($item->status_audit_auditee)
+                                            @if ($item->status_audit_auditee === 'completed')
                                                 <p class="list badge badge-success p-1" style="font-size: 14px;">Auditan
-                                                    sudah mengisi Audit Dokumen</p>
-                                            @else
+                                                    sudah mengisi</p>
+                                            @elseif($item->status_audit_auditee === 'in_progress')
                                                 <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditan
                                                     sedang
-                                                    mengisi audit</p>
+                                                    mengisi</p>
                                             @endif
-                                        @elseif ($status_audit_auditor)
-                                            <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditan dan
-                                                Auditor sedang mengisi audit</p>
-                                        @else
-                                            <a class="btn disabled">Belum Mulai</a>
+                                        @endif
+
+                                        {{-- Status Auditor --}}
+                                        @if ($item->status_audit_auditor)
+                                            @if ($item->status_audit_auditor === 'completed')
+                                                <p class="list badge badge-success p-1" style="font-size: 14px;">Auditor
+                                                    sudah mengisi</p>
+                                            @elseif($item->status_audit_auditor === 'in_progress')
+                                                <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditor
+                                                    sedang
+                                                    mengisi</p>
+                                            @endif
                                         @endif
                                     </td>
 
                                     {{-- Status Audit Lapangan --}}
                                     <td class="text-center align-middle">
                                         @php
-                                            $berita_acara = $item->berita_acara->first();
-                                            $ptk = $item->ptk->first();
-                                            $laporan = $item->laporan->first();
+                                            $status_ptk_auditee = $item->status_ptk_auditee;
+                                            $status_ptk_auditor = $item->status_ptk_auditor;
+                                            $status_laporan = $item->status_laporan;
 
-                                            // Status PTK dan Laporan
-                                            $status_ptk_auditee =
-                                                $ptk && $ptk->status_ptk_auditee
-                                                    ? $ptk->status_ptk_auditee->first()
-                                                    : null;
-                                            $status_ptk_auditor =
-                                                $ptk && $ptk->status_ptk_auditor
-                                                    ? $ptk->status_ptk_auditor->first()
-                                                    : null;
-                                            $status_laporan =
-                                                $laporan && $laporan->status_laporan
-                                                    ? $laporan->status_laporan->first()
-                                                    : null;
+                                            $ptk_auditor_selesai = $status_ptk_auditor === 'completed';
+                                            $ptk_auditee_selesai = $status_ptk_auditee === 'completed';
+                                            $laporan_selesai = $status_laporan === 'completed';
+                                            $laporan_mulai = $status_laporan !== null;
 
-                                            $ptk_auditor_selesai =
-                                                $status_ptk_auditor && $status_ptk_auditor->status === 'completed';
-                                            $ptk_auditee_selesai =
-                                                $status_ptk_auditee && $status_ptk_auditee->status === 'completed';
-                                            $laporan_selesai =
-                                                $status_laporan && $status_laporan->status === 'completed';
-                                            $laporan_mulai = $status_laporan && $status_laporan->status !== null;
-
-                                            $buat_ptk = $ptk && !$status_ptk_auditor && !$status_ptk_auditee;
+                                            $buat_ptk = $item->ptk_id && !$status_ptk_auditor && !$status_ptk_auditee;
 
                                             $auditor_mulai = $status_ptk_auditor && !$ptk_auditor_selesai;
                                             $auditee_mulai = $status_ptk_auditee && !$ptk_auditee_selesai;
                                         @endphp
 
-                                        @if ($laporan_selesai)
-                                            <p class="list badge badge-success p-1" style="font-size: 14px">Temuan Positif
-                                                berhasil
-                                                dibuat</p>
+                                        @if ($item->berita_acara_id)
+                                            <p class="list badge badge-success p-1" style="font-size: 14px">Berita Acara
+                                                berhasil dibuat</p>
+                                            <p class="list badge badge-success p-1" style="font-size: 14px">Audit Lapangan
+                                                Selesai</p>
                                         @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && $laporan_mulai && !$laporan_selesai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                                mengisi Temuan Positif</p>
+                                                mengisi Praktik Baik</p>
                                         @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && !$laporan_mulai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
-                                                selesai,
-                                                menunggu pembuatan Temuan Positif</p>
+                                                selesai, menunggu pembuatan Praktik Baik</p>
                                         @elseif ($buat_ptk)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
-                                                berhasil
-                                                dibuat</p>
+                                                berhasil dibuat</p>
                                         @elseif ($ptk_auditor_selesai && !$auditee_mulai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sudah
                                                 mengisi Temuan Negatif, menunggu Auditan</p>
@@ -210,17 +187,19 @@
                                                 mengisi Temuan Negatif</p>
                                         @elseif ($auditor_mulai && $auditee_mulai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditan dan
-                                                Auditor sedang mengisi Temuan Negatif</p>
-                                        @elseif ($status_laporan && !$laporan_selesai)
+                                                Auditor
+                                                sedang mengisi Temuan Negatif</p>
+                                        @elseif ($laporan_mulai && !$laporan_selesai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                                mengisi Temuan Positif</p>
-                                        @elseif ($berita_acara)
-                                            <p class="list badge badge-warning p-1" style="font-size: 14px">Berita Acara
-                                                berhasil dibuat</p>
+                                                mengisi Praktik Baik</p>
+                                        @elseif ($laporan_selesai)
+                                            <p class="list badge badge-success p-1" style="font-size: 14px">Laporan selesai
+                                            </p>
                                         @else
                                             <a class="btn disabled">Belum Ada</a>
                                         @endif
                                     </td>
+
 
                                     {{-- Aksi --}}
                                     <td class="text-center align-middle">
@@ -233,23 +212,23 @@
                                                     <i class="fa fa-eye"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                                    <a href="{{ route('hasil_audit.audit_dokumen', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
-                                                        class="dropdown-item">Audit Dokumen</a>
-                                                    <a href="{{ route('hasil_audit.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                    <a href="{{ route('hasil_audit_prodi.audit_dokumen', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id]) }}"
+                                                        class="dropdown-item">Isian Audit Auditan</a>
+                                                    <a href="{{ route('hasil_audit_prodi.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id]) }}"
                                                         class="dropdown-item">Daftar Tilik</a>
-                                                    @if ($item->ptk->isNotEmpty())
-                                                        <a href="{{ route('hasil_audit.ptk', $item->ptk->first()->id) }}"
+                                                    @if ($item->ptk_id)
+                                                        <a href="{{ route('hasil_audit_prodi.ptk', $item->ptk_id) }}"
                                                             class="dropdown-item">Temuan Negatif</a>
                                                     @endif
-                                                    @if ($item->laporan->isNotEmpty())
-                                                        <a href="{{ route('hasil_audit.laporan', $item->laporan->first()->id) }}"
-                                                            class="dropdown-item">Temuan Positif</a>
+                                                    @if ($item->laporan_id)
+                                                        <a href="{{ route('hasil_audit_prodi.laporan', $item->laporan_id) }}"
+                                                            class="dropdown-item">Praktik Baik</a>
                                                     @endif
                                                 </div>
                                             </div>
 
                                             {{-- Download --}}
-                                            <div class="dropdown">
+                                            <div class="dropdown mr-2">
                                                 <button class="btn btn-outline-dark dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
@@ -258,7 +237,7 @@
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     {{-- Download Isian Audit Auditan --}}
                                                     <form
-                                                        action="{{ route('download.isi_audit_auditee', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.isi_audit_auditee', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => 'prodi']) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
@@ -268,7 +247,7 @@
 
                                                     {{-- Download Daftar Tilik --}}
                                                     <form
-                                                        action="{{ route('download.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => 'prodi']) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
@@ -277,9 +256,9 @@
                                                     </form>
 
                                                     {{-- Download Berita Acara --}}
-                                                    @if ($item->berita_acara->isNotEmpty())
+                                                    @if ($item->berita_acara_id)
                                                         <form
-                                                            action="{{ route('download.berita-acara', $item->berita_acara->first()->id) }}"
+                                                            action="{{ route('download.berita-acara', $item->berita_acara_id) }}"
                                                             method="post" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
@@ -289,9 +268,8 @@
                                                     @endif
 
                                                     {{-- Download Temuan Negatif --}}
-                                                    @if ($item->ptk->isNotEmpty())
-                                                        <form
-                                                            action="{{ route('download.ptk', $item->ptk->first()->id) }}"
+                                                    @if ($item->ptk_id)
+                                                        <form action="{{ route('download.ptk', $item->ptk_id) }}"
                                                             method="post" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
@@ -300,14 +278,14 @@
                                                         </form>
                                                     @endif
 
-                                                    {{-- Download Temuan Positif --}}
-                                                    @if ($item->laporan->isNotEmpty())
-                                                        <form
-                                                            action="{{ route('download.laporan', $item->laporan->first()->id) }}"
+
+                                                    {{-- Download Praktik Baik --}}
+                                                    @if ($item->laporan_id)
+                                                        <form action="{{ route('download.laporan', $item->laporan_id) }}"
                                                             method="post" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
-                                                                Temuan Positif
+                                                                Praktik Baik
                                                             </button>
                                                         </form>
                                                     @endif
@@ -315,7 +293,7 @@
                                                     {{-- Download Semua --}}
                                                     <div class="dropdown-divider"></div>
                                                     <form
-                                                        action="{{ route('download.laporan_hasil_per_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.laporan_hasil_per_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => 'prodi']) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
@@ -323,7 +301,7 @@
                                                         </button>
                                                     </form>
                                                     <form
-                                                        action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => 'prodi']) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
@@ -335,8 +313,11 @@
                                         </div>
                                     </td>
                                 </tr>
-                            @endforeach
-
+                            @empty
+                                <tr>
+                                    <td colspan="7">Data Tidak Ada</td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -364,145 +345,119 @@
                             </tr>
                         </thead>
                         <tbody>
-
-
-                            @foreach ($upps as $item)
+                            @forelse ($upps as $item)
                                 <tr>
                                     {{-- No --}}
                                     <td class="text-center align-middle">{{ $loop->iteration }}</td>
 
-                                    {{-- Fakultas/Unit --}}
-                                    <td class="align-middle">
-                                        {{ $item->nama }}
-                                    </td>
+                                    {{-- Prodi --}}
+                                    <td class="align-middle">{{ $item->nama }}</td>
 
                                     {{-- Auditee --}}
                                     <td class="align-middle">
-                                        @if ($item->auditee->isNotEmpty())
-                                            @foreach ($item->auditee as $auditee)
-                                                <p style="margin:0; padding:0;">{{ $loop->iteration }}.
-                                                    {{ $auditee->user->name }}
+                                        @php
+                                            if ($item->auditees) {
+                                                $item->auditees = explode('|', $item->auditees);
+                                            }
+                                        @endphp
+
+                                        @if (is_array($item->auditees) && count($item->auditees) > 0)
+                                            @foreach ($item->auditees as $index => $auditee)
+                                                <p style="margin:0; padding:0;">{{ $index + 1 }}. {{ $auditee }}
                                                 </p>
                                             @endforeach
                                         @else
-                                            -
+                                            <div class="text-center">
+                                                <a class="btn disabled">-</a>
+                                            </div>
                                         @endif
                                     </td>
 
                                     {{-- Auditor --}}
                                     <td class="align-middle">
-                                        @if ($item->auditee->isNotEmpty())
-                                            @php
-                                                $uniqueAuditors = collect();
-                                                $noAuditorDisplayed = false;
-                                            @endphp
-                                            @foreach ($item->auditee as $auditee)
-                                                @if ($auditee->auditor->isNotEmpty())
-                                                    @foreach ($auditee->auditor as $auditor)
-                                                        @if (!$uniqueAuditors->contains('user_id', $auditor->user_id))
-                                                            <p style="margin:0; padding:0;">{{ $loop->iteration }}.
-                                                                {{ $auditor->user->name }}</p>
-                                                            @php
-                                                                $uniqueAuditors->push($auditor);
-                                                            @endphp
-                                                        @endif
-                                                    @endforeach
-                                                @else
-                                                    @if (!$noAuditorDisplayed)
-                                                        <a class="btn disabled text-center">Belum ada Auditor</a>
-                                                        @php
-                                                            $noAuditorDisplayed = true;
-                                                        @endphp
-                                                    @endif
-                                                @endif
+                                        @php
+                                            if ($item->auditors) {
+                                                $item->auditors = explode('|', $item->auditors);
+                                            }
+                                        @endphp
+
+                                        @if (is_array($item->auditors) && count($item->auditors) > 0)
+                                            @foreach ($item->auditors as $index => $auditor)
+                                                <p style="margin:0; padding:0;">{{ $index + 1 }}.
+                                                    {{ $auditor }}
+                                                </p>
                                             @endforeach
                                         @else
-                                            <a class="btn disabled text-center">Belum ada Auditor</a>
+                                            <div class="text-center">
+                                                <a class="btn disabled">Belum ada Auditor</a>
+                                            </div>
                                         @endif
                                     </td>
 
                                     {{-- Status Audit Dokumen --}}
                                     <td class="text-center align-middle">
-                                        @php
-                                            $status_audit_auditee = $item->status_audit_auditee->first();
-                                            $status_audit_auditor = $item->status_audit_auditor->first();
-                                        @endphp
-                                        @if ($status_audit_auditee && $status_audit_auditor)
-                                            @if ($status_audit_auditee->status === 'completed' && $status_audit_auditor->status === 'completed')
-                                                <p class="list badge badge-success p-1" style="font-size: 14px;">Audit
-                                                    Dokumen selesai</p>
-                                            @else
-                                                <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditan
-                                                    dan
-                                                    Auditor sedang mengisi audit</p>
-                                            @endif
-                                        @elseif ($status_audit_auditee)
-                                            @if ($status_audit_auditee->status === 'completed')
+                                        {{-- Jika belum keduanya --}}
+                                        @if (!$item->status_audit_auditee && !$item->status_audit_auditor)
+                                            <a class="btn disabled">Belum Mulai</a>
+                                        @endif
+
+                                        {{-- Status Auditan --}}
+                                        @if ($item->status_audit_auditee)
+                                            @if ($item->status_audit_auditee === 'completed')
                                                 <p class="list badge badge-success p-1" style="font-size: 14px;">Auditan
-                                                    sudah mengisi Audit Dokumen</p>
-                                            @else
+                                                    sudah mengisi</p>
+                                            @elseif($item->status_audit_auditee === 'in_progress')
                                                 <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditan
                                                     sedang
-                                                    mengisi audit</p>
+                                                    mengisi</p>
                                             @endif
-                                        @elseif ($status_audit_auditor)
-                                            <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditan dan
-                                                Auditor sedang mengisi audit</p>
-                                        @else
-                                            <a class="btn disabled">Belum Mulai</a>
+                                        @endif
+
+                                        {{-- Status Auditor --}}
+                                        @if ($item->status_audit_auditor)
+                                            @if ($item->status_audit_auditor === 'completed')
+                                                <p class="list badge badge-success p-1" style="font-size: 14px;">Auditor
+                                                    sudah mengisi</p>
+                                            @elseif($item->status_audit_auditor === 'in_progress')
+                                                <p class="list badge badge-warning p-1" style="font-size: 14px;">Auditor
+                                                    sedang
+                                                    mengisi</p>
+                                            @endif
                                         @endif
                                     </td>
 
                                     {{-- Status Audit Lapangan --}}
                                     <td class="text-center align-middle">
                                         @php
-                                            $berita_acara = $item->berita_acara->first();
-                                            $ptk = $item->ptk->first();
-                                            $laporan = $item->laporan->first();
+                                            $status_ptk_auditee = $item->status_ptk_auditee;
+                                            $status_ptk_auditor = $item->status_ptk_auditor;
+                                            $status_laporan = $item->status_laporan;
 
-                                            // Status PTK dan Laporan
-                                            $status_ptk_auditee =
-                                                $ptk && $ptk->status_ptk_auditee
-                                                    ? $ptk->status_ptk_auditee->first()
-                                                    : null;
-                                            $status_ptk_auditor =
-                                                $ptk && $ptk->status_ptk_auditor
-                                                    ? $ptk->status_ptk_auditor->first()
-                                                    : null;
-                                            $status_laporan =
-                                                $laporan && $laporan->status_laporan
-                                                    ? $laporan->status_laporan->first()
-                                                    : null;
+                                            $ptk_auditor_selesai = $status_ptk_auditor === 'completed';
+                                            $ptk_auditee_selesai = $status_ptk_auditee === 'completed';
+                                            $laporan_selesai = $status_laporan === 'completed';
+                                            $laporan_mulai = $status_laporan !== null;
 
-                                            $ptk_auditor_selesai =
-                                                $status_ptk_auditor && $status_ptk_auditor->status === 'completed';
-                                            $ptk_auditee_selesai =
-                                                $status_ptk_auditee && $status_ptk_auditee->status === 'completed';
-                                            $laporan_selesai =
-                                                $status_laporan && $status_laporan->status === 'completed';
-                                            $laporan_mulai = $status_laporan && $status_laporan->status !== null;
-
-                                            $buat_ptk = $ptk && !$status_ptk_auditor && !$status_ptk_auditee;
+                                            $buat_ptk = $item->ptk_id && !$status_ptk_auditor && !$status_ptk_auditee;
 
                                             $auditor_mulai = $status_ptk_auditor && !$ptk_auditor_selesai;
                                             $auditee_mulai = $status_ptk_auditee && !$ptk_auditee_selesai;
                                         @endphp
 
-                                        @if ($laporan_selesai)
-                                            <p class="list badge badge-success p-1" style="font-size: 14px">Temuan Positif
-                                                berhasil
-                                                dibuat</p>
+                                        @if ($item->berita_acara_id)
+                                            <p class="list badge badge-success p-1" style="font-size: 14px">Berita Acara
+                                                berhasil dibuat</p>
+                                            <p class="list badge badge-success p-1" style="font-size: 14px">Audit Lapangan
+                                                Selesai</p>
                                         @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && $laporan_mulai && !$laporan_selesai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                                mengisi Temuan Positif</p>
+                                                mengisi Praktik Baik</p>
                                         @elseif ($ptk_auditor_selesai && $ptk_auditee_selesai && !$laporan_mulai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
-                                                selesai,
-                                                menunggu pembuatan Temuan Positif</p>
+                                                selesai, menunggu pembuatan Praktik Baik</p>
                                         @elseif ($buat_ptk)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Temuan Negatif
-                                                berhasil
-                                                dibuat</p>
+                                                berhasil dibuat</p>
                                         @elseif ($ptk_auditor_selesai && !$auditee_mulai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sudah
                                                 mengisi Temuan Negatif, menunggu Auditan</p>
@@ -514,17 +469,20 @@
                                                 mengisi Temuan Negatif</p>
                                         @elseif ($auditor_mulai && $auditee_mulai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditan dan
-                                                Auditor sedang mengisi Temuan Negatif</p>
-                                        @elseif ($status_laporan && !$laporan_selesai)
+                                                Auditor
+                                                sedang mengisi Temuan Negatif</p>
+                                        @elseif ($laporan_mulai && !$laporan_selesai)
                                             <p class="list badge badge-warning p-1" style="font-size: 14px">Auditor sedang
-                                                mengisi Temuan Positif</p>
-                                        @elseif ($berita_acara)
-                                            <p class="list badge badge-warning p-1" style="font-size: 14px">Berita Acara
-                                                berhasil dibuat</p>
+                                                mengisi Praktik Baik</p>
+                                        @elseif ($laporan_selesai)
+                                            <p class="list badge badge-success p-1" style="font-size: 14px">Laporan
+                                                selesai
+                                            </p>
                                         @else
                                             <a class="btn disabled">Belum Ada</a>
                                         @endif
                                     </td>
+
 
                                     {{-- Aksi --}}
                                     <td class="text-center align-middle">
@@ -537,23 +495,23 @@
                                                     <i class="fa fa-eye"></i>
                                                 </button>
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                                    <a href="{{ route('hasil_audit.audit_dokumen', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
-                                                        class="dropdown-item">Audit Dokumen</a>
-                                                    <a href="{{ route('hasil_audit.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                    <a href="{{ route('hasil_audit_prodi.audit_dokumen', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id]) }}"
+                                                        class="dropdown-item">Isian Audit Auditan</a>
+                                                    <a href="{{ route('hasil_audit_prodi.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id]) }}"
                                                         class="dropdown-item">Daftar Tilik</a>
-                                                    @if ($item->ptk->isNotEmpty())
-                                                        <a href="{{ route('hasil_audit.ptk', $item->ptk->first()->id) }}"
+                                                    @if ($item->ptk_id)
+                                                        <a href="{{ route('hasil_audit_prodi.ptk', $item->ptk_id) }}"
                                                             class="dropdown-item">Temuan Negatif</a>
                                                     @endif
-                                                    @if ($item->laporan->isNotEmpty())
-                                                        <a href="{{ route('hasil_audit.laporan', $item->laporan->first()->id) }}"
-                                                            class="dropdown-item">Temuan Positif</a>
+                                                    @if ($item->laporan_id)
+                                                        <a href="{{ route('hasil_audit_prodi.laporan', $item->laporan_id) }}"
+                                                            class="dropdown-item">Praktik Baik</a>
                                                     @endif
                                                 </div>
                                             </div>
 
                                             {{-- Download --}}
-                                            <div class="dropdown">
+                                            <div class="dropdown mr-2">
                                                 <button class="btn btn-outline-dark dropdown-toggle" type="button"
                                                     id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                                     aria-expanded="false">
@@ -562,7 +520,7 @@
                                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                                     {{-- Download Isian Audit Auditan --}}
                                                     <form
-                                                        action="{{ route('download.isi_audit_auditee', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.isi_audit_auditee', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => 'prodi']) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
@@ -572,7 +530,7 @@
 
                                                     {{-- Download Daftar Tilik --}}
                                                     <form
-                                                        action="{{ route('download.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.daftar_tilik', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => 'prodi']) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
@@ -581,9 +539,9 @@
                                                     </form>
 
                                                     {{-- Download Berita Acara --}}
-                                                    @if ($item->berita_acara->isNotEmpty())
+                                                    @if ($item->berita_acara_id)
                                                         <form
-                                                            action="{{ route('download.berita-acara', $item->berita_acara->first()->id) }}"
+                                                            action="{{ route('download.berita-acara', $item->berita_acara_id) }}"
                                                             method="post" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
@@ -593,9 +551,8 @@
                                                     @endif
 
                                                     {{-- Download Temuan Negatif --}}
-                                                    @if ($item->ptk->isNotEmpty())
-                                                        <form
-                                                            action="{{ route('download.ptk', $item->ptk->first()->id) }}"
+                                                    @if ($item->ptk_id)
+                                                        <form action="{{ route('download.ptk', $item->ptk_id) }}"
                                                             method="post" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
@@ -604,14 +561,14 @@
                                                         </form>
                                                     @endif
 
-                                                    {{-- Download Temuan Positif --}}
-                                                    @if ($item->laporan->isNotEmpty())
-                                                        <form
-                                                            action="{{ route('download.laporan', $item->laporan->first()->id) }}"
+
+                                                    {{-- Download Praktik Baik --}}
+                                                    @if ($item->laporan_id)
+                                                        <form action="{{ route('download.laporan', $item->laporan_id) }}"
                                                             method="post" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item">
-                                                                Temuan Positif
+                                                                Praktik Baik
                                                             </button>
                                                         </form>
                                                     @endif
@@ -619,7 +576,7 @@
                                                     {{-- Download Semua --}}
                                                     <div class="dropdown-divider"></div>
                                                     <form
-                                                        action="{{ route('download.laporan_hasil_per_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.laporan_hasil_per_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => 'prodi']) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
@@ -627,7 +584,7 @@
                                                         </button>
                                                     </form>
                                                     <form
-                                                        action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => $item->type]) }}"
+                                                        action="{{ route('download.zip_unit', ['jadwalAudit' => $jadwalAudit->id, 'unit' => $item->id, 'type' => 'prodi']) }}"
                                                         method="post" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="dropdown-item">
@@ -639,7 +596,11 @@
                                         </div>
                                     </td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="7">Data Tidak Ada</td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -703,11 +664,11 @@
                         "width": "10%",
                         "targets": [1]
                     }, {
-                        "width": "15%",
+                        "width": "17%",
                         "targets": [2]
                     },
                     {
-                        "width": "15%",
+                        "width": "17%",
                         "targets": [3]
                     },
                     {
@@ -719,7 +680,7 @@
                         "targets": [5]
                     },
                     {
-                        "width": "25%",
+                        "width": "20%",
                         "targets": [6]
                     },
                 ]
@@ -735,11 +696,11 @@
                         "width": "10%",
                         "targets": [1]
                     }, {
-                        "width": "15%",
+                        "width": "17%",
                         "targets": [2]
                     },
                     {
-                        "width": "15%",
+                        "width": "17%",
                         "targets": [3]
                     },
                     {
@@ -751,7 +712,7 @@
                         "targets": [5]
                     },
                     {
-                        "width": "25%",
+                        "width": "20%",
                         "targets": [6]
                     },
                 ]

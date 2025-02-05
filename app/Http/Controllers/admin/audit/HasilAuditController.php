@@ -54,90 +54,173 @@ class HasilAuditController extends Controller
         $ps = $upps = $fakultas = collect();
 
         if ($type === 'ps') {
-            $ps = Prodi::with([
-                'berita_acara' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id);
-                },
-                'ptk' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_ptk_auditee', 'status_ptk_auditor']);
-                },
-                'laporan' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_laporan']);
-                },
-                'status_audit_auditee' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id);
-                },
-                'status_audit_auditor' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id);
-                },
-                'jenjang'
-            ])->with(['auditee' => function ($query) use ($jadwalAudit) {
-                $query->whereHas('jadwal_audit', function ($subQuery) use ($jadwalAudit) {
-                    $subQuery->where('jadwal_audit_id', $jadwalAudit->id);
-                })->with([
-                    'user',
-                    'auditor.user',
-                    'jadwal_audit'
-                ]);
-            }])->get();
+            $ps = DB::table('prodi')
+                ->join('jenjang', 'prodi.jenjang_id', '=', 'jenjang.id')
+                ->leftJoin('berita_acara', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'berita_acara.prodi_id')
+                        ->where('berita_acara.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('ptk', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'ptk.prodi_id')
+                        ->where('ptk.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('status_ptk_auditee', 'ptk.id', '=', 'status_ptk_auditee.ptk_id')
+                ->leftJoin('status_ptk_auditor', 'ptk.id', '=', 'status_ptk_auditor.ptk_id')
+                ->leftJoin('laporan', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'laporan.prodi_id')
+                        ->where('laporan.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('status_laporan', 'laporan.id', '=', 'status_laporan.laporan_id')
+                ->leftJoin('status_audit_auditee', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'status_audit_auditee.prodi_id')
+                        ->where('status_audit_auditee.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('status_audit_auditor', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'status_audit_auditor.prodi_id')
+                        ->where('status_audit_auditor.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditee', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'auditee.prodi_id')
+                        ->where('auditee.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('users as auditee_users', 'auditee.user_id', '=', 'auditee_users.id')
+                ->leftJoin('auditee_auditor', function ($join) use ($jadwalAudit) {
+                    $join->on('prodi.id', '=', 'auditee_auditor.prodi_id')
+                        ->where('auditee_auditor.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+                ->leftJoin('users as auditor_users', 'auditor.user_id', '=', 'auditor_users.id')
+                ->select([
+                    'prodi.id as id',
+                    'prodi.nama as nama',
+                    'jenjang.nama as jenjang',
+                    DB::raw('STRING_AGG(DISTINCT auditee_users.name, \'|\') as auditees'),
+                    DB::raw('STRING_AGG(DISTINCT auditor_users.name, \'|\') as auditors'),
+                    DB::raw('STRING_AGG(DISTINCT TO_CHAR(auditee_auditor.created_at, \'YYYY-MM-DD HH24:MI:SS\'), \'|\') as auditors_created_at'),
+                    'status_audit_auditee.status as status_audit_auditee',
+                    'status_audit_auditor.status as status_audit_auditor',
+                    'berita_acara.id as berita_acara_id',
+                    'ptk.id as ptk_id',
+                    'laporan.id as laporan_id',
+                    'status_ptk_auditee.status as status_ptk_auditee',
+                    'status_ptk_auditor.status as status_ptk_auditor',
+                    'status_laporan.status as status_laporan',
+                ])
+                ->groupBy('prodi.id', 'jenjang.nama', 'status_audit_auditee.status', 'status_audit_auditor.status', 'berita_acara.id', 'ptk.id', 'laporan.id', 'status_ptk_auditee.status', 'status_ptk_auditor.status', 'status_laporan.status')
+                ->orderBy('auditors_created_at', 'asc')
+                ->get();
 
             $fakultas = DB::table('fakultas')->select('id', 'nama')->get();
-        } elseif ($type === 'upps') {
-            $fakultas = Fakultas::with([
-                'berita_acara' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id);
-                },
-                'ptk' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_ptk_auditee', 'status_ptk_auditor']);
-                },
-                'laporan' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_laporan']);
-                },
-                'status_audit_auditee' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id);
-                },
-                'status_audit_auditor' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id);
-                },
-            ])->with(['auditee' => function ($query) use ($jadwalAudit) {
-                $query->whereHas('jadwal_audit', function ($subQuery) use ($jadwalAudit) {
-                    $subQuery->where('jadwal_audit_id', $jadwalAudit->id);
-                })->with([
-                    'user.jabatan',
-                    'auditor.user',
-                    'jadwal_audit'
-                ]);
-            }])->get();
+        } elseif ($type == 'upps') {
+            $faks = DB::table('fakultas')
+                ->leftJoin('berita_acara', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'berita_acara.fakultas_id')
+                        ->where('berita_acara.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('ptk', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'ptk.fakultas_id')
+                        ->where('ptk.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('status_ptk_auditee', 'ptk.id', '=', 'status_ptk_auditee.ptk_id')
+                ->leftJoin('status_ptk_auditor', 'ptk.id', '=', 'status_ptk_auditor.ptk_id')
+                ->leftJoin('laporan', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'laporan.fakultas_id')
+                        ->where('laporan.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('status_laporan', 'laporan.id', '=', 'status_laporan.laporan_id')
+                ->leftJoin('status_audit_auditee', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'status_audit_auditee.fakultas_id')
+                        ->where('status_audit_auditee.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('status_audit_auditor', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'status_audit_auditor.fakultas_id')
+                        ->where('status_audit_auditor.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditee', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'auditee.fakultas_id')
+                        ->where('auditee.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('users as auditee_users', 'auditee.user_id', '=', 'auditee_users.id')
+                ->leftJoin('auditee_auditor', function ($join) use ($jadwalAudit) {
+                    $join->on('fakultas.id', '=', 'auditee_auditor.fakultas_id')
+                        ->where('auditee_auditor.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+                ->leftJoin('users as auditor_users', 'auditor.user_id', '=', 'auditor_users.id')
+                ->select([
+                    'fakultas.id as id',
+                    DB::raw("CONCAT('Fakultas ' , fakultas.nama) as nama"),
+                    DB::raw('STRING_AGG(DISTINCT auditee_users.name, \'|\') as auditees'),
+                    DB::raw('STRING_AGG(DISTINCT auditor_users.name, \'|\') as auditors'),
+                    DB::raw('STRING_AGG(DISTINCT TO_CHAR(auditee_auditor.created_at, \'YYYY-MM-DD HH24:MI:SS\'), \'|\') as auditors_created_at'),
+                    'status_audit_auditee.status as status_audit_auditee',
+                    'status_audit_auditor.status as status_audit_auditor',
+                    'berita_acara.id as berita_acara_id',
+                    'ptk.id as ptk_id',
+                    'laporan.id as laporan_id',
+                    'status_ptk_auditee.status as status_ptk_auditee',
+                    'status_ptk_auditor.status as status_ptk_auditor',
+                    'status_laporan.status as status_laporan',
+                ])
+                ->groupBy('fakultas.id', 'status_audit_auditee.status', 'status_audit_auditor.status', 'berita_acara.id', 'ptk.id', 'laporan.id', 'status_ptk_auditee.status', 'status_ptk_auditor.status', 'status_laporan.status')
+                ->orderBy('auditors_created_at', 'asc')
+                ->get();
 
-            $unit = Unit::with([
-                'berita_acara' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id);
-                },
-                'ptk' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_ptk_auditee', 'status_ptk_auditor']);
-                },
-                'laporan' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id)->with(['status_laporan']);
-                },
-                'status_audit_auditee' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id);
-                },
-                'status_audit_auditor' => function ($query) use ($jadwalAudit) {
-                    $query->where('jadwal_audit_id', $jadwalAudit->id);
-                },
-            ])->with(['auditee' => function ($query) use ($jadwalAudit) {
-                $query->whereHas('jadwal_audit', function ($subQuery) use ($jadwalAudit) {
-                    $subQuery->where('jadwal_audit_id', $jadwalAudit->id);
-                })->with([
-                    'user.jabatan',
-                    'auditor.user',
-                    'jadwal_audit' => function ($query) use ($jadwalAudit) {
-                        $query->where('id', $jadwalAudit->id);
-                    },
-                ]);
-            }])->get();
+            $unit = DB::table('unit')
+                ->leftJoin('berita_acara', function ($join) use ($jadwalAudit) {
+                    $join->on('unit.id', '=', 'berita_acara.unit_id')
+                        ->where('berita_acara.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('ptk', function ($join) use ($jadwalAudit) {
+                    $join->on('unit.id', '=', 'ptk.unit_id')
+                        ->where('ptk.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('status_ptk_auditee', 'ptk.id', '=', 'status_ptk_auditee.ptk_id')
+                ->leftJoin('status_ptk_auditor', 'ptk.id', '=', 'status_ptk_auditor.ptk_id')
+                ->leftJoin('laporan', function ($join) use ($jadwalAudit) {
+                    $join->on('unit.id', '=', 'laporan.unit_id')
+                        ->where('laporan.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('status_laporan', 'laporan.id', '=', 'status_laporan.laporan_id')
+                ->leftJoin('status_audit_auditee', function ($join) use ($jadwalAudit) {
+                    $join->on('unit.id', '=', 'status_audit_auditee.unit_id')
+                        ->where('status_audit_auditee.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('status_audit_auditor', function ($join) use ($jadwalAudit) {
+                    $join->on('unit.id', '=', 'status_audit_auditor.unit_id')
+                        ->where('status_audit_auditor.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditee', function ($join) use ($jadwalAudit) {
+                    $join->on('unit.id', '=', 'auditee.unit_id')
+                        ->where('auditee.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('users as auditee_users', 'auditee.user_id', '=', 'auditee_users.id')
+                ->leftJoin('auditee_auditor', function ($join) use ($jadwalAudit) {
+                    $join->on('unit.id', '=', 'auditee_auditor.unit_id')
+                        ->where('auditee_auditor.jadwal_audit_id', $jadwalAudit->id);
+                })
+                ->leftJoin('auditor', 'auditee_auditor.auditor_id', '=', 'auditor.id')
+                ->leftJoin('users as auditor_users', 'auditor.user_id', '=', 'auditor_users.id')
+                ->select([
+                    'unit.id as id',
+                    'unit.nama as nama',
+                    DB::raw('STRING_AGG(DISTINCT auditee_users.name, \'|\') as auditees'),
+                    DB::raw('STRING_AGG(DISTINCT auditor_users.name, \'|\') as auditors'),
+                    DB::raw('STRING_AGG(DISTINCT TO_CHAR(auditee_auditor.created_at, \'YYYY-MM-DD HH24:MI:SS\'), \'|\') as auditors_created_at'),
+                    'status_audit_auditee.status as status_audit_auditee',
+                    'status_audit_auditor.status as status_audit_auditor',
+                    'berita_acara.id as berita_acara_id',
+                    'ptk.id as ptk_id',
+                    'laporan.id as laporan_id',
+                    'status_ptk_auditee.status as status_ptk_auditee',
+                    'status_ptk_auditor.status as status_ptk_auditor',
+                    'status_laporan.status as status_laporan',
+                ])
+                ->groupBy('unit.id', 'status_audit_auditee.status', 'status_audit_auditor.status', 'berita_acara.id', 'ptk.id', 'laporan.id', 'status_ptk_auditee.status', 'status_ptk_auditor.status', 'status_laporan.status')
+                ->orderBy('auditors_created_at', 'asc')
+                ->get();
 
-            $upps = $unit->concat($fakultas)->all();
+            $upps = $unit->concat($faks)->all();
         } else {
             abort(404);
         }
@@ -544,7 +627,7 @@ class HasilAuditController extends Controller
         $jawabanLaporan = LaporanForm::where('laporan_id', $laporan->id)->get();
 
         $data = [
-            'title' => 'Temuan Positif',
+            'title' => 'Praktik Baik',
             'paginatedForms' => $paginatedForms,
             'laporan' => $laporan,
             'jadwal' => $laporan->jadwal_audit_id,

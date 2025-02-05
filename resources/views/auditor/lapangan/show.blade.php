@@ -47,7 +47,7 @@
                         <th class="text-center">Prodi/Fakultas/Unit</th>
                         <th class="text-center">Berita Acara</th>
                         <th class="text-center">Temuan Negatif</th>
-                        <th class="text-center">Temuan Positif</th>
+                        <th class="text-center">Praktik Baik</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -298,7 +298,7 @@
                                             'unit' => $item->id,
                                             'type' => $item->type,
                                         ]) }}"
-                                            class="btn btn-outline-primary">+ Temuan Positif</a>
+                                            class="btn btn-outline-primary">+ Praktik Baik</a>
                                     @else
                                         <a class="btn disabled">Tertutup</a>
                                     @endif
