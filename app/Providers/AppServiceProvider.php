@@ -39,13 +39,11 @@ class AppServiceProvider extends ServiceProvider
             if ($roles->isNotEmpty()) {
                 $roleId = $roles->pluck('id')->toArray();
                 $menus = Menu::whereHas('role', function ($query) use ($roleId) {
-                    $query->where('name', '!=', 'gpm');
                     $query->whereIn('id', $roleId);
                 })
                     ->where('status', 1)
                     ->get();
                 $submenus = Submenu::whereHas('role', function ($query) use ($roleId) {
-                    $query->where('name', '!=', 'gpm');
                     $query->whereIn('id', $roleId);
                 })
                     ->where('status', 1)
