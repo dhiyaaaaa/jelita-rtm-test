@@ -29,8 +29,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if (config('app.env') === 'production') {
+            URL::forceScheme('https');
         }
-        URL::forceScheme('https');
 
         View::composer('components.layout.partials.sidebar', function ($view) {
             $user = Auth::user();
@@ -39,13 +39,11 @@ class AppServiceProvider extends ServiceProvider
             if ($roles->isNotEmpty()) {
                 $roleId = $roles->pluck('id')->toArray();
                 $menus = Menu::whereHas('role', function ($query) use ($roleId) {
-                    $query->where('name', '!=', 'gpm');
                     $query->whereIn('id', $roleId);
                 })
                     ->where('status', 1)
                     ->get();
                 $submenus = Submenu::whereHas('role', function ($query) use ($roleId) {
-                    $query->where('name', '!=', 'gpm');
                     $query->whereIn('id', $roleId);
                 })
                     ->where('status', 1)
