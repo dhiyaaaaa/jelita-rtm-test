@@ -61,4 +61,9 @@ class Ptk extends Model
     {
         return $this->hasMany(StatusPtkAuditor::class, 'ptk_id');
     }
+
+    public function ptk_form_deskripsi(): HasMany
+    {
+        return $this->hasMany(PtkFormDeskripsi::class);
+    }
 }

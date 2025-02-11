@@ -43,6 +43,10 @@ use App\Http\Controllers\gpm\AuditorController as GpmAuditorController;
 use App\Http\Controllers\HasilAuditProdiController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\dekan\RtmJadwalController;
+use App\Http\Controllers\dekan\RtmLampiranController;
+use App\Http\Controllers\dekan\RtmRtlController;
+use App\Http\Controllers\dekan\RtmRtlProdiController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'guest'], function () {
@@ -792,6 +796,56 @@ Route::group(['middleware' => 'auth'], function () {
 
             // Laporan
             Route::get('{laporan}/laporan', [HasilAuditProdiController::class, 'laporan'])->name('hasil_audit_prodi.laporan');
+        });
+    });
+
+    //RTM FAKULTAS
+    Route::group(['middleware' => 'role:pj_fakultas'], function () {
+        Route::prefix('rtm-fakultas')->group(function () {
+            Route::get('', [RtmJadwalController::class, 'index'])->name('dekan.jadwal-rtm.index');
+            Route::get('/jadwal-rtm/create', [RtmJadwalController::class, 'create'])->name('dekan.jadwal-rtm.create');
+
+            //Store Jadwal RTM
+            Route::post('/jadwal-rtm/store', [RtmJadwalController::class, 'store'])->name('dekan.jadwal-rtm.store');
+
+            //Show Jadwal
+            Route::get('/jadwal-rtm/{id}/show', [RtmJadwalController::class, 'show'])->name('dekan.jadwal-rtm.show');
+
+            //Update Jadwal
+            Route::put('/jadwal-rtm/{id}/update', [RtmJadwalController::class, 'update'])->name('dekan.jadwal-rtm.update');
+
+            //Hapus Jadwal
+            Route::delete('/jadwal-rtm/{id}/destroy', [RtmJadwalController::class, 'destroy'])->name('dekan.jadwal-rtm.destroy');
+
+            //Details Pratinjau
+            Route::get('/rtm/details/{rtmJadwal}', [RtmJadwalController::class, 'details'])->name('rtm.details');
+
+            
+            // Lampiran RTM
+            Route::post('/lampiran-rtm/store', [RtmLampiranController::class, 'store'])->name('dekan.lampiran-rtm.store');
+
+            //RTM RTL 
+            Route::post('/rtm-rtl/store', [RtmRtlController::class, 'store'])->name('dekan.rtm-rtl.store');
+
+            //status pengisian
+            Route::post('/rtm-rtl/isi/{rtmRtl}', [RtmRtlController::class, 'isi_rtm_rtl'])->name('dekan.rtm-rtl.isi');
+            
+            //Form RTM RTL
+            Route::get('/rtm-rtl/form/{rtmRtl}', [RtmRtlController::class, 'form'])->name('dekan.rtm-rtl.form');
+
+            Route::post('rtm-rtl/{rtmRtl}/store/{fakultas}', [RtmRtlController::class, 'store_form'])->name('dekan.rtm-rtl.store_form');
+
+            // Save Form RTMRTL per nomor
+            Route::post('rtm-rtl/{rtmRtl}/save/{fakultas}', [RtmRtlController::class, 'save_form'])->name('dekan.rtm-rtl.save_form');
+
+            //RTM RTL FORM PRODI
+            Route::get('/rtm-rtl/form-prodi/{rtmRtl}', [RtmRtlProdiController::class, 'form'])->name('dekan.rtm-rtl.form_prodi');
+
+            Route::post('rtm-rtl-prodi/{rtmRtl}/store/{prodi}', [RtmRtlProdiController::class, 'store_form'])->name('dekan.rtm-rtl-prodi.store_form');
+
+            // Save Form RTMRTL per nomor
+            Route::post('rtm-rtl-prodi/{rtmRtl}/save/{prodi}', [RtmRtlProdiController::class, 'save_form'])->name('dekan.rtm-rtl-prodi.save_form');
+            
         });
     });
 
