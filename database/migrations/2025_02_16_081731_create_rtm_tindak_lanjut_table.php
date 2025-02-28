@@ -15,12 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignUuid('rtm_rtl_id')->constrained('rtm_rtl', 'id')->onDelete('cascade');
             $table->foreignUuid('form_id')->constrained('form', 'id')->onDelete('cascade');
-            $table->foreignUuid('prodi_id')->nullable()->constrained('prodi', 'id')->onDelete('cascade');
-            $table->foreignUuid('fakultas_id')->nullable()->constrained('fakultas', 'id')->onDelete('cascade');
-            $table->foreignUuid('unit_id')->nullable()->constrained('unit', 'id')->onDelete('cascade');
-            $table->foreignId('kriteria_id')->constrained('kriteria', 'id')->onDelete('cascade'); // Relasi ke tabel kriteria
-            $table->text('tindakan')->nullable();
-            $table->text('catatan')->nullable();
+            $table->foreignId('kriteria_id')->constrained('kriteria', 'id')->onDelete('cascade');
+            $table->foreignUuid('auditee_id')->constrained('auditee', 'id')->onDelete('cascade');
+            $table->text('tindakan');
+            $table->text('pic');
+            $table->text('waktu');
             $table->timestamps();
         });
     }

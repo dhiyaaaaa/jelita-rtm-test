@@ -53,15 +53,28 @@
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label for="fakultas_id">Pilih Fakultas</label>
-                    <small class="form-text text-muted">Pastikan memilih fakultas</small>
-                    <select name="fakultas_id" class="form-control" required>
-                        @foreach($fakultas as $fakultasItem)
-                            <option value="{{ $fakultasItem->id }}">{{ $fakultasItem->nama }}</option>
-                        @endforeach
-                    </select>
-                </div>  
+                @if($isUnit)
+                    <div class="form-group">
+                        <label for="unit_id">Pilih Unit</label>
+                        <small class="form-text text-muted">Pastikan memilih unit</small>
+                        <select name="unit_id" class="form-control" required>
+                            @foreach($units as $unitItem)
+                                <option value="{{ $unitItem->id }}">{{ $unitItem->nama }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @else
+                    <div class="form-group">
+                        <label for="fakultas_id">Pilih Fakultas</label>
+                        <small class="form-text text-muted">Pastikan memilih fakultas</small>
+                        <select name="fakultas_id" class="form-control" required>
+                            @foreach($fakultas as $fakultasItem)
+                                <option value="{{ $fakultasItem->id }}">{{ $fakultasItem->nama }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
                 
                 <div class="mb-3">
                     <label for="peserta" class="form-label">Jumlah Peserta:</label>

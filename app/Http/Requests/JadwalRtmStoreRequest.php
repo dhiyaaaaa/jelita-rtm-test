@@ -11,7 +11,7 @@ class JadwalRtmStoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->hasAnyRole(['pusjamu','pj_fakultas']);
+        return $this->user()->hasAnyRole(['pusjamu','pj_fakultas','pj_universitas']);
     }
 
     /**
@@ -24,6 +24,7 @@ class JadwalRtmStoreRequest extends FormRequest
         return [
             'jadwal_audit_id' => 'required|exists:jadwal_audit,id',
             'fakultas_id' => 'nullable|exists:fakultas,id',
+            'unit_id' => 'nullable|exists:unit,id',
             'agenda' => 'required|string|max:255',
             'tanggal' => 'required|date',
             'jam_mulai' => 'required|date_format:H:i',

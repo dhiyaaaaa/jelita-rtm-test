@@ -1,13 +1,13 @@
-<?php
-
+<?php 
 namespace App\Http\Controllers\dekan;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\JadwalRtmStoreRequest;
 use App\Models\JadwalAudit;
 use App\Models\RtmJadwal;
-use App\Models\RtmRtl;
+use App\Models\Unit;
 use App\Models\Fakultas;
+use App\Models\Prodi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -15,25 +15,58 @@ use Carbon\Carbon;
 class RtmJadwalController extends Controller
 {
     protected $user;
-    protected $fakultasUser ;
+    protected $unitOrFakultasId;
+    protected $isUnit; 
 
     public function __construct()
     {
         $this->user = Auth::user();
-        $this->fakultasUser = $this->user->prodi->isNotEmpty()
-            ? $this->user->prodi->first()->fakultas->id
-            : ($this->user->fakultas->isNotEmpty() ? $this->user->fakultas->first()->id : null);
-        
+
+        // Ambil data pivot dari relasi jabatan
+        $jabatanUser = Auth::user()->jabatan->isNotEmpty() ? Auth::user()->jabatan->first() : null;
+
+        if ($jabatanUser) {
+            // Cek apakah pengguna memiliki unit_id di pivot
+            if ($jabatanUser->pivot->unit_id) {
+                $this->unitOrFakultasId = $jabatanUser->pivot->unit_id;
+                $this->isUnit = true;
+            }
+            // Cek apakah pengguna memiliki prodi_id di pivot
+            elseif ($jabatanUser->pivot->prodi_id) {
+                $prodi = Prodi::find($jabatanUser->pivot->prodi_id);
+                if ($prodi) {
+                    $this->unitOrFakultasId = $prodi->fakultas_id;
+                    $this->isUnit = false;
+                }
+            }
+            // Cek apakah pengguna memiliki fakultas_id di pivot
+            elseif ($jabatanUser->pivot->fakultas_id) {
+                $this->unitOrFakultasId = $jabatanUser->pivot->fakultas_id;
+                $this->isUnit = false;
+            }
+            // Jika tidak ada, set null dan false
+            else {
+                $this->unitOrFakultasId = null;
+                $this->isUnit = false;
+            }
+        } else {
+            $this->unitOrFakultasId = null;
+            $this->isUnit = false;
+        }
     }
 
     public function index()
     {
         $jadwal = RtmJadwal::with(['jadwal_audit', 'fakultas', 'rtm_rtl'])
-            ->where('fakultas_id', $this->fakultasUser)
+            ->when($this->isUnit, function ($query) {
+                return $query->where('unit_id', $this->unitOrFakultasId);
+            }, function ($query) {
+                return $query->where('fakultas_id', $this->unitOrFakultasId);
+            })
             ->get();
 
         $data = [
-            'fakultasId' => $this->fakultasUser,
+            'unitOrFakultasId' => $this->unitOrFakultasId,
             'rtmJadwal' => $jadwal,
             'title' => 'Agenda RTM',
         ];
@@ -42,14 +75,24 @@ class RtmJadwalController extends Controller
 
     public function create()
     {
-
         $jadwalAudit = JadwalAudit::all();
-        $fakultas = Fakultas::where('id', $this->fakultasUser)->get();
-    
+        $jabatanUser = Auth::user()->jabatan->isNotEmpty() ? Auth::user()->jabatan->first()->id : null;
+        $fakultas = collect([]);
+        $units = collect([]);
+
+        if ($jabatanUser) {
+            if ($this->isUnit) {
+                $units = Unit::where('id', $this->unitOrFakultasId)->get();
+            } else {
+                $fakultas = Fakultas::where('id', $this->unitOrFakultasId)->get();
+            }
+        }
         $data = [
             'title' => 'Tambah Jadwal RTM',
             'jadwalAudit' => $jadwalAudit,
             'fakultas' => $fakultas,
+            'units' => $units,
+            'isUnit' => $this->isUnit,
         ];
         return view('dekan.rtm.jadwal.create', $data);
     }
@@ -58,7 +101,11 @@ class RtmJadwalController extends Controller
     {
         $data = $request->validated(); 
 
-        $data['fakultas_id'] = $request->fakultas_id; 
+        if ($this->isUnit) {
+            $data['unit_id'] = $this->unitOrFakultasId;
+        } else {
+            $data['fakultas_id'] = $this->unitOrFakultasId;
+        }
 
         $data['jadwal_audit_id'] = $request->jadwal_audit_id; 
 
@@ -73,7 +120,8 @@ class RtmJadwalController extends Controller
 
         $isEditMode = $request->has('edit') && $request->edit == 'true';
         $jadwalAudit = JadwalAudit::all();
-        $fakultas = Fakultas::where('id', $this->fakultasUser)->get();
+        $fakultas = Fakultas::where('id', $this->unitOrFakultasId)->get();
+        $unit = Unit::where('id', $this->unitOrFakultasId)->get();
 
         $data = [
             'title' => 'Detail Rapat Tinjauan Manajemen',
@@ -81,6 +129,7 @@ class RtmJadwalController extends Controller
             'isEditMode' => $isEditMode,
             'jadwalAudit' => $jadwalAudit,
             'fakultas' => $fakultas,
+            'unit' => $unit,
         ];
 
         return view('dekan.rtm.jadwal.show', $data);

@@ -56,8 +56,18 @@ class Form extends Model
         return $this->hasMany(PtkFormDeskripsi::class, 'form_id');
     }
 
+    public function ptk_form(): HasMany
+    {
+        return $this->hasMany(PtkForm::class, 'form_id');
+    }
+
     public function laporan_form(): HasMany
     {
         return $this->hasMany(LaporanForm::class, 'form_id');
+    }
+
+    public function rtm_tindak_lanjut(): HasMany
+    {
+        return $this->hasMany(RtmTindakLanjut::class, 'form_id');
     }
 }

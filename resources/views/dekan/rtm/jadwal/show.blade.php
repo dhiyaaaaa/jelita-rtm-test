@@ -4,7 +4,7 @@
 <div class="container">
     <h2>{{ $title}}</h2>
     <div class="mb-3">
-        <a href="{{ route("jadwal_rtm") }}" class="btn btn-outline-secondary">Kembali</a>
+        <a href="{{ route("dekan.jadwal-rtm.index") }}" class="btn btn-outline-secondary">Kembali</a>
     </div>
 
     <!-- Tampilkan pesan success jika ada -->
@@ -19,7 +19,7 @@
         <div class="card-body">
             @if($isEditMode)
                 <!-- Form untuk mengedit data RTM jika mode edit aktif -->
-                <form action="{{ route('gpm.jadwal-rtm.update', $item->id) }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('dekan.jadwal-rtm.update', $item->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     <div class="row mb-3">
@@ -61,7 +61,8 @@
                                 </option>
                             @endforeach
                         </select>
-                    </div>                    
+                    </div>
+                    @role(['pj_fakultas'])                    
                     <div class="form-group">
                         <label for="fakultas_id">Pilih Fakultas</label>
                         <select name="fakultas_id" id="fakultas_id" class="form-control" required>
@@ -70,6 +71,18 @@
                             @endforeach
                         </select>
                     </div>
+                    @endrole
+
+                    @role(['pj_universitas'])                    
+                    <div class="form-group">
+                        <label for="unit_id">Pilih Unit</label>
+                        <select name="unit_id" id="unit_id" class="form-control" required>
+                            @foreach($unit as $unitItem)
+                                <option value="{{ $unitItem->id }}"{{ old('unit_id', $item->unit_id) == $unitItem->id ? 'selected' : '' }}>{{ $unitItem->nama }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endrole
 
                     <div class="mb-3">
                         <label for="peserta" class="form-label">Jumlah Peserta Rapat:</label>
@@ -130,7 +143,7 @@
                         </div>
                         <div class="card-footer text-center">
                             <!-- Tombol untuk masuk ke mode edit -->
-                            <a href="{{ route('gpm.jadwal-rtm.show', ['id' => $item->id, 'edit' => 'true']) }}" class="btn btn-warning">Edit Jadwal</a>
+                            <a href="{{ route('dekan.jadwal-rtm.show', ['id' => $item->id, 'edit' => 'true']) }}" class="btn btn-warning">Edit Jadwal</a>
                         </div>
                     </div>
               

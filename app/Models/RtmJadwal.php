@@ -18,7 +18,7 @@ class RtmJadwal extends Model
 
     protected $table = 'rtm_jadwal';
 
-    protected $fillable = ['jadwal_audit_id', 'fakultas_id', 'tanggal', 'peserta', 'jam_mulai', 'jam_selesai', 'tempat', 'agenda', 'pimpinan'];
+    protected $fillable = ['jadwal_audit_id', 'fakultas_id', 'unit_id', 'tanggal', 'peserta', 'jam_mulai', 'jam_selesai', 'tempat', 'agenda', 'pimpinan'];
 
     public function jadwal_audit(): BelongsTo
     {
@@ -30,6 +30,11 @@ class RtmJadwal extends Model
         return $this->belongsTo(Fakultas::class, 'fakultas_id', 'id');
     }
 
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class, 'unit_id', 'id');
+    }
+
     public function rtm_lampiran(): HasMany
     {
         return $this->hasMany(RtmLampiran::class, 'rtm_jadwal_id');
@@ -38,6 +43,11 @@ class RtmJadwal extends Model
     public function rtm_rtl(): HasMany
     {
         return $this->hasMany(RtmRtl::class, 'rtm_jadwal_id');
+    }
+
+    public function rtm_tindak_lanjut(): HasMany
+    {
+        return $this->hasMany(RtmTindakLanjut::class, 'rtm_jadwal_id');
     }
 
     public static function boot()

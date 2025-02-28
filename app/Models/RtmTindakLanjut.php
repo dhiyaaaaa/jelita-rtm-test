@@ -17,12 +17,11 @@ class RtmTindakLanjut extends Model
     [
         'rtm_rtl_id', 
         'form_id', 
-        'prodi_id', 
-        'fakultas_id', 
-        'unit_id', 
+        'auditee_id',
         'kriteria_id',
         'tindakan',
-        'catatan'
+        'pic',
+        'waktu',
     ];
 
     public function rtm_rtl(): BelongsTo
@@ -35,19 +34,9 @@ class RtmTindakLanjut extends Model
         return $this->belongsTo(Form::class, 'form_id');
     }
     
-    public function prodi(): BelongsTo
+    public function auditee(): BelongsTo
     {
-        return $this->belongsTo(Prodi::class, 'prodi_id', 'id');
-    }
-
-    public function fakultas(): BelongsTo
-    {
-        return $this->belongsTo(Fakultas::class, 'fakultas_id', 'id');
-    }
-
-    public function unit(): BelongsTo
-    {
-        return $this->belongsTo(Unit::class, 'unit_id', 'id');
+        return $this->belongsTo(Auditee::class, 'auditee_id');
     }
 
     public function kriteria(): BelongsTo

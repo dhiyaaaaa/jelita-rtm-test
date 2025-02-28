@@ -91,4 +91,14 @@ class Unit extends Model
     {
         return $this->hasMany(StatusAssessment::class, 'unit_id');
     }
+    public function rtm_jadwal(): HasMany
+    {
+        return $this->hasMany(RtmJadwal::class, 'unit_id', 'id');
+    }
+
+    public function rtm_rtl(): HasMany
+    {
+        return $this->hasMany(RtmRtl::class, 'unit_id', 'id');
+    }
+    
 }

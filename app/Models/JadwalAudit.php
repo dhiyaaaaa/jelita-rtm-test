@@ -98,4 +98,10 @@ class JadwalAudit extends Model
     {
         return $this->hasMany(StatusAuditAuditor::class, 'jadwal_audit_id');
     }
+
+    public function rtm_jadwal(): HasMany
+    {
+        return $this->hasMany(RtmJadwal::class, 'jadwal_audit_id', 'id');
+    }
+
 }

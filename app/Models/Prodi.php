@@ -93,4 +93,12 @@ class Prodi extends Model
     {
         return $this->hasMany(StatusAssessment::class, 'prodi_id');
     }
+    public function monitoring(): HasMany
+    {
+        return $this->hasMany(Monitoring::class, 'prodi_id', 'id');
+    }
+    public function rtl(): HasMany
+    {
+        return $this->hasMany(Rtl::class, 'prodi_id', 'id');
+    }
 }

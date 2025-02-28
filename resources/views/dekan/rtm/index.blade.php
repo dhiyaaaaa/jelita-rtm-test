@@ -52,35 +52,34 @@
                                     @if ($item->rtm_rtl->isNotEmpty())
                                         @php
                                             $rtmRtl = $item->rtm_rtl->first();
+                                            $status = $rtmRtl->status_rtm_rtl->first();
                                         @endphp
-                                            {{-- Isi rtm_rtl --}}
-                                            @if ($rtmRtl->status_rtm_rtl->isEmpty())
-                                                <form action= "{{ route('dekan.rtm-rtl.isi', ['rtmRtl' => $rtmRtl->id]) }}"
-                                                    method="post" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-outline-info">Isi</button>
-                                                </form>
+                                        @if ($rtmRtl->status_rtm_rtl->isNotEmpty())
+                                            @php
+                                                $status = $rtmRtl->status_rtm_rtl->first();
+                                            @endphp
+                                            @if ($status->status === 'completed')
+                                                <a href="{{ route('dekan.rtm-rtl.form', ['rtmRtl' => $rtmRtl->id]) }}"
+                                                    class="btn btn-primary">Sudah Isi</a>
                                             @else
-                                                @php
-                                                    $status = $rtmRtl->status_rtm_rtl->first();
-                                                @endphp
-                                                @if ($status->status === 'completed')
-                                                    <a href="{{ route('dekan.rtm-rtl.form', ['rtmRtl' => $rtmRtl->id]) }}"
-                                                        class="btn btn-info">Sudah Isi</a>
-                                                @else
-                                                    <a href="{{ route('dekan.rtm-rtl.form', ['rtmRtl' => $rtmRtl->id]) }}"
-                                                        class="btn btn-outline-info">Isi</a>
-                                                @endif
+                                                <a href="{{ route('dekan.rtm-rtl.form', ['rtmRtl' => $rtmRtl->id]) }}"
+                                                    class="btn btn-outline-primary">Isi</a>
                                             @endif
+                                        @else
+                                            <form action="{{ route('dekan.rtm-rtl.isi', ['rtmRtl' => $rtmRtl->id]) }}"
+                                                method="post" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-primary">Isi</button>
+                                            </form>
+                                        @endif
                                     @else
-                                        
                                         <button class="btn btn-outline-primary tindak-lanjut-btn" 
                                             data-id="{{ $item->id }}" 
-                                            data-fakultas_id="{{ $item->fakultas_id }}" 
+                                            data-fakultas_id="{{ $item->fakultas_id }}"
+                                            data-unit_id="{{ $item->unit_id }}"  
                                             data-jadwal_audit_id="{{ $item->jadwal_audit_id }}">
                                             +Tindak Lanjut
                                         </button>
-                                        
                                     @endif
                                 </td>
                             
@@ -88,22 +87,17 @@
                             {{-- Aksi --}}
                             <td class="text-center">
                                 <div class="dropdown">
-                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                         Aksi
                                     </button>
                                     <ul class="dropdown-menu">
                                         <li>
-                                            <a class="dropdown-item" href="/">
+                                            <a class="dropdown-item" href="{{ route('dekan.jadwal-rtm.show', $item->id) }}">
                                                 <i class="fas fa-file"></i> Lihat Agenda
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="{{ route('rtm.details', $item->id) }}">
-                                                <i class="fas fa-eye"></i> Pratinjau
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="/">
+                                            <a class="dropdown-item" href="{{ route('download.rtm.fakultas', $item->id) }}">
                                                 <i class="fas fa-download"></i> Download Laporan RTM
                                             </a>
                                         </li>
@@ -347,11 +341,13 @@
         $('.tindak-lanjut-btn').click(function() {
             let jadwalId = $(this).data('id');
             let fakultasId = $(this).data('fakultas_id');
+            let unitId = $(this).data('unit_id');
             let auditId = $(this).data('jadwal_audit_id');
 
             // Debugging untuk memastikan data tidak kosong
             console.log("Jadwal ID:", jadwalId);
             console.log("Fakultas ID:", fakultasId);
+            console.log("Unit ID:", unitId);
             console.log("Audit ID:", auditId);
 
             $('#konfirmasiModal').modal('show');
@@ -364,6 +360,7 @@
                         _token: "{{ csrf_token() }}",
                         jadwal_id: jadwalId,
                         fakultas_id: fakultasId,
+                        unit_id: unitId,
                         jadwal_audit_id: auditId
                     },
                     success: function(response) {

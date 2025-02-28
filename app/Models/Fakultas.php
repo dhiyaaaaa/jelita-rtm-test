@@ -83,4 +83,14 @@ class Fakultas extends Model
     {
         return $this->hasMany(StatusAssessment::class, 'fakultas_id');
     }
+    
+    public function rtm_jadwal(): HasMany
+    {
+        return $this->hasMany(RtmJadwal::class, 'fakultas_id');
+    }
+
+    public function rtm_rtl(): HasMany
+    {
+        return $this->hasMany(RtmRtl::class, 'fakultas_id');
+    }
 }

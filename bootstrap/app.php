@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check_auditor' => \App\Http\Middleware\CheckAuditor::class,
             'check_is_admin_or_rektor' => \App\Http\Middleware\CheckIsAdminOrRektor::class,
             'check_is_gpm_or_dekan' => \App\Http\Middleware\CheckIsGpmOrDekan::class,
+            'check_role_rtm' => \App\Http\Middleware\CheckRoleRtm::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
