@@ -126,14 +126,12 @@ class RtmRtlController extends Controller
         $sessionKey = 'form_rtm_rtl-page_' . $request->query('page', 1) . '-rtmRtlId_' . $rtmRtl->id . '-auditeeId_' . $auditee->id;
         $sessionFormData = session()->get($sessionKey, []);
         Log::info('RTM controller session data', $sessionFormData);
-        // Gabungkan data dari database dan session
+
         $formData = [];
 
-        // If sessionFormData is not empty, use it
         if (!empty($sessionFormData)) {
             $formData = $sessionFormData;
         } else {
-            // If sessionFormData is empty, use data from the database
             foreach ($jawabanTindakLanjut as $jawaban) {
                 if (!isset($formData[$jawaban->form_id])) {
                     $formData[$jawaban->form_id] = [
@@ -296,7 +294,7 @@ class RtmRtlController extends Controller
                         [
                             'rtm_rtl_id' => $rtmRtl->id,
                             'form_id' => $formId,
-                            'tindakan' => $tindakanItem,
+                            'tindakan' => $tindakanItem['tindakan'],
                         ],
                         [
                             'kriteria_id' => $kriteriaId,
@@ -344,7 +342,7 @@ class RtmRtlController extends Controller
             session()->forget($sessionKey);
         }
 
-        return redirect()->route('dekan.jadwal-rtm.index')
+        return redirect()->route('dekan.rtm-rtl.form_prodi', $rtmRtl->id)
             ->with('success', 'Data berhasil disimpan.');
     }
 }

@@ -84,7 +84,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end gap-2">
-                    <button type="submit" class="btn btn-success me-2">Simpan</button>
+                    <button type="submit" class="btn btn-primary me-2">Simpan</button>
                     <a href="{{ route('dekan.jadwal-rtm.index') }}" class="btn btn-outline-secondary">Kembali</a>
                 </div>                
             </form>

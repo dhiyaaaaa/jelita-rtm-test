@@ -109,7 +109,7 @@ class RtmJadwalController extends Controller
 
         $data['jadwal_audit_id'] = $request->jadwal_audit_id; 
 
-        RtmJadwal::create($data);
+        RtmJadwal::updateOrCreate($data);
 
         return redirect()->route('dekan.jadwal-rtm.index')->with('success', 'Data RTM berhasil disimpan!');
     }

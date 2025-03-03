@@ -53,22 +53,26 @@
                                         @endforeach
                                         <div id="tindakan-inputs-{{ $formId }}-{{ $kriteriaId }}" class="mt-3">
                                             @if ($tindakanDataKriteria->isNotEmpty())
-                                                @foreach ($tindakanDataKriteria as $index => $tindakan)
                                                 <div class="row g-2 mb-3">
-                                                    <input type="text"
-                                                        class="form-control"
-                                                        value="{{ $tindakan['tindakan'] }}"
-                                                        disabled>
-                                                    <input type="text"
-                                                        class="form-control"
-                                                        value="{{ $tindakan['pic'] }}"
-                                                        disabled>
-                                                    <input type="text"
-                                                        class="form-control"
-                                                        value="{{ $tindakan['waktu'] }}"
-                                                        disabled>
+                                                    <div class="col-md-4">
+                                                        <label class="font-weight-bold">Tindakan</label>
+                                                        @foreach ($tindakanDataKriteria as $index => $tindakan)
+                                                            <textarea class="form-control small-textarea mb-2" disabled>{{ $tindakan['tindakan'] }}</textarea>
+                                                        @endforeach
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="font-weight-bold">PIC</label>
+                                                        @foreach ($tindakanDataKriteria as $index => $tindakan)
+                                                            <textarea class="form-control small-textarea mb-2" disabled>{{ $tindakan['pic'] }}</textarea>
+                                                        @endforeach
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="font-weight-bold">Waktu</label>
+                                                        @foreach ($tindakanDataKriteria as $index => $tindakan)
+                                                            <textarea class="form-control small-textarea mb-2" disabled>{{ $tindakan['waktu'] }}</textarea>
+                                                        @endforeach
+                                                    </div>
                                                 </div>
-                                                @endforeach
                                             @else
                                                 <p class="text-muted">Tidak ada rencana tindakan.</p>
                                             @endif
@@ -94,7 +98,7 @@
                             {{ $paginatedTemuanProdi->links('pagination::bootstrap-4') }}
                         </div>
                         <div class="text-center mt-3">
-                            <a href="{{ route('hasil_rtm_fakultas.show', $rtmJadwal->id) }}" class="btn btn-outline-secondary">Kembali</a>
+                            <a href="{{ route('hasil_rtm_fakultas.show', $jadwalAudit->id) }}" class="btn btn-outline-secondary">Kembali</a>
                         </div>
                     </div>
                 </div>
@@ -127,6 +131,17 @@
 
         .pagination-wrapper .page-item {
             flex: 1 0 1;
+        }
+
+        /* CSS untuk textarea kecil */
+        .small-textarea {
+            resize: none; 
+            height: 38px; 
+            min-height: 38px; 
+            max-height: 100px; 
+            overflow-y: auto; 
+            font-size: 14px; 
+            padding: 6px 12px; 
         }
     </style>
 @endsection

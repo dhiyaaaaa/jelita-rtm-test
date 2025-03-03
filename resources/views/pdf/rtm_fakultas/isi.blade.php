@@ -1,6 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Temuan</title>
     <style>
         @page {
             size: A4 portrait;
@@ -32,14 +35,17 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
-            margin-bottom: 0; /* Hilangkan margin bawah */
+            table-layout: fixed; /* Pastikan tabel tidak melebar */
         }
 
         .table th, .table td {
-            padding: 10px;
+            padding: 8px;
             text-align: left;
             border: 1px solid #bfbfbf;
-            word-wrap: break-word;
+            word-wrap: break-word; 
+            overflow-wrap: break-word;
+            white-space: normal;
+            vertical-align: top;
         }
 
         .table th {
@@ -53,7 +59,7 @@
         }
 
         .tindak-lanjut {
-            padding-left: 15px;
+            padding-left: 10px;
         }
 
         .tindak-lanjut ol {
@@ -65,36 +71,45 @@
             page-break-after: always;
         }
 
-        /* Atur lebar kolom */
+        /* Atur lebar kolom agar tidak terlalu lebar */
         .table th:nth-child(1), .table td:nth-child(1) {
-            width: 5%; /* No */
+            width: 5%;
+            text-align: center;
         }
 
         .table th:nth-child(2), .table td:nth-child(2) {
-            width: 25%; /* Kode & Instrumen */
+            width: 20%;
         }
 
         .table th:nth-child(3), .table td:nth-child(3) {
-            width: 15%; /* Kriteria */
+            width: 15%;
         }
 
         .table th:nth-child(4), .table td:nth-child(4) {
-            width: 15%; /* Jabatan */
+            width: 15%;
         }
 
         .table th:nth-child(5), .table td:nth-child(5) {
-            width: 20%; /* Catatan Auditor */
+            width: 25%;
         }
 
         .table th:nth-child(6), .table td:nth-child(6) {
-            width: 20%; /* Tindak Lanjut */
+            width: 20%;
         }
+
+        /* Atur lebar kolom Tindak Lanjut agar tidak terlalu melebar */
+        .table td:nth-child(5), .table td:nth-child(6) {
+            max-width: 20%;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+        }
+
     </style>
 </head>
 <body>
     <div class="container">
-
-        <!-- Daftar Temuan Fakultas -->
         <h4>Daftar Temuan</h4>
         <table class="table">
             <thead>
@@ -118,7 +133,7 @@
                         <td>{{ $item->catatan ?? '(Catatan auditor tidak tersedia)' }}</td>
                         <td class="tindak-lanjut">
                             <ol>
-                                @foreach ($jawabanTindakLanjut->where('form_id', $item->form->id) as $index => $tindak)
+                                @foreach ($jawabanTindakLanjut->where('form_id', $item->form->id) as $tindak)
                                     <li>
                                         <strong>Tindakan:</strong> {{ $tindak->tindakan ?? '-' }}<br>
                                         <strong>PIC:</strong> {{ $tindak->pic ?? '-' }}<br>
@@ -134,7 +149,6 @@
 
         <div class="page-break"></div>
 
-        <!-- Daftar Temuan Prodi -->
         @if($fakultas)
         <h4>Daftar Temuan Prodi</h4>
         <table class="table">
@@ -157,15 +171,15 @@
                         <td>{{ $item->prodi->jenjang->nama }} {{ $item->prodi->nama }}: {{ $item->catatan ?? '(Tidak ada catatan)' }}</td>
                         <td class="tindak-lanjut">
                             <ol>
-                                @foreach ($jawabanTindakLanjut->where('form_id', $item->form->id)->where('kriteria_id', $item->kriteria->id) as $index => $tindak)
+                                @foreach ($jawabanTindakLanjut->where('form_id', $item->form->id)->where('kriteria_id', $item->kriteria->id) as $tindak)
                                     <li>
-                                        <strong>Tindakan:</strong> {{ $tindak->tindakan ?? '-' }}<br>
+                                        <strong>Tindakan:</strong> {!! nl2br(e(wordwrap($tindak->tindakan ?? '-', 50, "\n", true))) !!}<br>
                                         <strong>PIC:</strong> {{ $tindak->pic ?? '-' }}<br>
                                         <strong>Waktu:</strong> {{ $tindak->waktu ?? '-' }}
                                     </li>
                                 @endforeach
                             </ol>
-                        </td>
+                        </td>                        
                     </tr>
                 @endforeach
             </tbody>

@@ -67,23 +67,14 @@
                                                 @if (isset($jawabanTindakLanjut[$item->form->id]))
                                                     @foreach ($jawabanTindakLanjut[$item->form->id] as $tindakan)
                                                         <div class="input-group mb-2">
-                                                            <input type="text"
-                                                                class="form-control"
-                                                                value="{{ $tindakan->tindakan }}"
-                                                                disabled>
-                                                            <input type="text"
-                                                                class="form-control"
-                                                                value="{{ $tindakan->pic }}"
-                                                                disabled>
-                                                            <input type="text"
-                                                                class="form-control"
-                                                                value="{{ $tindakan->waktu }}"
-                                                                disabled>
+                                                            <textarea class="form-control small-textarea" disabled>{{ $tindakan->tindakan }}</textarea>
+                                                            <textarea class="form-control small-textarea" disabled>{{ $tindakan->pic }}</textarea>
+                                                            <textarea class="form-control small-textarea" disabled>{{ $tindakan->waktu }}</textarea>
                                                         </div>
                                                     @endforeach
                                                 @else
                                                     <div class="input-group mb-2">
-                                                        <textarea class="form-control" disabled></textarea>
+                                                        <textarea class="form-control small-textarea" disabled></textarea>
                                                     </div>
                                                 @endif
                                             </div>
@@ -108,14 +99,15 @@
                         <div class="pagination-wrapper">
                             {{ $paginatedTemuanFakultas->links('pagination::bootstrap-4') }}
                         </div>
-                        <div class="d-flex justify-content-start">
-                            <a href="{{ route('hasil_rtm_fakultas.show', $jadwalAudit->id) }}" class="btn btn-outline-secondary mr-2">Kembali</a>
-                        </div>
                         @if ($fakultas)
-                        <div class="d-flex justify-content-start">
+                        <div class="d-flex justify-content-start mb-2">
                             <a href="{{ route('hasil_rtm_rtl_prodi.show', $rtmRtl->id) }}" class="btn btn-primary mr-2">Temuan Prodi</a>
                         </div>
                         @endif
+                        <div class="d-flex justify-content-start mb-2">
+                            <a href="{{ route('hasil_rtm_fakultas.show', $jadwalAudit->id) }}" class="btn btn-outline-secondary mr-2">Kembali</a>
+                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -147,6 +139,17 @@
 
         .pagination-wrapper .page-item {
             flex: 1 0 1;
+        }
+
+        /* CSS untuk textarea kecil */
+        .small-textarea {
+            resize: none; /* Nonaktifkan resize */
+            height: 38px; /* Tinggi textarea */
+            min-height: 38px; /* Tinggi minimum */
+            max-height: 100px; /* Tinggi maksimum */
+            overflow-y: auto; /* Tambahkan scroll jika konten melebihi tinggi */
+            font-size: 14px; /* Ukuran font */
+            padding: 6px 12px; /* Padding untuk tampilan yang lebih baik */
         }
     </style>
 @endsection

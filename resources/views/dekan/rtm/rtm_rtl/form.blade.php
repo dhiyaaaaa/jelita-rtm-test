@@ -96,61 +96,60 @@
                                                 <span class="text-danger">&#42;</span>
 
                                                 <div id="tindakan-inputs-{{ $item->form->id }}" class="mb-3">
-
                                                     @if (!empty($sessionFormData[$item->form->id]['tindakan']))
                                                         @foreach ($sessionFormData[$item->form->id]['tindakan'] as $index => $tindakan)
-                                                        <div class="input-group mb-2 tindakan-row">
-                                                            <input type="text"
-                                                                name="tindakan_{{ $item->form->id }}[{{ $index }}][tindakan]"
-                                                                class="form-control @error('tindakan_'.$item->form->id.'.'.$index.'.tindakan') is-invalid @enderror"
-                                                                placeholder="{{ $item->kriteria->nama === 'Belum Memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan' }}"
-                                                                value="{{ $tindakan['tindakan'] ?? '' }}"
-                                                                {{ $isDisabled ? 'disabled' : '' }}>
-                                                            @error('tindakan_'.$item->form->id.'.'.$index.'.tindakan')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
-                                                            <input type="text"
-                                                                name="pic_{{ $item->form->id }}[{{ $index }}][pic]"
-                                                                class="form-control @error('pic_'.$item->form->id.'.'.$index.'.pic') is-invalid @enderror"
-                                                                placeholder="PIC"
-                                                                value="{{ $tindakan['pic'] ?? '' }}"
-                                                                {{ $isDisabled ? 'disabled' : '' }}>
-                                                            @error('pic_'.$item->form->id.'.'.$index.'.pic')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
-
-                                                            <input type="text"
-                                                                name="waktu_{{ $item->form->id }}[{{ $index }}][waktu]"
-                                                                class="form-control @error('waktu_'.$item->form->id.'.'.$index.'.waktu') is-invalid @enderror"
-                                                                placeholder="{{ $item->kriteria->nama === 'Belum Memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"
-                                                                value="{{ $tindakan['waktu'] ?? '' }}"
-                                                                {{ $isDisabled ? 'disabled' : '' }}>
-                                                            @error('waktu_'.$item->form->id.'.'.$index.'.waktu')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
-
-                                                            <button type="button"
-                                                                class="btn btn-danger btn-sm remove-tindakan ml-2">Hapus</button>
-                                                        </div>
+                                                            <div class="input-group mb-2 tindakan-row">
+                                                                <textarea
+                                                                    name="tindakan_{{ $item->form->id }}[{{ $index }}][tindakan]"
+                                                                    class="form-control small-textarea @error('tindakan_'.$item->form->id.'.'.$index.'.tindakan') is-invalid @enderror"
+                                                                    placeholder="{{ $item->kriteria->nama === 'Belum Memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan' }}"
+                                                                    {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['tindakan'] ?? '' }}</textarea>
+                                                                @error('tindakan_'.$item->form->id.'.'.$index.'.tindakan')
+                                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                                @enderror
+                                                
+                                                                <textarea
+                                                                    name="pic_{{ $item->form->id }}[{{ $index }}][pic]"
+                                                                    class="form-control small-textarea @error('pic_'.$item->form->id.'.'.$index.'.pic') is-invalid @enderror"
+                                                                    placeholder="PIC"
+                                                                    {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['pic'] ?? '' }}</textarea>
+                                                                @error('pic_'.$item->form->id.'.'.$index.'.pic')
+                                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                                @enderror
+                                                
+                                                                <textarea
+                                                                    name="waktu_{{ $item->form->id }}[{{ $index }}][waktu]"
+                                                                    class="form-control small-textarea @error('waktu_'.$item->form->id.'.'.$index.'.waktu') is-invalid @enderror"
+                                                                    placeholder="{{ $item->kriteria->nama === 'Belum Memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"
+                                                                    {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['waktu'] ?? '' }}</textarea>
+                                                                @error('waktu_'.$item->form->id.'.'.$index.'.waktu')
+                                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                                @enderror
+                                                
+                                                                <button type="button"
+                                                                    class="btn btn-danger btn-sm remove-tindakan ml-2">Hapus</button>
+                                                            </div>
                                                         @endforeach
                                                     @else
                                                         <div class="input-group mb-2 tindakan-row">
-                                                            <input type="text"
+                                                            <textarea
                                                                 name="tindakan_{{ $item->form->id }}[0][tindakan]"
-                                                                class="form-control"
+                                                                class="form-control small-textarea"
                                                                 placeholder="{{ $item->kriteria->nama === 'Belum Memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan' }}"
-                                                                {{ $isDisabled ? 'disabled' : '' }}>
-
-                                                            <input type="text" name="pic_{{ $item->form->id }}[0][pic]"
-                                                                class="form-control" placeholder="PIC"
-                                                                {{ $isDisabled ? 'disabled' : '' }}>
-
-                                                            <input type="text"
+                                                                {{ $isDisabled ? 'disabled' : '' }}></textarea>
+                                                
+                                                            <textarea
+                                                                name="pic_{{ $item->form->id }}[0][pic]"
+                                                                class="form-control small-textarea"
+                                                                placeholder="PIC"
+                                                                {{ $isDisabled ? 'disabled' : '' }}></textarea>
+                                                
+                                                            <textarea
                                                                 name="waktu_{{ $item->form->id }}[0][waktu]"
-                                                                class="form-control"
+                                                                class="form-control small-textarea"
                                                                 placeholder="{{ $item->kriteria->nama === 'Belum Memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"
-                                                                {{ $isDisabled ? 'disabled' : '' }}>
-
+                                                                {{ $isDisabled ? 'disabled' : '' }}></textarea>
+                                                
                                                             <button type="button"
                                                                 class="btn btn-danger btn-sm remove-tindakan ml-2">Hapus</button>
                                                         </div>
@@ -162,7 +161,7 @@
                                                         @if (!$isDisabled)
                                                             <div class="mb-3">
                                                                 <button type="button" class="btn btn-secondary btn-sm"
-                                                                    onclick="addTindakanInput('{{ $item->form->id }}')">
+                                                                    onclick="addTindakanInput('{{ $item->form->id }}', '{{ $item->kriteria->nama }}')">
                                                                     Tambah Rencana
                                                                 </button>
                                                             </div>
@@ -239,7 +238,7 @@
                                 </div>
                             @endif
 
-                            @if (isset($status) && $status->status === 'completed')
+                            {{-- @if (isset($status) && $status->status === 'completed')
                                 <div class="mb-3">
                                     <button type="button" class="btn btn-warning" id="edit-button">Ubah</button>
                                     <button id="button-edit-loading" class="btn btn-warning d-none" type="button"
@@ -249,16 +248,18 @@
                                         Loading...
                                     </button>
                                 </div>
-                            @endif
+                            @endif --}}
 
 
                             {{-- Kembali ke halaman jadwal --}}
                             <div class="d-flex justify-content-start">
-                                <a href="{{ route('dekan.jadwal-rtm.index') }}" class="btn btn-outline-secondary mr-2">Kembali</a>
                                 @role(['pj_fakultas', 'gpm', 'gkm'])
-                                <a href="{{ route('dekan.rtm-rtl.form_prodi', $rtmRtl->id) }}" class="btn btn-primary">Temuan
+                                <a href="{{ route('dekan.rtm-rtl.form_prodi', $rtmRtl->id) }}" class="btn btn-primary mr-2">Temuan
                                     Prodi</a>
-                                @endrole
+                                @endrole 
+
+                                <a href="{{ route('dekan.jadwal-rtm.index') }}" class="btn btn-outline-secondary mr-2">Kembali</a>
+                                
                             </div>
                         </div>
                     </div>
@@ -292,6 +293,19 @@
 
         .pagination-wrapper .page-item {
             flex: 1 0 1;
+        }
+    </style>
+
+    <style>
+        .tindakan-row {
+            display: flex;
+            gap: 10px; 
+            align-items: center; 
+        }
+        .small-textarea {
+            width: 200px; 
+            height: 50px; 
+            resize: none; 
         }
     </style>
 @endsection
@@ -427,46 +441,26 @@
             });
 
             // Menyimpan perubahan saat input diubah
-            // Use event delegation for dynamic inputs
-            $(document).on('input', 'input[name^="tindakan_"], input[name^="pic_"], input[name^="waktu_"]',
-                debounce(save_session, 1000));
+            $(document).on('input', 'textarea[name^="tindakan_"], textarea[name^="pic_"], textarea[name^="waktu_"]',
+                debounce(function() {
+                    save_session();
+                }, 1000));
             // $('input[name^="tindakan_"], input[name^="pic_"], input[name^="waktu_"]').on('input', debounce(save_session, 1000));
 
             // Fungsi menyimpan jawaban
             function save_jawaban(formId) {
                 console.log("Menyimpan jawaban untuk formId:", formId);
-                // Check if this selects the right elements
-                console.log($(`#tindakan-inputs-${formId}`).html()); // Check if this selects the right elements
+                console.log($(`#tindakan-inputs-${formId}`).html()); 
 
                 var tindakanList = [];
                 $(`#tindakan-inputs-${formId} .tindakan-row`).each(function() {
-                    // Find the input elements within the current row
-                    let tindakanInput = $(this).find(`[name^="tindakan_${formId}["]`);
-                    let picInput = $(this).find(`[name^="pic_${formId}["]`);
-                    let waktuInput = $(this).find(`[name^="waktu_${formId}["]`);
-
-                    // Extract the index from the name attribute
-                    let tindakanName = tindakanInput.attr('name');
-                    let index = tindakanName.match(/\[(\d+)\]/)[
-                        1]; // Extract the number inside the square brackets
-
-                    // Get the values
-                    let tindakan = tindakanInput.val() || '';
-                    let pic = picInput.val() || '';
-                    let waktu = waktuInput.val() || '';
-
-                    console.log(tindakan, pic, waktu);
-
-                    // Add to the list if any of the values are non-empty
-                    if (tindakan || pic || waktu) {
-                        tindakanList.push({
-                            tindakan,
-                            pic,
-                            waktu
-                        });
-                    }
+                    var textareas = $(this).find('textarea');
+                    tindakanList.push({
+                        tindakan: textareas.eq(0).val(),
+                        pic: textareas.eq(1).val(),
+                        waktu: textareas.eq(2).val()
+                    });
                 });
-
                 // Tampilkan loading
                 $(`#simpan_${formId}`).addClass('d-none');
                 $(`#simpan-button-loading_${formId}`).removeClass('d-none');
@@ -523,7 +517,7 @@
                 }
 
                 var formIds = [];
-                $('input[name^="tindakan_"]').each(function() {
+                $('textarea[name^="tindakan_"]').each(function() {
                     var name = $(this).attr('name');
                     var formId = name.match(/tindakan_([a-zA-Z0-9-]+)/)[1];
                     if (!formIds.includes(formId)) {
@@ -539,15 +533,15 @@
                     var pic = [];
                     var waktu = [];
 
-                    $(`input[name^="tindakan_${formId}"]`).each(function() {
+                    $(`textarea[name^="tindakan_${formId}"]`).each(function() {
                         tindakan.push($(this).val());
                     });
 
-                    $(`input[name^="pic_${formId}"]`).each(function() {
+                    $(`textarea[name^="pic_${formId}"]`).each(function() {
                         pic.push($(this).val());
                     });
 
-                    $(`input[name^="waktu_${formId}"]`).each(function() {
+                    $(`textarea[name^="waktu_${formId}"]`).each(function() {
                         waktu.push($(this).val());
                     });
 
@@ -564,10 +558,10 @@
                 if (!container) return;
                 const rows = container.querySelectorAll('.tindakan-row');
                 rows.forEach((row, index) => {
-                    const inputs = row.querySelectorAll('input');
-                    inputs[0].name = `tindakan_${formId}[${index}][tindakan]`;
-                    inputs[1].name = `pic_${formId}[${index}][pic]`;
-                    inputs[2].name = `waktu_${formId}[${index}][waktu]`;
+                    const textareas = row.querySelectorAll('textarea');
+                    textareas[0].name = `tindakan_${formId}[${index}][tindakan]`;
+                    textareas[1].name = `pic_${formId}[${index}][pic]`;
+                    textareas[2].name = `waktu_${formId}[${index}][waktu]`;
                 });
             }
 
@@ -581,7 +575,7 @@
                 }
 
                 var formIds = [];
-                $('input[name^="tindakan_"]').each(function() {
+                $('textarea[name^="tindakan_"]').each(function() {
                     var name = $(this).attr('name');
                     var formId = name.match(/tindakan_([a-zA-Z0-9-]+)/)[1];
                     if (!formIds.includes(formId)) {
@@ -595,11 +589,11 @@
                 formIds.forEach(function(formId) {
                     var rowsData = [];
                     $(`#tindakan-inputs-${formId} .tindakan-row`).each(function() {
-                        var inputs = $(this).find('input');
+                        var textareas = $(this).find('textarea');
                         rowsData.push({
-                            tindakan: inputs.eq(0).val(),
-                            pic: inputs.eq(1).val(),
-                            waktu: inputs.eq(2).val()
+                            tindakan: textareas.eq(0).val(),
+                            pic: textareas.eq(1).val(),
+                            waktu: textareas.eq(2).val()
                         });
                     });
                     formData.append(`rows_${formId}`, JSON.stringify(rowsData));
@@ -633,19 +627,33 @@
 
 
             // Tambah input tindakan baru
-            window.addTindakanInput = function(formId) {
+            window.addTindakanInput = function(formId, kriteriaNama) {
                 let container = document.getElementById(`tindakan-inputs-${formId}`);
-                if (!container) {
-                    console.error(`Container tindakan-inputs-${formId} tidak ditemukan`);
-                    return;
-                }
+                if (!container) return;
                 let index = container.querySelectorAll(".tindakan-row").length;
                 let newRow = document.createElement("div");
                 newRow.classList.add("input-group", "mb-2", "tindakan-row");
+
+                // Tentukan placeholder berdasarkan kriteria
+                const tindakanPlaceholder = kriteriaNama === 'Belum Memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan';
+                const waktuPlaceholder = kriteriaNama === 'Belum Memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan';
+
                 newRow.innerHTML = `
-                    <input type="text" name="tindakan_${formId}[${index}][tindakan]" class="form-control" placeholder="Tindakan" required>
-                    <input type="text" name="pic_${formId}[${index}][pic]" class="form-control" placeholder="PIC" required>
-                    <input type="text" name="waktu_${formId}[${index}][waktu]" class="form-control" placeholder="Waktu" required>
+                    <textarea
+                        name="tindakan_${formId}[${index}][tindakan]"
+                        class="form-control small-textarea"
+                        placeholder="${tindakanPlaceholder}"
+                        required></textarea>
+                    <textarea
+                        name="pic_${formId}[${index}][pic]"
+                        class="form-control small-textarea"
+                        placeholder="PIC"
+                        required></textarea>
+                    <textarea
+                        name="waktu_${formId}[${index}][waktu]"
+                        class="form-control small-textarea"
+                        placeholder="${waktuPlaceholder}"
+                        required></textarea>
                     <button type="button" class="btn btn-danger btn-sm remove-tindakan ml-2">Hapus</button>
                 `;
                 container.appendChild(newRow);
@@ -657,30 +665,14 @@
                     save_session(); // Simpan session setelah menghapus input
                 });
             };
-
+            
             // Hapus input tindakan
             $(document).on("click", ".remove-tindakan", function() {
-                // Find the input field within this row
-                const inputField = $(this).closest(".tindakan-row").find("input:first");
-
-                // Extract the formId from the input name attribute
-                // The format is like: tindakan_9e3d8a1c-40e6-4761-b931-74595bbb7c61[18][tindakan]
-                const matches = inputField.attr("name").match(/tindakan_([^[]+)/);
-
-                if (matches && matches[1]) {
-                    const formId = matches[1];
-
-                    // Remove the row
-                    $(this).closest(".tindakan-row").remove();
-
-                    // Call reindexRows with the extracted formId
-                    reindexRows(formId);
-
-                    // Save session
-                    save_session();
-                } else {
-                    console.error("Could not extract formId");
-                }
+                const row = $(this).closest(".tindakan-row");
+                const formId = row.find('textarea').first().attr('name').match(/tindakan_([^[]+)/)[1];
+                row.remove();
+                reindexRows(formId);
+                save_session(); 
             });
 
         });
