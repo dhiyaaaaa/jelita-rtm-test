@@ -130,7 +130,31 @@
                         <td>{{ $item->form->instrumen->kode }} – {{ $item->form->instrumen->pernyataan }}</td>
                         <td>{{ $item->kriteria->nama ?? '-' }}</td>
                         <td>{{ $item->form->instrumen->jabatan->pluck('nama')->implode(', ') ?? '-' }}</td>
-                        <td>{{ $item->catatan ?? '(Catatan auditor tidak tersedia)' }}</td>
+                        <td>
+                            @if ($item->kriteria->nama === 'Belum Memenuhi')
+                                @if ($item->form->ptk_form_deskripsi->isNotEmpty())
+                                    @foreach ($item->form->ptk_form_deskripsi as $deskripsi)
+                                        <p class="text-muted">{{ $deskripsi->deskripsi }}</p>
+                                    @endforeach
+                                @else
+                                    <p class="text-muted">Tidak ada catatan</p>
+                                @endif
+                            @elseif ($item->kriteria->nama === 'Memenuhi')
+                                @if ($item->catatan)
+                                    <p class="text-muted">{{ $item->catatan }}</p>
+                                @else
+                                    <p class="text-muted">Tidak ada catatan</p>
+                                @endif
+                            @elseif ($item->kriteria->nama === 'Melampaui')
+                                @if ($item->form->laporan_form->isNotEmpty())
+                                    @foreach ($item->form->laporan_form as $kelebihan)
+                                        <p class="text-muted">{{ $kelebihan->kelebihan }}</p>
+                                    @endforeach
+                                @else
+                                    <p class="text-muted">Tidak ada catatan</p>
+                                @endif
+                            @endif
+                        </td>
                         <td class="tindak-lanjut">
                             <ol>
                                 @foreach ($jawabanTindakLanjut->where('form_id', $item->form->id) as $tindak)
@@ -168,7 +192,31 @@
                         <td class="text-center">{{ $no++ }}</td>
                         <td>{{ $item->form->instrumen->kode }} – {{ $item->form->instrumen->pernyataan }}</td>
                         <td>{{ $item->kriteria->nama ?? '-' }}</td>
-                        <td>{{ $item->prodi->jenjang->nama }} {{ $item->prodi->nama }}: {{ $item->catatan ?? '(Tidak ada catatan)' }}</td>
+                        <td>{{ $item->prodi->jenjang->nama }} {{ $item->prodi->nama }}: 
+                            @if ($item->kriteria->nama === 'Belum Memenuhi')
+                                @if ($item->form->ptk_form_deskripsi->isNotEmpty())
+                                    @foreach ($item->form->ptk_form_deskripsi as $deskripsi)
+                                        <p class="text-muted">{{ $deskripsi->deskripsi }}</p>
+                                    @endforeach
+                                @else
+                                    <p class="text-muted">Tidak ada catatan</p>
+                                @endif
+                            @elseif ($item->kriteria->nama === 'Memenuhi')
+                                @if ($item->catatan)
+                                    <p class="text-muted">{{ $item->catatan }}</p>
+                                @else
+                                    <p class="text-muted">Tidak ada catatan</p>
+                                @endif
+                            @elseif ($item->kriteria->nama === 'Melampaui')
+                                @if ($item->form->laporan_form->isNotEmpty())
+                                    @foreach ($item->form->laporan_form as $kelebihan)
+                                        <p class="text-muted">{{ $kelebihan->kelebihan }}</p>
+                                    @endforeach
+                                @else
+                                    <p class="text-muted">Tidak ada catatan</p>
+                                @endif
+                            @endif
+                        </td>
                         <td class="tindak-lanjut">
                             <ol>
                                 @foreach ($jawabanTindakLanjut->where('form_id', $item->form->id)->where('kriteria_id', $item->kriteria->id) as $tindak)

@@ -19,7 +19,7 @@
                         <th class="text-center" style="width: 15%">Agenda</th>
                         <th class="text-center" style="width: 15%">Tanggal</th>
                         <th class="text-center" style="width: 15%">Waktu</th>
-                        <th class="text-center" style="width: 15%">Tempat</th>
+                        <th class="text-center" style="width: 15%">Periode Audit</th>
                         <th class="text-center" style="width: 10%">Lampiran</th>
                         <th class="text-center" style="width: 10%">RTL RTM</th>
                         <th class="text-center" style="width: 15%">Aksi</th>
@@ -35,12 +35,12 @@
                                 <td class="text-center">{{ $item->agenda }}</td>
                                 <td class="text-center">{{ Carbon::parse($item->tanggal)->translatedFormat('l, j F Y') }}</td>
                                 <td class="text-center">{{ Carbon::parse($item->jam_mulai)->translatedFormat('H:i') }} - {{ Carbon::parse($item->jam_selesai)->translatedFormat('H:i') }}</td>
-                                <td class="text-center">{{ $item->tempat }}</td>
+                                <td class="text-center">{{ $item->jadwal_audit->jadwal }}</td>
 
 
                                 {{-- Lampiran --}}
                                 <td class="text-center">
-                                    <button class="btn btn-outline-primary btn-sm lampiran-btn"
+                                    <button class="btn btn-outline-primary btn-sm btn-fixed-size lampiran-btn"
                                             data-bs-toggle="modal" data-bs-target="#lampiranModal"
                                             data-id="{{ $item->id }}">
                                         +Lampiran
@@ -60,20 +60,20 @@
                                             @endphp
                                             @if ($status->status === 'completed')
                                                 <a href="{{ route('dekan.rtm-rtl.form', ['rtmRtl' => $rtmRtl->id]) }}"
-                                                    class="btn btn-primary">Sudah Isi</a>
+                                                    class="btn btn-primary btn-fixed-size">Sudah Isi</a>
                                             @else
                                                 <a href="{{ route('dekan.rtm-rtl.form', ['rtmRtl' => $rtmRtl->id]) }}"
-                                                    class="btn btn-outline-primary">Isi</a>
+                                                    class="btn btn-outline-primary btn-fixed-size">Isi</a>
                                             @endif
                                         @else
                                             <form action="{{ route('dekan.rtm-rtl.isi', ['rtmRtl' => $rtmRtl->id]) }}"
                                                 method="post" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-outline-primary">Isi</button>
+                                                <button type="submit" class="btn btn-outline-primary btn-fixed-size">Isi</button>
                                             </form>
                                         @endif
                                     @else
-                                        <button class="btn btn-outline-primary tindak-lanjut-btn" 
+                                        <button class="btn btn-outline-primary btn-fixed-size tindak-lanjut-btn" 
                                             data-id="{{ $item->id }}" 
                                             data-fakultas_id="{{ $item->fakultas_id }}"
                                             data-unit_id="{{ $item->unit_id }}"  
@@ -87,7 +87,7 @@
                             {{-- Aksi --}}
                             <td class="text-center">
                                 <div class="dropdown">
-                                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <button class="btn btn-outline-primary btn-sm btn-fixed-size dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                         Aksi
                                     </button>
                                     <ul class="dropdown-menu">
@@ -177,8 +177,6 @@
             </div>
         </div>
     </div>
-
-
 @endsection
 
 
@@ -195,6 +193,21 @@
 
         .dropdown-item:hover {
             background-color: #f8f9fa; 
+        }
+    </style>
+
+    <style>
+        .btn-fixed-size {
+            width: 120px; 
+            height: 38px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap; 
+        }
+
+        .dropdown .btn-fixed-size {
+            width: 120px; 
         }
     </style>
 @endsection

@@ -1,7 +1,7 @@
 @extends('components.layout.auditee_layout')
 
 @section('content')
-    <form action="{{ route('dekan.rtm-rtl-prodi.store_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditee->id]) }}"
+    <form action="{{ route('dekan.rtm-rtl-prodi.store_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}"
         method="post" id="create-form" enctype="multipart/form-data" class="block">
         @csrf
 
@@ -34,7 +34,7 @@
                                 // isDisabled
                                 $isDisabled = false;
 
-                                if (isset($status) && $status->status === 'completed') {
+                                if (isset($status) && $status->status === 'completed' || !$auditee) {
                                     $isDisabled = true;
                                 }
                             @endphp
@@ -70,7 +70,29 @@
                                             @foreach ($prodiGroup as $item)
                                                 <p><strong> {{ $item->prodi->jenjang->nama }}
                                                         {{ $item->prodi->nama }}:</strong>
-                                                    {{ $item->catatan ?? '(Tidak ada catatan auditor)' }}
+                                                        @if ($item->kriteria->nama === 'Belum Memenuhi')
+                                                            @if ($item->form->ptk_form_deskripsi->isNotEmpty())
+                                                                @foreach ($item->form->ptk_form_deskripsi as $deskripsi)
+                                                                    <p class="text-muted">{{ $deskripsi->deskripsi }}</p>
+                                                                @endforeach
+                                                            @else
+                                                                <p class="text-muted">Tidak ada catatan</p>
+                                                            @endif
+                                                        @elseif ($item->kriteria->nama === 'Memenuhi')
+                                                            @if ($jawabanAuditor && $jawabanAuditor->catatan)
+                                                                <p class="text-muted">{{ $jawabanAuditor->catatan }}</p>
+                                                            @else
+                                                                <p class="text-muted">Tidak ada catatan</p>
+                                                            @endif
+                                                        @elseif ($item->kriteria->nama === 'Melampaui')
+                                                            @if ($item->form->laporan_form->isNotEmpty())
+                                                                @foreach ($item->form->laporan_form as $kelebihan)
+                                                                    <p class="text-muted">{{ $kelebihan->kelebihan }}</p>
+                                                                @endforeach
+                                                            @else
+                                                                <p class="text-muted">Tidak ada catatan</p>
+                                                            @endif
+                                                        @endif
                                                 </p>
                                             @endforeach
                                             <div id="tindakan-inputs-{{ $formId }}-{{ $kriteriaId }}"
@@ -80,28 +102,37 @@
                                                         <div class="row g-2 mb-2 tindakan-row">
                                                             <div class="col-md-4">
                                                                 <textarea name="tindakan_{{ $formId }}_{{ $kriteriaId }}[{{ $index }}][tindakan]"
-                                                                          class="form-control small-textarea"
-                                                                          placeholder="{{ $kriteriaNama === 'Belum Memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan' }}"
-                                                                          {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['tindakan'] ?? '' }}</textarea>
+                                                                        class="form-control small-textarea"
+                                                                        placeholder="{{ $kriteriaNama === 'Belum Memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan' }}"
+                                                                        {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['tindakan'] ?? '' }}</textarea>
+                                                                        @error('tindakan_' . $formId . '_' . $kriteriaId . '.' . $index . '.tindakan')
+                                                                            <div class="invalid-feedback">{{ $message }}</div>
+                                                                        @enderror
                                                             </div>
                                                             <div class="col-md-3">
                                                                 <textarea name="pic_{{ $formId }}_{{ $kriteriaId }}[{{ $index }}][pic]"
-                                                                          class="form-control small-textarea"
-                                                                          placeholder="PIC"
-                                                                          {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['pic'] ?? '' }}</textarea>
+                                                                        class="form-control small-textarea"
+                                                                        placeholder="PIC"
+                                                                        {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['pic'] ?? '' }}</textarea>
+                                                                        @error('tindakan_' . $formId . '_' . $kriteriaId . '.' . $index . '.tindakan')
+                                                                            <div class="invalid-feedback">{{ $message }}</div>
+                                                                        @enderror
                                                             </div>
                                                             <div class="col-md-3">
                                                                 <textarea name="waktu_{{ $formId }}_{{ $kriteriaId }}[{{ $index }}][waktu]"
-                                                                          class="form-control small-textarea"
-                                                                          placeholder="{{ $kriteriaNama === 'Belum Memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"
-                                                                          {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['waktu'] ?? '' }}</textarea>
+                                                                        class="form-control small-textarea"
+                                                                        placeholder="{{ $kriteriaNama === 'Belum Memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"
+                                                                        {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['waktu'] ?? '' }}</textarea>
+                                                                        @error('tindakan_' . $formId . '_' . $kriteriaId . '.' . $index . '.tindakan')
+                                                                            <div class="invalid-feedback">{{ $message }}</div>
+                                                                        @enderror
                                                             </div>
                                                             <div class="col-md-2 d-flex align-items-center justify-content-around">
-                                                                <button type="button"
+                                                                <button type="button" {{ $isDisabled ? 'disabled' : '' }}
                                                                         class="btn btn-danger btn-sm me-2 remove-tindakan">
                                                                     <i class="fas fa-trash"></i>
                                                                 </button>
-                                                                <button type="button" class="btn btn-secondary btn-sm"
+                                                                <button type="button" class="btn btn-secondary btn-sm" {{ $isDisabled ? 'disabled' : '' }}
                                                                         onclick="addTindakanInput('{{ $formId }}', '{{ $kriteriaId }}')">
                                                                     <i class="fas fa-plus"></i>
                                                                 </button>
@@ -129,11 +160,11 @@
                                                                       {{ $isDisabled ? 'disabled' : '' }}></textarea>
                                                         </div>
                                                         <div class="col-md-2 d-flex align-items-center">
-                                                            <button type="button"
+                                                            <button type="button" {{ $isDisabled ? 'disabled' : '' }}
                                                                     class="btn btn-danger btn-sm me-2 remove-tindakan">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
-                                                            <button type="button" class="btn btn-secondary btn-sm"
+                                                            <button type="button" class="btn btn-secondary btn-sm" {{ $isDisabled ? 'disabled' : '' }}
                                                                     onclick="addTindakanInput('{{ $formId }}', '{{ $kriteriaId }}')">
                                                                 <i class="fas fa-plus"></i>
                                                             </button>
@@ -146,7 +177,7 @@
                                     @if (isset($status) && $status->status !== 'completed')
                                         <div class="mb-3">
                                             <button id="simpan_{{ $formId }}" class="btn btn-warning"
-                                                    type="button">Simpan</button>
+                                                    type="button" {{ $isDisabled ? 'disabled' : '' }}>Simpan</button>
 
                                             <button id="simpan-button-loading_{{ $formId }}"
                                                     class="btn btn-warning d-none" type="button" disabled>
@@ -177,7 +208,7 @@
                                 @if (isset($status) && $status->status !== 'completed')
                                     <div class="text-center">
                                         <input type="hidden" name="final" value="final">
-                                        <button type="submit" id="button-submit" class="btn btn-primary">Submit</button>
+                                        <button type="submit" id="button-submit" class="btn btn-primary" {{ $isDisabled ? 'disabled' : '' }}>Submit</button>
                                     </div>
                                 @endif
                             @else
@@ -403,7 +434,7 @@
 
                 // Kirim data ke backend
                 $.ajax({
-                    url: '{{ route('dekan.rtm-rtl-prodi.save_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditee->id]) }}',
+                    url: '{{ route('dekan.rtm-rtl-prodi.save_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
                     type: 'POST',
                     data: {
                         formId: formId,
@@ -475,7 +506,7 @@
                 });
 
                 $.ajax({
-                    url: '{{ route('dekan.rtm-rtl-prodi.session', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditee->id]) }}',
+                    url: '{{ route('dekan.rtm-rtl-prodi.session', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
                     type: 'POST',
                     data: formData,
                     processData: false,

@@ -21,7 +21,11 @@ class CheckRoleRtm
 
             $userRole = $user->roles->pluck('name')->toArray();
 
-            if (in_array('pusjamu', $userRole) || (in_array('pj_fakultas', $userRole)) || $user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'ketua-lp3m') {
+            if (in_array('pusjamu', $userRole) || 
+            (in_array('pj_fakultas', $userRole)) || 
+            (in_array('gpm', $userRole)) || 
+            (in_array('gkm', $userRole)) || 
+            $user->jabatan->isNotEmpty() && $user->jabatan->first()->slug === 'ketua-lp3m') {
                 return $next($request);
             }
         }

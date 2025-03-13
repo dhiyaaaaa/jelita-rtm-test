@@ -1,7 +1,7 @@
 @extends('components.layout.auditee_layout')
 
 @section('content')
-    <form action="{{ route('dekan.rtm-rtl.store_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditee->id]) }}"
+    <form action="{{ route('dekan.rtm-rtl.store_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}"
         method="post" id="create-form" enctype="multipart/form-data" class="block">
         @csrf
         @php
@@ -34,7 +34,7 @@
 
                                     // isDisabled
                                     $isDisabled = false;
-                                    if (isset($status) && $status->status === 'completed') {
+                                    if (isset($status) && $status->status === 'completed' || !$auditee) {
                                         $isDisabled = true;
                                     }
 
@@ -76,10 +76,28 @@
                                             <div class="form-group mb-4">
                                                 <label class="font-weight-bold">Catatan Auditor</label>
                                                 <div class="mt-2">
-                                                    @if ($jawabanAuditor && $jawabanAuditor->catatan)
-                                                        <p class="text-muted">{{ $jawabanAuditor->catatan }}</p>
-                                                    @else
-                                                        <p class="text-muted">Tidak ada catatan</p>
+                                                    @if ($item->kriteria->nama === 'Belum Memenuhi')
+                                                        @if ($item->form->ptk_form_deskripsi->isNotEmpty())
+                                                            @foreach ($item->form->ptk_form_deskripsi as $deskripsi)
+                                                                <p class="text-muted">{{ $deskripsi->deskripsi }}</p>
+                                                            @endforeach
+                                                        @else
+                                                            <p class="text-muted">Tidak ada catatan</p>
+                                                        @endif
+                                                    @elseif ($item->kriteria->nama === 'Memenuhi')
+                                                        @if ($jawabanAuditor && $jawabanAuditor->catatan)
+                                                            <p class="text-muted">{{ $jawabanAuditor->catatan }}</p>
+                                                        @else
+                                                            <p class="text-muted">Tidak ada catatan</p>
+                                                        @endif
+                                                    @elseif ($item->kriteria->nama === 'Melampaui')
+                                                        @if ($item->form->laporan_form->isNotEmpty())
+                                                            @foreach ($item->form->laporan_form as $kelebihan)
+                                                                <p class="text-muted">{{ $kelebihan->kelebihan }}</p>
+                                                            @endforeach
+                                                        @else
+                                                            <p class="text-muted">Tidak ada catatan</p>
+                                                        @endif
                                                     @endif
                                                 </div>
                                             </div>
@@ -127,7 +145,7 @@
                                                                 @enderror
                                                 
                                                                 <button type="button"
-                                                                    class="btn btn-danger btn-sm remove-tindakan ml-2">Hapus</button>
+                                                                    class="btn btn-danger btn-sm remove-tindakan ml-2" {{ $isDisabled ? 'disabled' : '' }}>Hapus</button>
                                                             </div>
                                                         @endforeach
                                                     @else
@@ -151,7 +169,7 @@
                                                                 {{ $isDisabled ? 'disabled' : '' }}></textarea>
                                                 
                                                             <button type="button"
-                                                                class="btn btn-danger btn-sm remove-tindakan ml-2">Hapus</button>
+                                                                class="btn btn-danger btn-sm remove-tindakan ml-2" {{ $isDisabled ? 'disabled' : '' }}>Hapus</button>
                                                         </div>
                                                     @endif
                                                 </div>
@@ -160,7 +178,7 @@
                                                     <div class="mb-3">
                                                         @if (!$isDisabled)
                                                             <div class="mb-3">
-                                                                <button type="button" class="btn btn-secondary btn-sm"
+                                                                <button type="button" class="btn btn-secondary btn-sm" {{ $isDisabled ? 'disabled' : '' }}
                                                                     onclick="addTindakanInput('{{ $item->form->id }}', '{{ $item->kriteria->nama }}')">
                                                                     Tambah Rencana
                                                                 </button>
@@ -173,7 +191,7 @@
                                             @if (isset($status) && $status->status !== 'completed')
                                                 <div class="mb-3">
                                                     <button id="simpan_{{ $item['form']->id }}" class="btn btn-warning"
-                                                        type="button">Simpan</button>
+                                                        type="button" {{ $isDisabled ? 'disabled' : '' }}>Simpan</button>
 
                                                     <button id="simpan-button-loading_{{ $item['form']->id }}"
                                                         class="btn btn-warning d-none" type="button" disabled>
@@ -210,8 +228,7 @@
                             @if (($paginatedTemuanFakultas->currentPage() == $paginatedTemuanFakultas->lastPage()) == 1)
                                 @if (isset($status) && $status->status !== 'completed')
                                     <div class="mb-3">
-
-                                        <button type="submit" id="button-submit" class="btn btn-primary">Submit</button>
+                                        <button type="submit" id="button-submit" class="btn btn-primary" {{ $isDisabled ? 'disabled' : '' }}>Submit</button>
                                         <button id="button-submit-loading" class="btn btn-primary d-none" type="button"
                                             disabled>
                                             <span class="spinner-border spinner-border-sm" role="status"
@@ -238,7 +255,7 @@
                                 </div>
                             @endif
 
-                            {{-- @if (isset($status) && $status->status === 'completed')
+                            @if (isset($status) && $status->status === 'completed')
                                 <div class="mb-3">
                                     <button type="button" class="btn btn-warning" id="edit-button">Ubah</button>
                                     <button id="button-edit-loading" class="btn btn-warning d-none" type="button"
@@ -248,7 +265,7 @@
                                         Loading...
                                     </button>
                                 </div>
-                            @endif --}}
+                            @endif 
 
 
                             {{-- Kembali ke halaman jadwal --}}
@@ -307,10 +324,21 @@
             height: 50px; 
             resize: none; 
         }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 @endsection
 
 @section('script')
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
     @if (session('error_message'))
         <script>
             Swal.fire({
@@ -480,7 +508,7 @@
                 console.log(tindakanList);
 
                 $.ajax({
-                    url: '{{ route('dekan.rtm-rtl.save_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditee->id]) }}',
+                    url: '{{ route('dekan.rtm-rtl.save_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
                     type: 'POST',
                     data: formData,
                     processData: false,
@@ -600,7 +628,7 @@
                 });
 
                 $.ajax({
-                    url: '{{ route('dekan.rtm-rtl.session', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditee->id]) }}',
+                    url: '{{ route('dekan.rtm-rtl.session', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
                     type: 'POST',
                     data: formData,
                     processData: false,

@@ -64,14 +64,11 @@ class RtmFakultasController extends Controller
 
     public function rtmrtl(Request $request, RtmRtl $rtmRtl): View|RedirectResponse
     {
-        // Ambil data jadwal audit
         $jadwalAudit = JadwalAudit::findOrFail($rtmRtl->jadwal_audit_id);
 
-        // Ambil data fakultas atau unit
         $fakultas = $rtmRtl->fakultas_id ? Fakultas::find($rtmRtl->fakultas_id) : null;
         $unit = $rtmRtl->unit_id ? Unit::find($rtmRtl->unit_id) : null;
 
-        // Ambil data temuan fakultas/unit
         $temuanFakultas = JawabanAuditor::where('jadwal_audit_id', $rtmRtl->jadwal_audit_id)
             ->when($rtmRtl->fakultas_id, function ($query) use ($rtmRtl) {
                 return $query->where('fakultas_id', $rtmRtl->fakultas_id);
@@ -85,13 +82,14 @@ class RtmFakultasController extends Controller
                 'form.instrumen.jabatan',
                 'form.jawaban_auditee',
                 'kriteria',
+                'form.ptk_form_deskripsi',
+                'form.laporan_form',
             ])
             ->orderBy('kriteria_id', 'asc')
             ->orderBy('instrumen.id', 'asc')
             ->select('jawaban_auditor.*')
             ->get();
 
-        // Paginasi data temuan
         $perPage = 10;
         $currentPage = $request->query('page', 1);
 
@@ -103,7 +101,6 @@ class RtmFakultasController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        // Ambil data jawaban tindak lanjut
         $jawabanTindakLanjut = RtmTindakLanjut::where('rtm_rtl_id', $rtmRtl->id)
         ->get()
         ->groupBy('form_id');
@@ -118,7 +115,7 @@ class RtmFakultasController extends Controller
             'jadwalAudit' => $jadwalAudit,
             'fakultas' => $fakultas,
             'unit' => $unit,
-            'isAdminView' => true, // Tambahkan flag untuk menandai bahwa ini adalah view admin
+            'isAdminView' => true, 
         ];
 
         return view('admin.rtm_fakultas.rtmrtl', $data);
@@ -140,7 +137,7 @@ class RtmFakultasController extends Controller
             ->whereIn('jawaban_auditor.prodi_id', $prodiList)
             ->orderByRaw("REGEXP_REPLACE(instrumen.kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(instrumen.kode, '[0-9]', '', 'g') ASC")
             ->orderBy('jawaban_auditor.kriteria_id', 'asc') 
-            ->with(['prodi', 'form.jawaban_auditor', 'form.instrumen', 'kriteria']) 
+            ->with(['prodi', 'form.jawaban_auditor', 'form.instrumen', 'kriteria', 'form.ptk_form_deskripsi', 'form.laporan_form']) 
             ->get();
 
         $groupedTemuanProdi = $temuanProdi->groupBy('form.id');

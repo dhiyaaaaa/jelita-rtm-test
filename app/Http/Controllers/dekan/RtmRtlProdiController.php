@@ -25,11 +25,15 @@ class RtmRtlProdiController extends Controller
 {
     protected $user;
     protected $jabatanUser;
+    protected $auditee;
+    protected $isDisabled;
 
     public function __construct()
     {
         $this->user = Auth::user();
         $this->jabatanUser = $this->user->jabatan->isNotEmpty() ? $this->user->jabatan->first()->id : null;
+        $this->auditee = Auditee::where(['user_id' => $this->user->id])->first();
+        $this->isDisabled = !$this->auditee;
     }
 
     public function form(Request $request, RtmRtl $rtmRtl): View|RedirectResponse
@@ -39,8 +43,8 @@ class RtmRtlProdiController extends Controller
 
         $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $rtmRtl->jadwal_audit_id])->first();
 
-        $auditee = Auditee::where(['user_id' => $this->user->id])->first();
-
+        $auditee = $this->auditee;
+        $auditeeId = $auditee ? $auditee->id : 'no_auditee';
         $prodiList = Prodi::where('fakultas_id', $fakultas->id)->pluck('id')->toArray();
 
         $temuanProdi = JawabanAuditor::select('jawaban_auditor.*', 'jawaban_auditor.catatan')
@@ -50,7 +54,13 @@ class RtmRtlProdiController extends Controller
             ->whereIn('jawaban_auditor.prodi_id', $prodiList)
             ->orderByRaw("REGEXP_REPLACE(instrumen.kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(instrumen.kode, '[0-9]', '', 'g') ASC")
             ->orderBy('jawaban_auditor.kriteria_id', 'asc')
-            ->with(['prodi', 'form.jawaban_auditor', 'form.instrumen', 'kriteria'])
+            ->with([
+                'prodi', 
+                'form.jawaban_auditor', 
+                'form.instrumen', 
+                'kriteria',
+                'form.ptk_form_deskripsi',
+                'form.laporan_form'])
             ->get();
 
         $groupedTemuanProdi = $temuanProdi->groupBy('form.id');
@@ -71,7 +81,7 @@ class RtmRtlProdiController extends Controller
             ->get()
             ->groupBy('form_id');
 
-        $sessionFormData = session()->get('form_rtm_rtl_prodi-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl->id . '-auditeeId_' . $auditee->id, []);
+        $sessionFormData = session()->get('form_rtm_rtl_prodi-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl->id . '-auditeeId_' . $auditeeId, []);
 
         $status = StatusRtmRtl::where('rtm_rtl_id', $rtmRtl->id)->first();
 
@@ -87,6 +97,8 @@ class RtmRtlProdiController extends Controller
             'jawabanAuditor' => $jawaban_auditor,
             'status' => $status,
             'auditee' => $auditee,
+            'auditeeId' => $auditeeId,
+            'isDisabled' => !$auditee,
         ];
 
         return view('dekan.rtm.rtm_rtl.form_prodi', $data);
@@ -249,15 +261,10 @@ class RtmRtlProdiController extends Controller
             }
         }
 
-        if (isset($requestData['final']) && $requestData['final'] == 'final') {
-            Log::info('Final submission detected.');
-            $status = StatusRtmRtl::where('rtm_rtl_id', $rtmRtl->id)->first();
-
-            if ($status && $status->status == 'in_progress') {
-                $status->status = 'completed';
-                $status->save();
-                Log::info('Status diperbarui ke completed.');
-            }
+        $status = StatusRtmRtl::where('rtm_rtl_id', $rtmRtl->id)->first();
+        if ($status && $status->status === 'in_progress') {
+            $status->status = 'completed';
+            $status->save();
         }
 
         return redirect()->route('dekan.jadwal-rtm.index')

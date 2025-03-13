@@ -26,25 +26,22 @@ class RtmJadwalController extends Controller
         $jabatanUser = Auth::user()->jabatan->isNotEmpty() ? Auth::user()->jabatan->first() : null;
 
         if ($jabatanUser) {
-            // Cek apakah pengguna memiliki unit_id di pivot
             if ($jabatanUser->pivot->unit_id) {
                 $this->unitOrFakultasId = $jabatanUser->pivot->unit_id;
                 $this->isUnit = true;
             }
-            // Cek apakah pengguna memiliki prodi_id di pivot
+
             elseif ($jabatanUser->pivot->prodi_id) {
                 $prodi = Prodi::find($jabatanUser->pivot->prodi_id);
                 if ($prodi) {
                     $this->unitOrFakultasId = $prodi->fakultas_id;
-                    $this->isUnit = false;
+                    $this->isUnit = false; 
                 }
             }
-            // Cek apakah pengguna memiliki fakultas_id di pivot
             elseif ($jabatanUser->pivot->fakultas_id) {
                 $this->unitOrFakultasId = $jabatanUser->pivot->fakultas_id;
                 $this->isUnit = false;
             }
-            // Jika tidak ada, set null dan false
             else {
                 $this->unitOrFakultasId = null;
                 $this->isUnit = false;

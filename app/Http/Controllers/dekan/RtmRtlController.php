@@ -29,11 +29,15 @@ class RtmRtlController extends Controller
 {
     protected $user;
     protected $jabatanUser;
+    protected $auditee;
+    protected $isDisabled;
 
     public function __construct()
     {
         $this->user = Auth::user();
         $this->jabatanUser = $this->user->jabatan->isNotEmpty() ? $this->user->jabatan->first()->id : null;
+        $this->auditee = Auditee::where(['user_id' => $this->user->id])->first();
+        $this->isDisabled = !$this->auditee;
     }
 
     public function store(Request $request)
@@ -77,7 +81,7 @@ class RtmRtlController extends Controller
 
         $jabatanUserId = optional($this->user->jabatan->first())->id;
         $jabatanUser = Jabatan::find($jabatanUserId);
-        $auditee = Auditee::where(['user_id' => $this->user->id])->first();
+        $auditee = $this->auditee;
 
         $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $rtmRtl->jadwal_audit_id])->first();
 
@@ -91,6 +95,8 @@ class RtmRtlController extends Controller
             ->with([
                 'form.instrumen.jabatan',
                 'form.jawaban_auditee',
+                'form.ptk_form_deskripsi',
+                'form.laporan_form',
                 'kriteria',
             ])
             ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
@@ -120,10 +126,15 @@ class RtmRtlController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
+        if ($temuanFakultas->isEmpty()) {
+            return back()->with('error', 'Tidak ada temuan untuk ditindaklanjuti.');
+        }
+        
         $jawabanTindakLanjut = RtmTindakLanjut::where('rtm_rtl_id', $rtmRtl->id)->get();
 
+        $auditeeId = $auditee ? $auditee->id : 'no_auditee';
         // Ambil data dari session
-        $sessionKey = 'form_rtm_rtl-page_' . $request->query('page', 1) . '-rtmRtlId_' . $rtmRtl->id . '-auditeeId_' . $auditee->id;
+        $sessionKey = 'form_rtm_rtl-page_' . $request->query('page', 1) . '-rtmRtlId_' . $rtmRtl->id . '-auditeeId_' . $auditeeId;
         $sessionFormData = session()->get($sessionKey, []);
         Log::info('RTM controller session data', $sessionFormData);
 
@@ -157,9 +168,11 @@ class RtmRtlController extends Controller
             'status' => $status,
             'fakultas' => $fakultas,
             'unit' => $unit,
+            'auditeeId' => $auditeeId,
             'auditee' => $auditee,
             'temuanFakultas' => $temuanFakultas,
             'jawabanAuditor' => $jawaban_auditor,
+            'isDisabled' => !$auditee,
         ];
 
         return view('dekan.rtm.rtm_rtl.form', $data);
@@ -342,7 +355,19 @@ class RtmRtlController extends Controller
             session()->forget($sessionKey);
         }
 
-        return redirect()->route('dekan.rtm-rtl.form_prodi', $rtmRtl->id)
+        if ($rtmRtl->unit_id){
+            $status = StatusRtmRtl::where('rtm_rtl_id', $rtmRtl->id)->first();
+    
+            if ($status && $status->status === 'in_progress') {
+                $status->status = 'completed';
+                $status->save();
+            }
+            return redirect()->route('dekan.jadwal-rtm.index')
             ->with('success', 'Data berhasil disimpan.');
+        }else {
+            return redirect()->route('dekan.rtm-rtl.form_prodi', $rtmRtl->id)
+            ->with('success', 'Data berhasil disimpan.');
+        }
     }
+    
 }

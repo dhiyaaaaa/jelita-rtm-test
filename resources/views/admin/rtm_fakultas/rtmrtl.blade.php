@@ -46,10 +46,28 @@
                                         <div class="form-group mb-4">
                                             <label class="font-weight-bold">Catatan Auditor</label>
                                             <div class="mt-2">
-                                                @if ($item->catatan)
-                                                    <p class="text-muted">{{ $item->catatan }}</p>
-                                                @else
-                                                    <p class="text-muted">Tidak ada catatan</p>
+                                                @if ($item->kriteria->nama === 'Belum Memenuhi')
+                                                    @if ($item->form->ptk_form_deskripsi->isNotEmpty())
+                                                        @foreach ($item->form->ptk_form_deskripsi as $deskripsi)
+                                                            <p class="text-muted">{{ $deskripsi->deskripsi }}</p>
+                                                        @endforeach
+                                                    @else
+                                                        <p class="text-muted">Tidak ada catatan</p>
+                                                    @endif
+                                                @elseif ($item->kriteria->nama === 'Memenuhi')
+                                                    @if ($item->catatan)
+                                                        <p class="text-muted">{{ $item->catatan }}</p>
+                                                    @else
+                                                        <p class="text-muted">Tidak ada catatan</p>
+                                                    @endif
+                                                @elseif ($item->kriteria->nama === 'Melampaui')
+                                                    @if ($item->form->laporan_form->isNotEmpty())
+                                                        @foreach ($item->form->laporan_form as $kelebihan)
+                                                            <p class="text-muted">{{ $kelebihan->kelebihan }}</p>
+                                                        @endforeach
+                                                    @else
+                                                        <p class="text-muted">Tidak ada catatan</p>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </div>
@@ -74,7 +92,9 @@
                                                     @endforeach
                                                 @else
                                                     <div class="input-group mb-2">
-                                                        <textarea class="form-control small-textarea" disabled></textarea>
+                                                        <textarea class="form-control small-textarea" placeholder="{{ $item->kriteria->nama === 'Belum Memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan' }}"disabled></textarea>
+                                                        <textarea class="form-control small-textarea" placeholder="PIC"disabled></textarea>
+                                                        <textarea class="form-control small-textarea" placeholder="{{ $item->kriteria->nama === 'Belum Memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"disabled></textarea>
                                                     </div>
                                                 @endif
                                             </div>

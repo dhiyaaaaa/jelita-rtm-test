@@ -1694,19 +1694,29 @@ class DownloadController extends Controller
         // Ambil lampiran jika ada
         $lampiran = RtmLampiran::where('rtm_jadwal_id', $rtmJadwal->id)->first();
 
-        // Ambil semua temuan tanpa filter berdasarkan role
         $temuanFakultas = JawabanAuditor::where('jadwal_audit_id', $rtmJadwal->jadwal_audit_id)
             ->whereHas('form', function ($query) {
-                $query->whereHas('instrumen.jabatan'); // Filter hanya instrumen yang memiliki jabatan
+                $query->whereHas('instrumen.jabatan'); 
+            })
+            ->when($rtmJadwal->fakultas_id, function ($query) use ($rtmJadwal) {
+                return $query->whereHas('form.instrumen.jabatan', function ($q) use ($rtmJadwal) {
+                    $q->where('fakultas_id', $rtmJadwal->fakultas_id);
+                });
+            })
+            ->when($rtmJadwal->unit_id, function ($query) use ($rtmJadwal) {
+                return $query->whereHas('form.instrumen.jabatan', function ($q) use ($rtmJadwal) {
+                    $q->where('unit_id', $rtmJadwal->unit_id);
+                });
             })
             ->with([
                 'form.instrumen.jabatan',
                 'form.jawaban_auditee',
                 'kriteria',
+                'form.ptk_form_deskripsi',
+                'form.laporan_form',
             ])
             ->get();
 
-        // Jika ada fakultas, ambil temuan prodi
         $prodiList = $rtmJadwal->fakultas ? Prodi::where('fakultas_id', $rtmJadwal->fakultas_id)->pluck('id') : collect([]);
 
         $temuanProdi = $rtmJadwal->fakultas
@@ -1715,16 +1725,14 @@ class DownloadController extends Controller
                 ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
                 ->where('jawaban_auditor.jadwal_audit_id', $rtmJadwal->jadwal_audit_id)
                 ->whereIn('jawaban_auditor.prodi_id', $prodiList)
-                ->with(['prodi', 'form.instrumen', 'kriteria'])
+                ->with(['prodi', 'form.instrumen', 'kriteria', 'form.ptk_form_deskripsi', 'form.laporan_form'])
                 ->orderBy('instrumen.kode', 'asc')
                 ->orderBy('jawaban_auditor.kriteria_id', 'asc')
                 ->get()
             : collect([]);
 
-        // Ambil jawaban tindak lanjut
         $jawabanTindakLanjut = RtmTindakLanjut::whereIn('rtm_rtl_id', $rtmJadwal->rtm_rtl->pluck('id'))->get();
 
-        // Data untuk view
         $dataJadwal = [
             'rtmJadwal' => $rtmJadwal,
             'fakultas' => $rtmJadwal->fakultas->nama ?? null,
