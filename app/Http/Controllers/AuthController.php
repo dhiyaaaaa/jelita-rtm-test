@@ -39,7 +39,7 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerateToken();
 
-            return redirect()->route('dashboard')->with('success', "Login berhasil!");
+            return redirect()->route('mainmenu')->with('success', "Login berhasil!");
         }
 
         return back()->with('error', 'Email atau password salah');
@@ -137,7 +137,7 @@ class AuthController extends Controller
 
                 Auth::login($find);
 
-                return redirect()->route('dashboard')->with('success', 'Login Berhasil!');
+                return redirect()->route('mainmenu')->with('success', 'Login Berhasil!');
             }
 
             $newUser = User::create([
@@ -150,7 +150,7 @@ class AuthController extends Controller
 
             Auth::login($newUser);
 
-            return redirect()->route('dashboard')->with('success', 'Login Berhasil!');
+            return redirect()->route('mainmenu')->with('success', 'Login Berhasil!');
         } catch (\Exception $e) {
 
             return redirect()->route('login')->with('error', $e->getMessage());

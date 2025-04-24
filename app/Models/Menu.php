@@ -32,4 +32,11 @@ class Menu extends Model
             $menu->route = strtolower(preg_replace('/\s+/', '-', $menu->menu));
         });
     }
+
+    public function main_menu(): BelongsToMany
+    {
+        return $this->belongsToMany(MainMenu::class, 'main_menu_menu', 'menu_id', 'main_menu_id')->withTimestamps();
+    }
+
+
 }

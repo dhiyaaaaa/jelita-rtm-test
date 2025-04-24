@@ -61,6 +61,11 @@ class Form extends Model
         return $this->hasMany(PtkForm::class, 'form_id');
     }
 
+    public function ptk_form_rencana(): HasMany
+    {
+        return $this->hasMany(PtkFormRencana::class, 'form_id');
+    }
+
     public function laporan_form(): HasMany
     {
         return $this->hasMany(LaporanForm::class, 'form_id');
@@ -70,4 +75,20 @@ class Form extends Model
     {
         return $this->hasMany(RtmTindakLanjut::class, 'form_id');
     }
+
+    public function rtl_form(): HasMany
+    {
+        return $this->hasMany(RtlForm::class, 'form_id');
+    }
+
+    public function monitoring_form(): HasMany
+    {
+        return $this->hasMany(MonitoringForm::class, 'form_id');
+    }
+
+    public function monitoring_status_form(): HasMany
+    {
+        return $this->hasMany(MonitoringFormStatus::class, 'form_id');
+    }
+
 }

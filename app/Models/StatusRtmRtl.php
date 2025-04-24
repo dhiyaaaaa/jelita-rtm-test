@@ -12,10 +12,15 @@ class StatusRtmRtl extends Model
 
     protected $table = 'status_rtm_rtl';
 
-    protected $fillable = ['status', 'rtm_rtl_id'];
+    protected $fillable = ['status', 'rtm_rtl_id', 'kriteria_id'];
 
     public function rtm_rtl(): BelongsTo
     {
         return $this->belongsTo(RtmRtl::class, 'rtm_rtl_id');
+    }
+
+    public function kriteria(): BelongsTo
+    {
+        return $this->belongsTo(Kriteria::class, 'kriteria_id');
     }
 }

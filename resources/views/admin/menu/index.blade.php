@@ -8,6 +8,7 @@
         <!-- /.card-header -->
         <div class="card-body">
             <a href="{{ route('menu.create') }}" class="btn btn-outline-primary mb-3">+ Tambah Menu</a>
+            <a href="{{ route('main_menu') }}" class="btn btn-primary mb-3"><i class="fa fa-eye"></i> Main Menu</a>
             <table id="menu" class="table table-bordered table-striped">
                 <thead>
                     <tr>

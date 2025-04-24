@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rtm_tindak_lanjut', function (Blueprint $table) {
+        Schema::create('rtl_form', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('rtm_rtl_id')->constrained('rtm_rtl', 'id')->onDelete('cascade');
+            $table->foreignUuid('rtl_id')->constrained('rtl', 'id')->onDelete('cascade');
             $table->foreignUuid('form_id')->constrained('form', 'id')->onDelete('cascade');
             $table->foreignId('kriteria_id')->constrained('kriteria', 'id')->onDelete('cascade');
             $table->foreignUuid('auditee_id')->constrained('auditee', 'id')->onDelete('cascade');
             $table->text('tindakan');
-            $table->text('pic');
-            $table->text('waktu');
+            $table->text('bukti')->nullable();
             $table->timestamps();
         });
     }
@@ -29,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('rtm_tindak_lanjut');
+        Schema::dropIfExists('rtl_form');
     }
 };

@@ -48,5 +48,10 @@ class RtmRtl extends Model
     {
         return $this->hasMany(StatusRtmRtl::class, 'rtm_rtl_id');
     }
+
+    public function status_rtm_rtl_prodi(): HasMany
+    {
+        return $this->hasMany(StatusRtmRtlProdi::class, 'rtm_rtl_id');
+    }
     
 }

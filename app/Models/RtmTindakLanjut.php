@@ -20,7 +20,8 @@ class RtmTindakLanjut extends Model
         'auditee_id',
         'kriteria_id',
         'tindakan',
-        'pic',
+        'jabatan_id',
+        'user_id',
         'waktu',
     ];
 
@@ -44,4 +45,13 @@ class RtmTindakLanjut extends Model
         return $this->belongsTo(Kriteria::class, 'kriteria_id');
     }
     
+    public function jabatan(): BelongsTo
+    {
+        return $this->belongsTo(Jabatan::class, 'jabatan_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

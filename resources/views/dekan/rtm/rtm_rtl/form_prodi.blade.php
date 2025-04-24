@@ -1,6 +1,46 @@
 @extends('components.layout.auditee_layout')
 
 @section('content')
+
+    <form method="GET" action="{{ route('dekan.rtm-rtl.form_prodi', $rtmRtl->id) }}" class="mb-4">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">Filter Kriteria</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                @foreach($kriteriaOptions as $kriteria)
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" 
+                                        name="kriteria_ids[]" 
+                                        id="kriteria_{{ $kriteria->id }}" 
+                                        value="{{ $kriteria->id }}"
+                                        {{ in_array($kriteria->id, $selectedKriteria) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="kriteria_{{ $kriteria->id }}">
+                                        {{ $kriteria->nama }}
+                                    </label>
+                                </div>
+                                @endforeach
+                            </div>
+                            <div class="col-md-4 d-flex align-items-center">
+                                <button type="submit" class="btn btn-primary mr-2">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <a href="{{ route('dekan.rtm-rtl.form_prodi', $rtmRtl->id) }}" 
+                                class="btn btn-outline-secondary">
+                                    <i class="fas fa-sync-alt"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
     <form action="{{ route('dekan.rtm-rtl-prodi.store_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}"
         method="post" id="create-form" enctype="multipart/form-data" class="block">
         @csrf
@@ -21,16 +61,8 @@
 
                         @foreach ($paginatedTemuanProdi->groupBy('form.id') as $formId => $items)
                             @php
-                                // Ambil item pertama dalam grup untuk referensi form_id
-                                $firstItem = $items->first();
-                                $kriteriaId = $firstItem->kriteria->id ?? null;
-
-                                // Jawaban Tindak Lanjut
-                                $tindakanData = collect($jawabanTindakLanjut[$formId] ?? []);
-
-                                // Session Form Data
-                                $sessionData = $sessionFormData[$formId.'_'.$kriteriaId] ?? [];
-
+                                
+                                $currentFormData = $sessionFormData[$formId] ?? [];
                                 // isDisabled
                                 $isDisabled = false;
 
@@ -47,12 +79,7 @@
                                     @foreach ($items->groupBy('kriteria.nama') as $kriteriaNama => $prodiGroup)
                                         @php
                                             $kriteriaId = $prodiGroup->first()->kriteria->id ?? null;
-                                            $tindakanDataKriteria =
-                                                $tindakanData->where('kriteria_id', $kriteriaId) ?? [];
-                                            $sessionDataKriteria = $sessionData[$kriteriaId] ?? [];
-                                            $tindakanFinal = $tindakanDataKriteria->isNotEmpty()
-                                                ? $tindakanDataKriteria->all()
-                                                : collect($sessionDataKriteria);
+                                            $tindakanFinal = $currentFormData[$kriteriaId]['tindakan'] ?? [];
                                         @endphp
 
                                         <div class="mb-4 p-3 border rounded">
@@ -96,6 +123,8 @@
                                                 </p>
                                             @endforeach
                                             <div id="tindakan-inputs-{{ $formId }}-{{ $kriteriaId }}"
+                                                data-kriteria-id="{{ $kriteriaId }}"
+                                                data-form-id="{{ $formId }}"
                                                 class="mt-3">
                                                 @if (!empty($tindakanFinal) && (is_array($tindakanFinal) ? count($tindakanFinal) : $tindakanFinal->count()) > 0)
                                                     @foreach ($tindakanFinal as $index => $tindakan)
@@ -110,16 +139,30 @@
                                                                         @enderror
                                                             </div>
                                                             <div class="col-md-3">
-                                                                <textarea name="pic_{{ $formId }}_{{ $kriteriaId }}[{{ $index }}][pic]"
-                                                                        class="form-control small-textarea"
-                                                                        placeholder="PIC"
-                                                                        {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['pic'] ?? '' }}</textarea>
-                                                                        @error('tindakan_' . $formId . '_' . $kriteriaId . '.' . $index . '.tindakan')
-                                                                            <div class="invalid-feedback">{{ $message }}</div>
-                                                                        @enderror
+                                                                <select name="tindakan_{{ $item->form->id }}_{{ $kriteriaId }}[{{ $index }}][pic]" 
+                                                                    class="form-control select-pic @error('tindakan_'.$item->form->id.'.'.$index.'.pic') is-invalid @enderror"
+                                                                    {{ $isDisabled ? 'disabled' : '' }}>
+                                                                    <option value="">Pilih PIC</option>
+                                                                    @foreach($picData as $pic)
+                                                                        <option value="{{ $pic->user_id }}|{{ $pic->jabatan_id }}"
+                                                                            {{ (isset($tindakan['pic']) && $tindakan['pic'] == ($pic->user_id . '|' . $pic->jabatan_id)) ? 'selected' : '' }}>
+                                                                            {{ $pic->user_name }} ({{ $pic->jabatan_nama }})
+                                                                            @if ($pic->prodi_nama)
+                                                                                - {{ $pic->prodi_nama }}
+                                                                            @elseif ($pic->fakultas_nama)
+                                                                                - {{ $pic->fakultas_nama }}
+                                                                            @elseif ($pic->unit_nama)
+                                                                                - {{ $pic->unit_nama }}
+                                                                            @endif
+                                                                        </option>
+                                                                    @endforeach
+                                                                </select>
+                                                                @error('tindakan_'.$item->form->id.'.'.$index.'.pic')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                                @enderror
                                                             </div>
                                                             <div class="col-md-3">
-                                                                <textarea name="waktu_{{ $formId }}_{{ $kriteriaId }}[{{ $index }}][waktu]"
+                                                                <textarea name="tindakan_{{ $formId }}_{{ $kriteriaId }}[{{ $index }}][waktu]"
                                                                         class="form-control small-textarea"
                                                                         placeholder="{{ $kriteriaNama === 'Belum Memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"
                                                                         {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['waktu'] ?? '' }}</textarea>
@@ -148,13 +191,22 @@
                                                                       {{ $isDisabled ? 'disabled' : '' }}></textarea>
                                                         </div>
                                                         <div class="col-md-3">
-                                                            <textarea name="pic_{{ $formId }}_{{ $kriteriaId }}[0][pic]"
-                                                                      class="form-control small-textarea"
-                                                                      placeholder="PIC"
-                                                                      {{ $isDisabled ? 'disabled' : '' }}></textarea>
+                                                            <select name="tindakan_{{ $item->form->id }}_{{ $kriteriaId }}[0][pic]" class="form-control select-pic">
+                                                                <option value="">Pilih PIC</option>
+                                                                @foreach($picData as $pic)
+                                                                    <option value="{{ $pic->user_id }}|{{ $pic->jabatan_id }}">
+                                                                        {{ $pic->user_name }} ({{ $pic->jabatan_nama }})
+                                                                        @if ($pic->prodi_nama)
+                                                                            - {{ $pic->prodi_nama }}
+                                                                        @elseif ($pic->fakultas_nama)
+                                                                            - {{ $pic->fakultas_nama }}
+                                                                        @endif
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                         <div class="col-md-3">
-                                                            <textarea name="waktu_{{ $formId }}_{{ $kriteriaId }}[0][waktu]"
+                                                            <textarea name="tindakan_{{ $formId }}_{{ $kriteriaId }}[0][waktu]"
                                                                       class="form-control small-textarea"
                                                                       placeholder="{{ $kriteriaNama === 'Belum Memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"
                                                                       {{ $isDisabled ? 'disabled' : '' }}></textarea>
@@ -174,15 +226,22 @@
                                             </div>
                                         </div>
                                     @endforeach
+                                    
                                     @if (isset($status) && $status->status !== 'completed')
                                         <div class="mb-3">
-                                            <button id="simpan_{{ $formId }}" class="btn btn-warning"
-                                                    type="button" {{ $isDisabled ? 'disabled' : '' }}>Simpan</button>
+                                            <button id="simpan_{{ $formId }}" 
+                                                    class="btn btn-warning"
+                                                    type="button" 
+                                                    {{ $isDisabled ? 'disabled' : '' }}>
+                                                Simpan
+                                            </button>
 
                                             <button id="simpan-button-loading_{{ $formId }}"
-                                                    class="btn btn-warning d-none" type="button" disabled>
+                                                    class="btn btn-warning d-none" 
+                                                    type="button" 
+                                                    disabled>
                                                 <span class="spinner-border spinner-border-sm" role="status"
-                                                      aria-hidden="true"></span>
+                                                    aria-hidden="true"></span>
                                                 Loading...
                                             </button>
                                             <p class="mt-2 text-muted">Harap tekan tombol "Simpan" untuk menyimpan jawaban.</p>
@@ -202,7 +261,7 @@
                         </div>
                         <div class="card-body">
                             <div class="pagination-wrapper text-center">
-                                {{ $paginatedTemuanProdi->links('pagination::bootstrap-4') }}
+                                {{ $paginatedTemuanProdi->appends(request()->except('page'))->links('pagination::bootstrap-4') }}
                             </div>
                             @if (($paginatedTemuanProdi->currentPage() == $paginatedTemuanProdi->lastPage()) == 1)
                                 @if (isset($status) && $status->status !== 'completed')
@@ -263,19 +322,45 @@
         .pagination-wrapper .page-item {
             flex: 1 0 1;
         }
-    </style>
+        .small-textarea {
+            resize: none; 
+            height: 38px; 
+            min-height: 38px; 
+            max-height: 100px; 
+        }        
+        .form-check {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+        }
 
-    <style>
-    .small-textarea {
-        resize: none; 
-        height: 38px; 
-        min-height: 38px; 
-        max-height: 100px; 
-    }
+        .form-check-input {
+            margin-left: -1.5rem;
+            margin-top: 0.3rem;
+        }
+
+        .form-check-input:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .form-check-label {
+            margin-left: 0.25rem;
+            cursor: pointer;
+        }
     </style>
 @endsection
 
 @section('script')
+    @if(session('success'))
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: "{{ session('success') }}"
+            });
+        </script>
+    @endif
+
     @if (session('error_message'))
         <script>
             Swal.fire({
@@ -286,173 +371,238 @@
         </script>
     @endif
 
-    {{-- Pagination --}}
     <script>
         $(document).ready(function() {
-            var $paginationContainer = $('.pagination-container');
-            var navbarHeight = 56;
+            const form = $('#create-form');
+            
+            // Fungsi untuk menambahkan input tindakan baru
+            window.addTindakanInput = function(formId, kriteriaId) {
+                const container = $(`#tindakan-inputs-${formId}-${kriteriaId}`);
+                const index = container.find('.tindakan-row').length;
+                const kriteriaNama = $(`#kriteria-nama-${formId}-${kriteriaId}`).text().trim();
+                
+                const tindakanPlaceholder = kriteriaNama === 'Belum Memenuhi' ? 
+                    'Rencana Perbaikan' : 'Rencana Peningkatan';
+                const waktuPlaceholder = kriteriaNama === 'Belum Memenuhi' ? 
+                    'Waktu Perbaikan' : 'Waktu Peningkatan';
+                
+                const newRow = $(`
+                    <div class="row g-2 mb-2 tindakan-row">
+                        <div class="col-md-4">
+                            <textarea name="tindakan_${formId}_${kriteriaId}[${index}][tindakan]" 
+                                    class="form-control small-textarea" 
+                                    placeholder="${tindakanPlaceholder}" required></textarea>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="tindakan_${formId}_${kriteriaId}[${index}][pic]" class="form-control select-pic">
+                                <option value="">Pilih PIC</option>
+                                @foreach($picData as $pic)
+                                    <option value="{{ $pic->user_id }}|{{ $pic->jabatan_id }}">
+                                        {{ $pic->user_name }} ({{ $pic->jabatan_nama }})
+                                        @if ($pic->prodi_nama)
+                                            - {{ $pic->prodi_nama }}
+                                        @elseif ($pic->fakultas_nama)
+                                            - {{ $pic->fakultas_nama }}
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <textarea name="tindakan_${formId}_${kriteriaId}[${index}][waktu]" 
+                                    class="form-control small-textarea" 
+                                    placeholder="${waktuPlaceholder}" required></textarea>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-center justify-content-around">
+                            <button type="button" class="btn btn-danger btn-sm me-2 remove-tindakan">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" 
+                                    onclick="addTindakanInput('${formId}', '${kriteriaId}')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                `);
+                
+                container.append(newRow);
+                saveSession();
+            };
 
-            $(window).on('scroll', function() {
-                if ($(this).scrollTop() > 0) {
-                    $paginationContainer.css('padding-top', (navbarHeight + 12) + 'px');
+            // Fungsi untuk menghapus input tindakan
+            $(document).on('click', '.remove-tindakan', function() {
+                const row = $(this).closest('.tindakan-row');
+                const container = row.parent();
+                
+                // Jangan hapus jika hanya tersisa satu row
+                if (container.find('.tindakan-row').length > 1) {
+                    row.remove();
+                    saveSession();
                 } else {
-                    $paginationContainer.css('padding-top', '12px');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Peringatan',
+                        text: 'Setidaknya harus ada satu rencana tindakan'
+                    });
                 }
             });
 
-            $(window).trigger('scroll');
-        });
-    </script>
+            // Fungsi untuk menyimpan data ke session
+            function saveSession(callback) {
+                const currentPage = $('input[name^="page_"]').val();
+                const formData = new FormData();
+                const formIds = [];
+                const kriteriaMap = {};
 
-    <script>
-        $(document).ready(function() {
-            var form = $('#create-form');
-
-            // Menampilkan error message dari session
-            @if (session('error_message'))
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: "{{ session('error_message') }}"
-                });
-            @endif
-
-            // Form Submit
-            form.on('submit', function(e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Submit Form?',
-                    text: "Pastikan bahwa jawaban sudah terisi semua!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: 'primary',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Ya, submit!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#button-submit').addClass('d-none');
-                        $('#button-submit-loading').removeClass('d-none');
-                        form.off('submit')
-                            .submit();
+                // Kumpulkan semua formId dan kriteriaId
+                $('[id^="tindakan-inputs-"]').each(function() {
+                    const formId = $(this).data('form-id');
+                    const kriteriaId = $(this).data('kriteria-id');
+                    
+                    if (!formIds.includes(formId)) {
+                        formIds.push(formId);
+                    }
+                    
+                    if (!kriteriaMap[formId]) {
+                        kriteriaMap[formId] = [];
+                    }
+                    
+                    if (!kriteriaMap[formId].includes(kriteriaId)) {
+                        kriteriaMap[formId].push(kriteriaId);
                     }
                 });
-            });
 
-            $('#edit-button').on('click', function() {
-                $('#edit-button').addClass('d-none');
-                $('#button-edit-loading').removeClass('d-none');
+                formData.append('currentPage', currentPage);
+                formData.append('formIds', JSON.stringify(formIds));
+
+                // Kumpulkan data tindakan untuk setiap form dan kriteria
+                formIds.forEach(formId => {
+                    formData.append(`kriteriaIds_${formId}`, JSON.stringify(kriteriaMap[formId]));
+                    
+                    kriteriaMap[formId].forEach(kriteriaId => {
+                        const rowsData = [];
+                        const container = $(`#tindakan-inputs-${formId}-${kriteriaId}`);
+                        
+                        container.find('.tindakan-row').each(function() {
+                            const tindakan = $(this).find('textarea[name*="[tindakan]"]').val();
+                            const pic = $(this).find('select[name*="[pic]"]').val();
+                            const waktu = $(this).find('textarea[name*="[waktu]"]').val();
+                            
+                            if (tindakan || pic || waktu) {
+                                rowsData.push({
+                                    tindakan: tindakan,
+                                    pic: pic,
+                                    waktu: waktu
+                                });
+                            }
+                        });
+                        
+                        formData.append(`tindakan_${formId}_${kriteriaId}`, JSON.stringify(rowsData));
+                    });
+                });
 
                 $.ajax({
-                    url: "{{ route('dekan.rtm-rtl.isi', ['rtmRtl' => $rtmRtl->id]) }}",
+                    url: '{{ route('dekan.rtm-rtl-prodi.session', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
                     type: 'POST',
-                    success: function(response) {
-                        $('#edit-button').removeClass('d-none');
-                        $('#button-edit-loading').addClass('d-none');
-                        window.location.reload();
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function() {
+                        if (callback) callback();
                     },
                     error: function(xhr) {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: 'Terjadi kesalahan',
-                            icon: 'error',
-                            confirmButtonText: 'OK'
-                        });
+                        console.error('Error saving session:', xhr.responseText);
                     }
                 });
-            });
+            }
 
-            // Menyesuaikan padding untuk pagination
-            var $paginationContainer = $('.pagination-container');
-            var navbarHeight = 56;
-            $(window).on('scroll', function() {
-                $paginationContainer.css('padding-top', $(this).scrollTop() > 0 ? (navbarHeight + 12) +
-                    'px' : '12px');
-            }).trigger('scroll');
+            // Fungsi untuk menyimpan jawaban per form
+            function saveJawaban(formId) {
+                const formData = new FormData();
+                let isValid = true;
+                const errorMessages = [];
 
-            save_session();
-
-            // Menyimpan jawaban tindakan
-            $(document).on('click', '[id^=simpan_]', function() {
-                var id = $(this).attr('id').split('_')[1];
-                save_jawaban(id);
-                save_session();
-            });
-
-            // Menyimpan perubahan saat input diubah
-            $('textarea[name^="tindakan_"], textarea[name^="pic_"], textarea[name^="waktu_"]').on('input', debounce(
-                save_session, 1000));
-
-            // Fungsi menyimpan jawaban
-            function save_jawaban(formId) {
-                console.log("Menyimpan jawaban untuk formId:", formId);
-
-                var tindakanList = [];
-                $(`[id^=tindakan-inputs-${formId}]`).each(function() {
-                    let kriteriaId = $(this).attr('id').split('-').slice(-1)[0]; // Ambil kriteriaId dari ID
-                    let tindakanData = [];
-
-                    $(this).find('.row.g-2').each(function(index) {
-                        let tindakan = $(this).find(`textarea[name^="tindakan_${formId}_${kriteriaId}["]`)
-                            .val() || '';
-                        let pic = $(this).find(`textarea[name^="pic_${formId}_${kriteriaId}["]`).val() ||
-                        '';
-                        let waktu = $(this).find(`textarea[name^="waktu_${formId}_${kriteriaId}["]`)
-                        .val() || '';
-
-                        if (tindakan || pic || waktu) {
-                            tindakanData.push({
-                                tindakan: tindakan,
-                                pic: pic,
-                                waktu: waktu
-                            });
+                const kriteriaContainers = $(`[id^="tindakan-inputs-${formId}-"]`);
+                
+                // PERBAIKAN: Gunakan data attribute untuk ambil kriteriaId
+                kriteriaContainers.each(function() {
+                    const container = $(this);
+                    const kriteriaId = container.data('kriteria-id'); // Ambil dari data attribute
+                    
+                    container.find('.tindakan-row').each(function(index) {
+                        const row = $(this);
+                        const tindakan = row.find('textarea[name*="[tindakan]"]').val().trim();
+                        const pic = row.find('select[name*="[pic]"]').val().trim();
+                        const waktu = row.find('textarea[name*="[waktu]"]').val().trim();
+                        
+                        // Validasi
+                        if (!tindakan) {
+                            errorMessages.push(`Rencana tindakan untuk kriteria ${kriteriaId} baris ${index+1} wajib diisi`);
+                            isValid = false;
+                        }
+                        if (!pic) {
+                            errorMessages.push(`PIC untuk kriteria ${kriteriaId} baris ${index+1} wajib dipilih`);
+                            isValid = false;
+                        }
+                        if (!waktu) {
+                            errorMessages.push(`Waktu untuk kriteria ${kriteriaId} baris ${index+1} wajib diisi`);
+                            isValid = false;
+                        }
+                        
+                        if (isValid) {
+                            formData.append(`tindakan_${formId}_${kriteriaId}[${index}][tindakan]`, tindakan);
+                            formData.append(`tindakan_${formId}_${kriteriaId}[${index}][pic]`, pic);
+                            formData.append(`tindakan_${formId}_${kriteriaId}[${index}][waktu]`, waktu);
                         }
                     });
-
-                    if (tindakanData.length > 0) {
-                        tindakanList.push({
-                            kriteriaId: kriteriaId,
-                            tindakan: tindakanData
-                        });
-                    }
                 });
 
-                console.log("Data yang dikirim:", tindakanList);
-
-                if (tindakanList.length === 0) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Data tidak boleh kosong.'
-                    });
+                if (!isValid) {
+                    Swal.fire({ icon: 'error', title: 'Validasi Gagal', html: errorMessages.join('<br>') });
                     return;
                 }
 
-                // Tampilkan loading
-                $(`#simpan_${formId}`).addClass('d-none');
-                $(`#simpan-button-loading_${formId}`).removeClass('d-none');
-
-                // Kirim data ke backend
+                // Kirim data ke server
+                formData.append('formId', formId);
+                formData.append('currentPage', $('input[name^="page_"]').val());
+                
+                const kriteriaIds = [];
+                
+                // Kumpulkan kriteriaIds sebagai array number
+                $('[id^="tindakan-inputs-' + formId + '-"]').each(function() {
+                    const kriteriaId = parseInt($(this).data('kriteria-id'));
+                    if (!isNaN(kriteriaId)) {
+                        kriteriaIds.push(kriteriaId);
+                    }
+                });
+                formData.append('kriteriaIds', JSON.stringify(kriteriaIds));
                 $.ajax({
                     url: '{{ route('dekan.rtm-rtl-prodi.save_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
                     type: 'POST',
-                    data: {
-                        formId: formId,
-                        kriteria: tindakanList
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(response) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil',
                             text: response.message
-                        }).then(() => location.reload());
+                        }).then(() => {
+                            location.reload();
+                        });
                     },
                     error: function(xhr) {
-                        let response = JSON.parse(xhr.responseText);
+                        let response = xhr.responseJSON;
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            html: response.message
+                            html: response?.message || 'Terjadi kesalahan saat menyimpan data'
                         });
                     },
                     complete: function() {
@@ -462,140 +612,97 @@
                 });
             }
 
-            // Simpan session AJAX
-            function save_session() {
-                var formData = new FormData();
-
-                var currentPage = $('input[name^="page_"]').val();
-                formData.append('currentPage', currentPage);
-
-                var formId_kriteriaIds = [];
-                $('textarea[name^="tindakan_"]').each(function() {
-                    var name = $(this).attr('name');
-                    var matches = name.match(/tindakan_([^[]+)/);
-                    if (matches && matches[1]) {
-                        var formId_kriteriaId = matches[1];
-                        if (!formId_kriteriaIds.includes(formId_kriteriaId)) {
-                            formId_kriteriaIds.push(formId_kriteriaId);
-                        }
-                    }
-                });
-
-                formData.append('formId_kriteriaIds', JSON.stringify(formId_kriteriaIds));
-
-                formId_kriteriaIds.forEach(function(formId_kriteriaId) {
-                    var tindakanData = [];
-                    var formId = formId_kriteriaId.split('_')[0];
-                    var kriteriaId = formId_kriteriaId.split('_')[1];
-
-                    $(`#tindakan-inputs-${formId}-${kriteriaId}`).find('.row.g-2').each(function(index) {
-                        var tindakan = $(this).find(`textarea[name^="tindakan_${formId_kriteriaId}["]`).val() || '';
-                        var pic = $(this).find(`textarea[name^="pic_${formId_kriteriaId}["]`).val() || '';
-                        var waktu = $(this).find(`textarea[name^="waktu_${formId_kriteriaId}["]`).val() || '';
-
-                        if (tindakan || pic || waktu) {
-                            tindakanData.push({
-                                tindakan: tindakan,
-                                pic: pic,
-                                waktu: waktu
-                            });
-                        }
-                    });
-
-                    formData.append(`rows_${formId_kriteriaId}`, JSON.stringify(tindakanData));
-                });
-
-                $.ajax({
-                    url: '{{ route('dekan.rtm-rtl-prodi.session', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        if (response.success) {
-                            console.log('Session berhasil disimpan.');
-                        }
-                    },
-                    error: function() {
-                        console.error('Gagal menyimpan session.');
-                    }
-                });
-            }
-            // Use event delegation for dynamic inputs
-            $(document).on('input', 'textarea[name^="tindakan_"], textarea[name^="pic_"], textarea[name^="waktu_"]',
-                debounce(save_session, 1000));
-
-            // Fungsi debounce untuk optimasi input
-            function debounce(func, delay) {
-                let debounceTimer;
-                return function() {
-                    clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(() => func.apply(this, arguments), delay);
-                };
-            }
-
-            // Tambah input tindakan baru
-            window.addTindakanInput = function(formId, kriteriaId) {
-                const tindakanInputs = document.getElementById(`tindakan-inputs-${formId}-${kriteriaId}`);
-                const newRow = document.createElement('div');
-                const index = tindakanInputs.querySelectorAll('.row.g-2').length;
-                newRow.classList.add('row', 'g-2', 'tindakan-row');
-                newRow.innerHTML = `
-                <div class="col-md-4">
-                    <textarea name="tindakan_${formId}_${kriteriaId}[${index}][tindakan]" class="form-control small-textarea" placeholder="Rencana"></textarea>
-                </div>
-                <div class="col-md-3">
-                    <textarea name="pic_${formId}_${kriteriaId}[${index}][pic]" class="form-control small-textarea" placeholder="PIC"></textarea>
-                </div>
-                <div class="col-md-3">
-                    <textarea name="waktu_${formId}_${kriteriaId}[${index}][waktu]" class="form-control small-textarea" placeholder="Waktu"></textarea>
-                </div>
-                <div class="col-md-2 d-flex align-items-center">
-                    <button type="button" class="btn btn-danger btn-sm me-2 remove-tindakan">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            `;
-                tindakanInputs.appendChild(newRow);
-
-                // Menambahkan event listener untuk tombol hapus
-                const removeButton = newRow.querySelector('.remove-tindakan');
-                removeButton.addEventListener('click', function() {
-                    if (tindakanInputs.children.length > 1) {
-                        tindakanInputs.removeChild(newRow);
-                    }
-                    reindexRows(formId, kriteriaId);
-                    save_session();
-                });
-            };
-
-            function reindexRows(formId, kriteriaId) {
-                const container = document.getElementById(`tindakan-inputs-${formId}-${kriteriaId}`);
-                if (!container) return;
-                const rows = container.querySelectorAll('.tindakan-row');
-                rows.forEach((row, index) => {
-                    const inputs = row.querySelectorAll('textarea');
-                    inputs[0].name = `tindakan_${formId}_${kriteriaId}[${index}][tindakan]`;
-                    inputs[1].name = `pic_${formId}_${kriteriaId}[${index}][pic]`;
-                    inputs[2].name = `waktu_${formId}_${kriteriaId}[${index}][waktu]`;
-                });
-            }
-
-            // Hapus input tindakan
-            $(document).on("click", ".remove-tindakan", function() {
-                const inputField = $(this).closest(".tindakan-row").find("textarea:first");
-                const matches = inputField.attr("name").match(/tindakan_([^[]+)/);
-                if (matches && matches[1]) {
-                    const formId = matches[1].split("_")[0];
-                    const kriteriaId = matches[1].split("_")[1];
-                    $(this).closest(".tindakan-row").remove();
-                    reindexRows(formId, kriteriaId);
-                    save_session();
-                } else {
-                    console.error("Could not extract formId");
-                }
+            // Handle klik tombol simpan per form
+            $(document).on('click', '[id^=simpan_]', function() {
+                const formId = $(this).attr('id').split('_')[1];
+                
+                saveJawaban(formId);
+                saveSession();
             });
 
+            // Handle submit final form
+            form.on('submit', function(e) {
+                e.preventDefault();
+                
+                Swal.fire({
+                    title: 'Submit Form?',
+                    text: 'Pastikan semua data sudah benar sebelum submit!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, Submit',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Tampilkan loading
+                        $('#button-submit').addClass('d-none');
+                        $('#button-submit-loading').removeClass('d-none');
+                        
+                        // Simpan session terakhir sebelum submit
+                        saveSession(function() {
+                            form.off('submit').submit();
+                        });
+                    }
+                });
+            });
+
+            // Handle tombol edit (ubah status ke in_progress)
+            $('#edit-button').on('click', function() {
+                Swal.fire({
+                    title: 'Ubah Data?',
+                    text: 'Anda akan mengubah status data menjadi dapat diedit kembali',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, Ubah',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#edit-button').addClass('d-none');
+                        $('#button-edit-loading').removeClass('d-none');
+                        
+                        $.ajax({
+                            url: "{{ route('dekan.rtm-rtl-prodi.isi', ['rtmRtl' => $rtmRtl->id]) }}",
+                            type: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function() {
+                                location.reload();
+                            },
+                            error: function() {
+                                Swal.fire('Error!', 'Terjadi kesalahan', 'error');
+                                $('#edit-button').removeClass('d-none');
+                                $('#button-edit-loading').addClass('d-none');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Auto-save saat ada perubahan
+            $(document).on('input change', 'textarea, select', function() {
+                saveSession();
+            });
+
+            // Debounce untuk auto-save
+            let debounceTimer;
+            function debounceSaveSession() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(saveSession, 1000);
+            }
+
+            // Handle pagination
+            $(document).on('click', '.pagination a, #previous, #next', function(e) {
+                e.preventDefault();
+                const url = $(this).attr('href');
+                
+                saveSession(function() {
+                    window.location.href = url;
+                });
+            });
         });
     </script>
-@endsection
+@endsection  

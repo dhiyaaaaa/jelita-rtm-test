@@ -93,4 +93,14 @@ class Fakultas extends Model
     {
         return $this->hasMany(RtmRtl::class, 'fakultas_id');
     }
+
+    public function rtl(): HasMany
+    {
+        return $this->hasMany(Rtl::class, 'fakultas_id', 'id');
+    }
+
+    public function monitoring(): HasMany
+    {
+        return $this->hasMany(Monitoring::class, 'fakultas_id', 'id');
+    }
 }

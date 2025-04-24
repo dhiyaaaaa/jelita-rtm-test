@@ -1826,4 +1826,657 @@ class DownloadController extends Controller
             'X-Filename' => $namaFile,
         ]);
     }
+    
+    //Form 6 tindak lanjut koreksi (RTL)
+    private function rtl($id)
+    {
+        // Title
+        $title = "Formulir Isian Tindak Lanjut";
+
+        // RTL
+        $rtl = DB::table('rtl')->where('id', $id)->first();
+
+        // RTL Form
+        $forms = DB::table('rtl_form')
+            ->where('rtl_form.rtl_id', $rtl->id)
+            ->join('kriteria', 'rtl_form.kriteria_id', '=', 'kriteria.id')
+            ->join('form', 'rtl_form.form_id', '=', 'form.id')
+            ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+            ->leftjoin('rtm_tindak_lanjut', function($join) {
+                $join->on('rtl_form.form_id', '=', 'rtm_tindak_lanjut.form_id')
+                     ->on('rtl_form.kriteria_id', '=', 'rtm_tindak_lanjut.kriteria_id');     
+            })
+            ->leftJoin('ptk_form_deskripsi', 'rtl_form.form_id', '=', 'ptk_form_deskripsi.form_id')
+            ->leftJoin('jawaban_auditor', 'rtl_form.form_id', '=', 'jawaban_auditor.form_id')
+            ->leftJoin('laporan_form', 'rtl_form.form_id', '=', 'laporan_form.form_id')
+            ->select([
+                'kriteria.id as kriteria_id',
+                'kriteria.nama as nama_kriteria',
+                'instrumen.kode as kode_instrumen',
+                'instrumen.pernyataan as pernyataan',
+                'rtl_form.tindakan as tindakan_pelaksanaan',
+                'rtl_form.bukti as bukti_pelaksanaan',
+                'rtm_tindak_lanjut.tindakan as rencana_tindakan',
+                'rtm_tindak_lanjut.pic',
+                'rtm_tindak_lanjut.waktu',
+                'ptk_form_deskripsi.deskripsi as deskripsi',
+                'jawaban_auditor.catatan as catatan',
+                'laporan_form.kelebihan as kelebihan'
+            ])
+            ->distinct()
+            ->get();
+            Log::info('Jumlah data form RTL: ' . $forms->count());
+
+
+        if ($forms->isEmpty()) {
+            throw new \Exception('Form RTL tidak memiliki data.');
+        }
+
+        $groupedForms = [];
+
+        foreach ($forms as $form) {
+            // kode
+            $key = $form->kode_instrumen . '|' . $form->pernyataan;
+
+            if (!isset($groupedForms[$key])) {
+                $groupedForms[$key] = [
+                    'kode_instrumen' => $form->kode_instrumen,
+                    'pernyataan' => $form->pernyataan,
+                    'kriteria_id' => $form->kriteria_id,
+                    'deskripsi' => [],
+                    'catatan' => [],
+                    'kelebihan' => [],
+                    'rencana_tindakan' => [],
+                    'pic' => [],
+                    'waktu' => [],
+                    'tindakan_pelaksanaan' => [],
+                    'bukti_pelaksanaan' => [],
+                ];
+            }
+
+            // Gabungkan data temuan
+            if ($form->deskripsi) $groupedForms[$key]['deskripsi'][] = $form->deskripsi;
+            if ($form->catatan) $groupedForms[$key]['catatan'][] = $form->catatan;
+            if ($form->kelebihan) $groupedForms[$key]['kelebihan'][] = $form->kelebihan;
+
+            // Gabungkan rencana
+            $groupedForms[$key]['rencana_tindakan'] = array_merge($groupedForms[$key]['rencana_tindakan'], explode(';', $form->rencana_tindakan ?? ''));
+            $groupedForms[$key]['pic'] = array_merge($groupedForms[$key]['pic'], explode(';', $form->pic ?? ''));
+            $groupedForms[$key]['waktu'] = array_merge($groupedForms[$key]['waktu'], explode(';', $form->waktu ?? ''));
+
+            // Gabungkan tindakan pelaksanaan
+            $groupedForms[$key]['tindakan_pelaksanaan'] = array_merge($groupedForms[$key]['tindakan_pelaksanaan'], explode(';', $form->tindakan_pelaksanaan ?? ''));
+            $groupedForms[$key]['bukti_pelaksanaan'] = array_merge($groupedForms[$key]['bukti_pelaksanaan'], explode(';', $form->bukti_pelaksanaan ?? ''));
+        }
+
+        $kategoriData = [
+            'bm' => [],
+            'm' => [],
+            'ml' => []
+        ];
+
+        $index = 0;
+        foreach ($groupedForms as $data) {
+            $index++;
+
+            // Format rencana tindakan
+            $rencanaList = [];
+            foreach ($data['rencana_tindakan'] as $i => $item) {
+                $parts = [];
+                if ($item) $parts[] = trim($item);
+                if (!empty($data['pic'][$i])) $parts[] = 'PIC: ' . trim($data['pic'][$i]);
+                if (!empty($data['waktu'][$i])) $parts[] = 'Waktu: ' . trim($data['waktu'][$i]);
+                if (!empty($parts)) {
+                    $rencanaList[] = ($i + 1) . '. ' . implode(' | ', $parts);
+                }
+            }
+
+            // Format tindakan & bukti pelaksanaan
+            $tindakanList = array_filter($data['tindakan_pelaksanaan']);
+            foreach ($tindakanList as $i => &$t) {
+                $t = ($i + 1) . '. ' . trim($t);
+            }
+
+            $buktiList = array_filter($data['bukti_pelaksanaan']);
+            foreach ($buktiList as $i => &$t) {
+                $t = ($i + 1) . '. ' . trim($t);
+            }
+
+            // Format temuan
+            $temuan = match($data['kriteria_id']) {
+                1 => implode("\n- ", array_unique($data['deskripsi'])) ?: 'Tidak ada deskripsi',
+                2 => implode("\n- ", array_unique($data['catatan'])) ?: 'Tidak ada catatan',
+                3 => implode("\n- ", array_unique($data['kelebihan'])) ?: 'Tidak ada kelebihan',
+                default => 'Tidak ada data temuan'
+            };
+
+            $item = [
+                'no' => $index,
+                'kode_pernyataan' => $data['kode_instrumen'] . ' - ' . $data['pernyataan'],
+                'temuan' => $temuan ?: 'Tidak Ada Temuan',
+                'rencana_tindakan' => !empty($rencanaList) ? implode("\n", $rencanaList) : 'Tidak ada rencana tindakan',
+                'tindakan_pelaksanaan' => !empty($tindakanList) ? implode("\n", $tindakanList) : 'Tidak ada tindakan pelaksanaan',
+                'bukti_pelaksanaan' => !empty($buktiList) ? implode("\n", $buktiList) : 'Tidak ada bukti pelaksanaan',
+            ];
+
+            // Masukkan ke kategori
+            switch ($data['kriteria_id']) {
+                case 1: $kategoriData['bm'][] = $item; break;
+                case 2: $kategoriData['m'][] = $item; break;
+                case 3: $kategoriData['ml'][] = $item; break;
+                default: $kategoriData['bm'][] = $item;
+            }
+        }
+
+        // Ambil data auditan
+        $auditan = DB::table('rtl_auditee as rtl_auditan')
+            ->where('rtl_auditan.rtl_id', $id)
+            ->leftJoin('auditee', 'rtl_auditan.auditee_id', '=', 'auditee.id')
+            ->leftJoin('users', 'auditee.user_id', '=', 'users.id')
+            ->select(
+                'auditee.id as id',
+                'users.name as nama',
+                'rtl_auditan.approve as approve',
+                'rtl_auditan.updated_at as updated_at'
+            )
+            ->first();
+        
+            if (!$auditan) {
+                $auditan = (object) [
+                    'id' => null,
+                    'nama' => 'Auditan Tidak Ditemukan',
+                    'approve' => null,
+                    'updated_at' => null,
+                ];
+            }
+
+        // Dekan
+        // $dekan = DB::table('rtl_dekan as rtl_dekan')
+        //     ->where('rtl_dekan.rtl_id', $id)
+        //     ->leftJoin('auditee', 'rtl_dekan.auditee_id', '=', 'auditee.id')
+        //     ->leftJoin('users', 'auditee.user_id', '=', 'users.id')
+        //     ->select(
+        //         'auditee.id as id',
+        //         'users.name as nama',
+        //         'rtl_dekan.approve as approve',
+        //         'rtl_dekan.created_at as created_at',
+        //         'rtl_dekan.updated_at as updated_at'
+        //     )
+        //     ->orderBy('rtl_dekan.created_at', 'asc')
+        //     ->get();
+
+        // Unit Data
+        $unitData = $this->get_unit($rtl);
+        if (!$unitData) {
+            throw new \Exception('Data Unit tidak ditemukan.');
+        }
+
+
+        // Template
+        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_form6.docx'));
+
+        \Carbon\Carbon::setLocale('id');
+        $date = \Carbon\Carbon::parse($rtl->tgl);
+
+        $templateProcessor->setValues([
+            'date' => $date->isoFormat('D MMMM YYYY'),
+            'unit' => $unitData['unitName'] ?? 'Unit tidak ditemukan'
+        ]);
+
+        // if (in_array('bm_no', $templateProcessor->getVariables())) {
+        //     $templateProcessor->cloneRow('bm_no', count($kategoriData['bm']));
+        // } else {
+        //     Log::warning('Tag bm_no tidak ditemukan di template Word!');
+        // }
+        
+        // Prepare values for the template
+        foreach ($kategoriData as $prefix => $data) {
+            if (empty($data)) {
+                $templateProcessor->setValue($prefix.'_no', 'Tidak ada data');
+                $templateProcessor->setValue($prefix.'_kode_pernyataan', 'Tidak ada data');
+                $templateProcessor->setValue($prefix.'_temuan', 'Tidak ada data');
+                $templateProcessor->setValue($prefix.'_rencana_tindakan', 'Tidak ada data');
+                $templateProcessor->setValue($prefix.'_tindakan_pelaksanaan', 'Tidak ada data');
+                $templateProcessor->setValue($prefix.'_bukti_pelaksanaan', 'Tidak ada data');
+                continue;
+            }
+
+            $templateProcessor->cloneRow($prefix.'_no', count($data));
+            foreach ($data as $index => $item) {
+                $rowNumber = $index + 1;
+                $templateProcessor->setValue($prefix.'_no#'.$rowNumber, $item['no']);
+                $templateProcessor->setValue($prefix.'_kode_pernyataan#'.$rowNumber, $item['kode_pernyataan']);
+                $templateProcessor->setValue($prefix.'_temuan#'.$rowNumber, $item['temuan']);
+                $templateProcessor->setValue($prefix.'_rencana_tindakan#'.$rowNumber, $item['rencana_tindakan']);
+                $templateProcessor->setValue($prefix.'_tindakan_pelaksanaan#'.$rowNumber, $item['tindakan_pelaksanaan']);
+                $templateProcessor->setValue($prefix.'_bukti_pelaksanaan#'.$rowNumber, $item['bukti_pelaksanaan']);
+            }
+        }
+        
+       
+        $this->auditan($templateProcessor, $auditan, $unitData, $title);
+
+        // Return template and other data
+        return compact('templateProcessor', 'unitData', 'date', 'title');
+    }
+
+    //RTL word
+    public function rtl_word(string $rtl)
+    {
+        try {
+            $tp = $this->rtl($rtl);
+            return $this->word($tp['templateProcessor'], $tp['unitData'], $tp['date'], $tp['title']);
+        } catch (\Exception $e) {
+            Log::error('Error generating RTL Word: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh RTL!');
+        }
+    }
+    
+
+    //Form7 Monitoring RTL 
+    private function monitoring($id)
+    {
+        // Title
+        $title = "Formulir Monitoring Tindak Lanjut atas PTK";
+
+        $monitoring = DB::table('monitoring')->where('id', $id)->first();
+
+        // Monitoring Form
+        $forms = DB::table('monitoring_form')
+            ->where('monitoring_form.monitoring_id', $monitoring->id)
+            ->join('kriteria', 'monitoring_form.kriteria_id', '=', 'kriteria.id')
+            ->join('form', 'monitoring_form.form_id', '=', 'form.id')
+            ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+            ->leftJoin('monitoring_form_status', 'monitoring_form.form_id', '=', 'monitoring_form_status.form_id')
+            ->leftjoin('rtm_tindak_lanjut', function($join) {
+                $join->on('monitoring_form.form_id', '=', 'rtm_tindak_lanjut.form_id')
+                     ->on('monitoring_form.kriteria_id', '=', 'rtm_tindak_lanjut.kriteria_id');     
+            })
+            ->leftjoin('rtl_form', function($join) {
+                $join->on('monitoring_form.form_id', '=', 'rtl_form.form_id')
+                     ->on('monitoring_form.kriteria_id', '=', 'rtl_form.kriteria_id');     
+            })
+            ->select([
+                'kriteria.id as kriteria_id',
+                'kriteria.nama as nama_kriteria',
+                'instrumen.kode as kode_instrumen',
+                'instrumen.pernyataan as pernyataan',
+                'rtl_form.tindakan as tindakan',
+                'rtl_form.bukti as bukti',
+                'rtm_tindak_lanjut.tindakan as rencana_tindakan',
+                'rtm_tindak_lanjut.pic',
+                'rtm_tindak_lanjut.waktu',
+                'monitoring_form_status.status as status',
+                'monitoring_form.catatan as catatan',
+            ])
+            ->distinct()
+            ->get();
+            Log::info('Jumlah data form: ' . $forms->count());
+
+        if ($forms->isEmpty()) {
+            throw new \Exception('Form RTL tidak memiliki data.');
+        }
+
+        $groupedForms = [];
+        foreach ($forms as $form) {
+            // kode
+            $key = $form->kode_instrumen . '|' . $form->pernyataan;
+
+            if (!isset($groupedForms[$key])) {
+                $groupedForms[$key] = [
+                    'kode_instrumen' => $form->kode_instrumen,
+                    'pernyataan' => $form->pernyataan,
+                    'kriteria_id' => $form->kriteria_id,
+                    'rencana_tindakan' => [],
+                    'pic' => [],
+                    'waktu' => [],
+                    'tindakan' => [],
+                    'bukti' => [],
+                    'status' => $form->status,
+                    'catatan' => []
+                ];
+            }
+
+            // Gabungkan rencana RTM
+            $groupedForms[$key]['rencana_tindakan'] = array_merge($groupedForms[$key]['rencana_tindakan'], explode(';', $form->rencana_tindakan ?? ''));
+            $groupedForms[$key]['pic'] = array_merge($groupedForms[$key]['pic'], explode(';', $form->pic ?? ''));
+            $groupedForms[$key]['waktu'] = array_merge($groupedForms[$key]['waktu'], explode(';', $form->waktu ?? ''));
+
+            // Gabungkan tindakan pelaksanaan
+            $groupedForms[$key]['tindakan'] = array_merge($groupedForms[$key]['tindakan'], explode(';', $form->tindakan ?? ''));
+            $groupedForms[$key]['bukti'] = array_merge($groupedForms[$key]['bukti'], explode(';', $form->bukti ?? ''));
+           
+            //Catatan Auditor
+            $groupedForms[$key]['catatan'][] = $form->catatan;
+
+            //status
+            $groupedForms[$key]['statuses'][] = $form->status;
+
+        }
+
+        $kategoriData = [
+            'bm' => [],
+            'm' => [],
+            'ml' => []
+        ];
+
+        $index = 0;
+        foreach ($groupedForms as $data) {
+            $index++;
+
+            // Format rencana tindakan
+            $rencanaList = [];
+            foreach ($data['rencana_tindakan'] as $i => $item) {
+                $parts = [];
+                if ($item) $parts[] = trim($item);
+                if (!empty($data['pic'][$i])) $parts[] = 'PIC: ' . trim($data['pic'][$i]);
+                if (!empty($data['waktu'][$i])) $parts[] = 'Waktu: ' . trim($data['waktu'][$i]);
+                if (!empty($parts)) {
+                    $rencanaList[] = ($i + 1) . '. ' . implode(' | ', $parts);
+                }
+            }
+
+            // Format tindakan pelaksanaan
+            $tindakanList = [];
+            foreach ($data['tindakan'] as $i => $item) {
+                $parts = [];
+                if ($item) $parts[] = trim($item);
+                if (!empty($data['bukti'][$i])) $parts[] = 'bukti: ' . trim($data['bukti'][$i]);
+                if (!empty($parts)) {
+                    $tindakanList[] = ($i + 1) . '. ' . implode(' | ', $parts);
+                }
+            }
+
+            //Status
+            $selesai = '';
+            $proses = '';
+            $belum = '';
+
+            switch ($data['status']) {
+                case 'selesai':
+                    $selesai = '✔';
+                    break;
+                case 'proses':
+                    $proses = '✔';
+                    break;
+                case 'belum_dilaksanakan':
+                    $belum = '✔';
+                    break;
+            }
+
+            $item = [
+                'no' => $index,
+                'kode_pernyataan' => $data['kode_instrumen'] . ' - ' . $data['pernyataan'],
+                'rencana_tindakan' => !empty($rencanaList) ? implode("\n", $rencanaList) : 'Tidak ada rencana tindakan',
+                'tindakan' => !empty($tindakanList) ? implode("\n", $tindakanList) : 'Tidak ada tindakan pelaksanaan',
+                'catatan' => !empty($data['catatan']) ? implode("\n-", $data['catatan']) : 'Tidak ada tindakan pelaksanaan',
+                'status' => $data['status'] ?? '-',
+                's' => $selesai,
+                'p' => $proses,
+                'b' => $belum,
+            ];
+
+            // Masukkan ke kategori
+            switch ($data['kriteria_id']) {
+                case 1: $kategoriData['bm'][] = $item; break;
+                case 2: $kategoriData['m'][] = $item; break;
+                case 3: $kategoriData['ml'][] = $item; break;
+                default: $kategoriData['bm'][] = $item;
+            }
+        }
+        
+        // Ambil data auditan
+        $auditan = DB::table('monitoring_auditee as monitoring_auditan')
+            ->where('monitoring_auditan.monitoring_id', $id)
+            ->leftJoin('auditee', 'monitoring_auditan.auditee_id', '=', 'auditee.id')
+            ->leftJoin('users', 'auditee.user_id', '=', 'users.id')
+            ->select(
+                'auditee.id as id',
+                'users.name as nama',
+                'monitoring_auditan.approve as approve',
+                'monitoring_auditan.updated_at as updated_at'
+            )
+            ->first();
+            if (!$auditan) {
+                $auditan = (object) [
+                    'id' => null,
+                    'nama' => 'Auditan',
+                    'approve' => null,
+                    'updated_at' => null,
+                ];
+            }
+
+        // Auditor
+        $auditors = DB::table('monitoring_auditor as monitoring_auditor')
+            ->where('monitoring_auditor.monitoring_id', $id)
+            ->leftJoin('auditor', 'monitoring_auditor.auditor_id', '=', 'auditor.id')
+            ->leftJoin('users', 'auditor.user_id', '=', 'users.id')
+            ->select(
+                'auditor.id as id',
+                'users.name as nama',
+                'monitoring_auditor.approve as approve',
+                'monitoring_auditor.created_at as created_at',
+                'monitoring_auditor.updated_at as updated_at'
+            )
+            ->orderBy('monitoring_auditor.created_at', 'asc')
+            ->get();
+
+            if (!$auditors) {
+                $auditors = (object) [
+                    'id' => null,
+                    'nama' => 'Auditors',
+                    'approve' => null,
+                    'updated_at' => null,
+                ];
+            }
+
+        // Unit Data
+        $unitData = $this->get_unit($monitoring);
+        if (!$unitData) {
+            throw new \Exception('Data Unit tidak ditemukan.');
+        }
+
+        // Template
+        $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_form7.docx'));
+
+
+        \Carbon\Carbon::setLocale('id');
+        $date = \Carbon\Carbon::parse($monitoring->tgl);
+        $templateProcessor->setValues([
+            'date' => $date->isoFormat('D MMMM YYYY'),
+            'unit' => $unitData ? $unitData['unit']->nama : ''
+        ]);
+        
+        // Prepare values for the template
+        foreach ($kategoriData as $prefix => $data) {
+            if (empty($data)) {
+                $templateProcessor->setValue($prefix.'_no', '');
+                $templateProcessor->setValue($prefix.'_kode_pernyataan', 'Tidak ada data');
+                $templateProcessor->setValue($prefix.'_rencana_tindakan', 'Tidak ada data');
+                $templateProcessor->setValue($prefix.'_tindakan', 'Tidak ada data');
+                $templateProcessor->setValue($prefix.'_catatan', 'Tidak ada data');
+                $templateProcessor->setValue($prefix.'_s', '');
+                $templateProcessor->setValue($prefix.'_p', '');
+                $templateProcessor->setValue($prefix.'_b', '');
+
+                continue;
+            }
+
+            $templateProcessor->cloneRow($prefix.'_no', count($data));
+            foreach ($data as $index => $item) {
+                $rowNumber = $index + 1;
+                $templateProcessor->setValue($prefix.'_no#'.$rowNumber, $item['no']);
+                $templateProcessor->setValue($prefix.'_kode_pernyataan#'.$rowNumber, $item['kode_pernyataan']);
+                $templateProcessor->setValue($prefix.'_rencana_tindakan#'.$rowNumber, $item['rencana_tindakan']);
+                $templateProcessor->setValue($prefix.'_tindakan#'.$rowNumber, $item['tindakan']);
+                $templateProcessor->setValue($prefix.'_catatan#'.$rowNumber, $item['catatan']);
+                $templateProcessor->setValue($prefix.'_s#'.$rowNumber, $item['s']);
+                $templateProcessor->setValue($prefix.'_p#'.$rowNumber, $item['p']);
+                $templateProcessor->setValue($prefix.'_b#'.$rowNumber, $item['b']);
+
+            }
+        }
+
+        $this->auditan($templateProcessor, $auditan, $unitData, $title);
+        $this->auditors($templateProcessor, $auditors, $unitData, $title);
+
+        // Return template and other data
+        return compact('templateProcessor', 'unitData', 'date', 'title');
+    }
+
+    public function monitoring_rtl_word(string $monitoring)
+    {
+        try {
+            $tp = $this->monitoring($monitoring);
+            return $this->word($tp['templateProcessor'], $tp['unitData'], $tp['date'], $tp['title']);
+        } catch (\Exception $e) {
+            // Log error for debugging
+            Log::error('Error generating RTL Word: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh Form Monitoring Tindak Lanjut!');
+        }
+    }
+
+    //RTM Univ
+    public function download_rtm_univ(RtmJadwal $rtmJadwal)
+    {
+        // Data Cover
+        $dataCover = [
+            'tahun' => \Carbon\Carbon::parse($rtmJadwal->tanggal)->translatedFormat('Y'),
+        ];
+
+        $rtmJadwal = RtmJadwal::with([
+            'rtm_rtl.rtm_tindak_lanjut',
+            'rtm_rtl.fakultas', 
+            'rtm_rtl.unit',     
+            'fakultas',
+            'unit',
+            'rtm_lampiran'
+        ])->findOrFail($rtmJadwal->id);
+        
+        
+        // Ambil lampiran jika ada
+        $lampiran = RtmLampiran::where('rtm_jadwal_id', $rtmJadwal->id)->first();
+
+        $rtmUniv = collect($rtmJadwal->rtm_rtl)
+        ->groupBy(function ($rtl_rtm) {
+            return $rtl_rtm->fakultas_id ? 'fakultas_' . $rtl_rtm->fakultas_id : 'unit_' . $rtl_rtm->unit_id;
+        });
+
+        $temuanAudit = [];
+
+        foreach ($rtmUniv as $key => $rtmRtlGroup) {
+            foreach ($rtmRtlGroup as $hasilRtmRtl) {
+        
+        
+                $temuan = JawabanAuditor::where('jadwal_audit_id', $rtmJadwal->jadwal_audit_id)
+                    ->whereHas('form.instrumen.jabatan', function ($q) use ($hasilRtmRtl) {
+                        if ($hasilRtmRtl->fakultas_id) {
+                            $q->where('fakultas_id', $hasilRtmRtl->fakultas_id);
+                        } elseif ($hasilRtmRtl->unit_id) {
+                            $q->where('unit_id', $hasilRtmRtl->unit_id);
+                        }
+                    })
+                    ->with([
+                        'form.instrumen.jabatan',
+                        'form.jawaban_auditee',
+                        'kriteria',
+                        'form.ptk_form_deskripsi',
+                        'form.laporan_form',
+                    ])
+                    ->get();
+        
+                $temuanAudit[] = [
+                    'nama' => $hasilRtmRtl->fakultas->nama ?? $hasilRtmRtl->unit->nama ?? 'Tidak diketahui',
+                    'temuan' => $temuan,
+                    'rtm_rtl' => $hasilRtmRtl,
+                ];
+            }
+        }
+        
+        
+        $jawabanTindakLanjut = RtmTindakLanjut::whereIn('rtm_rtl_id', $rtmJadwal->rtm_rtl->pluck('id'))->get();
+
+        $dataJadwal = [
+            'rtmJadwal' => $rtmJadwal,
+        ];
+
+        $dataIsi = [
+            'rtmJadwal' => $rtmJadwal,
+            'lampiran' => $lampiran,
+            'temuanAudit' => $temuanAudit,
+            'jawabanTindakLanjut' => $jawabanTindakLanjut,
+        ];
+
+        // MPDF
+        $mpdf = new \Mpdf\Mpdf([
+            'tempDir' => storage_path('app/tmp'),
+        ]);
+
+        // Halaman Cover (Portrait)
+        $cover = view('pdf.rtm_univ.cover', $dataCover)->render();
+        $mpdf->AddPage('P');
+        $mpdf->WriteHTML($cover);
+
+        // Hilangkan footer pada cover
+        $mpdf->SetFooter('');
+
+        // Tambahkan halaman baru untuk isi laporan
+        $mpdf->AddPage('P'); // Portrait untuk isi
+        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
+
+        // Halaman Isi 
+        $jadwal = view('pdf.rtm_univ.jadwal', $dataJadwal)->render();
+        $mpdf->WriteHTML($jadwal);
+
+        // Tambahkan halaman baru untuk isi laporan
+        $mpdf->AddPage('L'); // Landscape untuk isi
+        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
+
+        // Halaman Isi 
+        $isi = view('pdf.rtm_univ.isi', $dataIsi)->render();
+        $mpdf->WriteHTML($isi);
+
+        // Tambahkan Lampiran Jika Ada
+        if ($lampiran) {
+            $lampiranFiles = [
+                'undangan' => $lampiran->undangan,
+                'presensi' => $lampiran->presensi,
+                'dokumentasi' => $lampiran->dokumentasi,
+            ];
+
+            foreach ($lampiranFiles as $fileKey => $filePath) {
+                if ($filePath) {
+                    $pdfPath = storage_path("app/$filePath");
+
+                    // Pastikan file ada sebelum diproses
+                    if (file_exists($pdfPath) && is_readable($pdfPath)) {
+                        try {
+                            $pageCount = $mpdf->SetSourceFile($pdfPath);
+
+                            for ($i = 1; $i <= $pageCount; $i++) {
+                                $tplId = $mpdf->ImportPage($i);
+                                $mpdf->AddPage();
+                                $mpdf->UseTemplate($tplId);
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Gagal menambahkan lampiran $fileKey: " . $e->getMessage());
+                        }
+                    } else {
+                        Log::warning("Lampiran $fileKey tidak ditemukan atau tidak dapat dibaca di path: $pdfPath");
+                    }
+                }
+            }
+        }
+
+        // Penamaan file berdasarkan fakultas atau unit
+        $namaFile = "Laporan RTM Unsoed " . " Tahun " . $dataCover['tahun'] . ".pdf";
+        
+        // Download
+        return response($mpdf->Output($namaFile, \Mpdf\Output\Destination::STRING_RETURN), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"$namaFile\"",
+            'X-Filename' => $namaFile,
+        ]);
+    }
+    
 }

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Auditee;
 use App\Models\AuditeeAuditor;
 use App\Models\Auditor;
+use App\Models\MainMenu;
 use App\Models\Menu;
 use App\Models\Notifikasi;
 use App\Models\Submenu;
@@ -38,22 +39,31 @@ class AppServiceProvider extends ServiceProvider
 
             if ($roles->isNotEmpty()) {
                 $roleId = $roles->pluck('id')->toArray();
-                $menus = Menu::whereHas('role', function ($query) use ($roleId) {
-                    $query->whereIn('id', $roleId);
-                })
-                    ->where('status', 1)
-                    ->get();
-                $submenus = Submenu::whereHas('role', function ($query) use ($roleId) {
-                    $query->whereIn('id', $roleId);
-                })
-                    ->where('status', 1)
-                    ->get();
-            } else {
-                $menus = collect([Menu::where('route', 'dashboard')->first()]);
-                $submenus = collect();
-            }
 
-            $view->with('menus', $menus)->with('submenus', $submenus);
+                $mainMenus = MainMenu::where('status', 1)
+                ->whereHas('menu', function ($query) use ($roleId) {
+                    $query->where('status', 1)
+                        ->whereHas('role', function ($q) use ($roleId) {
+                            $q->whereIn('id', $roleId);
+                        });
+                })
+                ->with(['menu' => function ($query) use ($roleId) {
+                    $query->where('status', 1)
+                        ->whereHas('role', function ($q) use ($roleId) {
+                            $q->whereIn('id', $roleId);
+                        })
+                        ->with(['submenu' => function ($submenuQuery) use ($roleId) {
+                            $submenuQuery->where('status', 1)
+                                ->whereHas('role', function ($sq) use ($roleId) {
+                                    $sq->whereIn('id', $roleId);
+                                });
+                        }]);
+                }])
+                ->get();
+            }else{
+                $mainMenus = collect();
+            }
+               $view->with('mainMenus', $mainMenus);
         });
 
         View::composer('components.layout.partials.navbar', function ($view) {

@@ -83,4 +83,9 @@ class Auditee extends Model
     {
         return $this->hasMany(StatusPtkAuditee::class, 'auditee_id');
     }
+    
+    public function rtl(): BelongsToMany
+    {
+        return $this->belongsToMany(Rtl::class, 'rtl_auditee', 'auditee_id', 'rtl_id')->withPivot('approve')->withTimestamps();
+    }
 }

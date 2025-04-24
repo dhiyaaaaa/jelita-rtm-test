@@ -104,4 +104,13 @@ class JadwalAudit extends Model
         return $this->hasMany(RtmJadwal::class, 'jadwal_audit_id', 'id');
     }
 
+    public function rtl(): HasMany
+    {
+        return $this->hasMany(Rtl::class, 'jadwal_audit_id', 'id');
+    }
+
+    public function monitoring(): HasMany
+    {
+        return $this->hasMany(Monitoring::class, 'jadwal_audit_id', 'id');
+    }
 }

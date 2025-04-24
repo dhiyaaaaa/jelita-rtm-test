@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check_is_admin_or_rektor' => \App\Http\Middleware\CheckIsAdminOrRektor::class,
             'check_is_gpm_or_dekan' => \App\Http\Middleware\CheckIsGpmOrDekan::class,
             'check_role_rtm' => \App\Http\Middleware\CheckRoleRtm::class,
+            'check_role_rtm_univ' => \App\Http\Middleware\CheckRoleRtmUniv::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

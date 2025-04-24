@@ -198,110 +198,30 @@ class SessionController extends Controller
         ], 400);
     }
 
-    //session RTL Auditee
-    // public function session_rtl_auditee(Request $request, string $rtl, string $auditee): JsonResponse
-    // {
-    //     if ($request->ajax()) {
-    //         try {
-    //             $totalPages = $request->input('totalPage');
-    //             for ($i = 1; $i <= $totalPages; $i++) {
-    //                 $page = $request->input(('page_' . $i));
-
-    //                 if (empty($page)) {
-    //                     continue;
-    //                 }
-
-    //                 $sessionKey = 'form_rtl_auditee-page_' .  $page . '-rtlId_' . $rtl . '-auditeeId_' . $auditee;
-
-    //                 $formData = $request->all();
-    //                 $formData[('page_' . $i)] = $page;
-
-    //                 // Debugging: Periksa data yang akan disimpan di session
-    //                 Log::info('Menyimpan data ke session:', [$sessionKey => $formData]);
-    //                 session([$sessionKey => $formData]);
-    //             }
-
-    //             return response()->json(['success' => true]);
-    //         } catch (\Exception $e) {
-    //             return response()->json(['success' => false, 'message' => 'Error.'], 500);
-    //         }
-    //     }
-
-    //     return response()->json([
-    //         'error' => 'Invalid Request.'
-    //     ], 400);
-    // }
-
-    // // Session RTL Auditee per Nomor (backup)
-    // public function session_rtl_auditee_per_nomor(Request $request, string $rtl, string $auditee, string $formId) {}
-
-    // //
-    // public function session_monitoring_auditor(Request $request, string $monitoring, string $auditor): JsonResponse
-    // {
-    //     if ($request->ajax()) {
-    //         try {
-    //             $totalPages = $request->input('totalPage');
-    //             for ($i = 1; $i <= $totalPages; $i++) {
-    //                 $page = $request->input(('page_' . $i));
-
-    //                 if (empty($page)) {
-    //                     continue;
-    //                 }
-
-    //                 $sessionKey = 'form_monitoring-page_' . $i . '-monitoringId_' . $monitoring . '-auditorId_' . $auditor;
-
-    //                 $formData = $request->all();
-    //                 $formData[('page_' . $i)] = $page;
-    //                 Log::info('Menyimpan data ke session:', [$sessionKey => $formData]);
-    //                 session([$sessionKey => $formData]);
-    //             }
-
-    //             return response()->json(['success' => true]);
-    //         } catch (\Exception $e) {
-    //             return response()->json(['success' => false, 'message' => 'Error.'], 500);
-    //         }
-    //     }
-
-    //     return response()->json(['error' => 'Invalid Request.'], 400);
-    // }
-
-    //public function session_monitoring_auditor_per_nomor(Request $request, string $monitoring, string $auditorId, string $formId) {}
-
     public function session_rtm_rtl_dekan(Request $request, string $rtmRtl, string $auditee): JsonResponse
     {
-        // Validate that the request is an AJAX request
         if (!$request->ajax()) {
             return response()->json(['error' => 'Invalid Request.'], 400);
         }
 
         try {
-            // Log::info($request->all());
-            // Get the current page number, default to 1 if not provided
             $currentPage = $request->input('currentPage', 1);
-
-            // Create a unique session key based on current page, RTM RTL ID, and Auditee ID
             $sessionKey = 'form_rtm_rtl-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee;
 
+            $formData = [];
             $formIds = json_decode($request->input('formIds'), true);
 
-            $sessionData = [];
-
-            // Process each form ID
             foreach ($formIds as $formId) {
-                // Decode tindakan (action), pic (person in charge), and waktu (time) for each form
-                $tindakan = json_decode($request->input('rows_' . $formId), true);
-
-                // Initialize data for this form
-                $sessionData[$formId] = [
+                $tindakan = json_decode($request->input('tindakan_' . $formId), true);
+                
+                $formData[$formId] = [
                     'tindakan' => [],
                 ];
 
-                // Process each row of actions for this form
                 if (is_array($tindakan)) {
                     foreach ($tindakan as $row) {
-                        // Only add non-empty rows
-                        if (!empty($row['tindakan']) || !empty($row['pic']) || !empty($row['waktu'])) {
-                            $sessionData[$formId]['tindakan'][] = [
+                        if (!empty($row['tindakan']) || !empty($row['bukti'])) {
+                            $formData[$formId]['tindakan'][] = [
                                 'tindakan' => $row['tindakan'] ?? null,
                                 'pic' => $row['pic'] ?? null,
                                 'waktu' => $row['waktu'] ?? null,
@@ -311,45 +231,155 @@ class SessionController extends Controller
                 }
             }
 
-            // Save the processed data to the session
-            session([$sessionKey => $sessionData]);
+            session([$sessionKey => $formData]);
 
-            Log::info('Session Controller sessionData', $sessionData);
-
-            // Return success response
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            // Log any errors and return error response
-            Log::error('Error saving session:', ['error' => $e->getMessage()]);
+            Log::error('Error saving RTL session:', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
         }
     }
 
     public function session_rtm_rtl_prodi(Request $request, string $rtmRtl, string $auditee): JsonResponse
     {
+        if (!$request->ajax()) {
+            return response()->json(['error' => 'Invalid Request.'], 400);
+        }
+
+        try {
+            $currentPage = $request->input('currentPage', 1);
+            $sessionKey = 'form_rtm_rtl_prodi-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee;
+
+            $formData = [];
+            $formIds = json_decode($request->input('formIds', '[]'), true);
+            
+            foreach ($formIds as $formId) {
+                $kriteriaIds = json_decode($request->input("kriteriaIds_{$formId}", '[]'), true);
+                
+                foreach ($kriteriaIds as $kriteriaId) {
+                    $tindakanKey = "tindakan_{$formId}_{$kriteriaId}";
+                    $tindakanData = json_decode($request->input($tindakanKey, '[]'), true);
+                    
+                    if (is_array($tindakanData)) {
+                        $formData[$formId][$kriteriaId] = [
+                            'tindakan' => array_filter($tindakanData, function($item) {
+                                return !empty($item['tindakan']) || !empty($item['pic']) || !empty($item['waktu']);
+                            })
+                        ];
+                    }
+                }
+            }
+
+            session([$sessionKey => $formData]);
+
+            return response()->json(['success' => true, 'message' => 'Data berhasil disimpan sementara']);
+        } catch (\Exception $e) {
+            Log::error('Error saving RTL Prodi session:', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
+        }
+    }
+    
+    public function session_rtm_ptk_univ (Request $request, string $rtmPtk): JsonResponse
+    {
         if ($request->ajax()) {
             try {
-                $formData = $request->all();
-                $currentPage = $request->input('currentPage');
-    
-                if (empty($currentPage)) {
-                    return response()->json(['success' => false, 'message' => 'Halaman tidak valid.'], 422);
+                $totalPages = $request->input('totalPage');
+                for ($i = 1; $i <= $totalPages; $i++) {
+                    $page = $request->input(('page_' . $i));
+
+                    if (empty($page)) {
+                        continue;
+                    }
+
+                    $sessionKey = 'form_rtmPtk-page_' .  $page . '-rtmPtkId_' . $rtmPtk;
+
+                    $formData = $request->all();
+                    $formData[('page_' . $i)] = $page;
+
+                    session([$sessionKey => $formData]);
                 }
-    
-                // Pastikan $formData tidak null
-                if (empty($formData)) {
-                    return response()->json(['success' => false, 'message' => 'Data tidak boleh kosong.'], 422);
-                }
-    
-                $sessionKey = 'form_rtm_rtl_prodi-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee;
-                session([$sessionKey => $formData]);
-    
+
                 return response()->json(['success' => true]);
             } catch (\Exception $e) {
                 return response()->json(['success' => false, 'message' => 'Error.'], 500);
             }
         }
-    
+
+        return response()->json([
+            'error' => 'Invalid Request.'
+        ], 400);
+    }
+
+    public function session_rtl_auditee(Request $request, string $rtl, string $auditee): JsonResponse
+    {
+        if (!$request->ajax()) {
+            return response()->json(['error' => 'Invalid Request.'], 400);
+        }
+
+        try {
+            $currentPage = $request->input('currentPage', 1);
+            $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl . '-auditeeId_' . $auditee;
+
+            $formData = [];
+            $formIds = json_decode($request->input('formIds'), true);
+
+            foreach ($formIds as $formId) {
+                $tindakan = json_decode($request->input('tindakan_' . $formId), true);
+                
+                $formData[$formId] = [
+                    'tindakan' => [],
+                ];
+
+                if (is_array($tindakan)) {
+                    foreach ($tindakan as $row) {
+                        if (!empty($row['tindakan']) || !empty($row['bukti'])) {
+                            $formData[$formId]['tindakan'][] = [
+                                'tindakan' => $row['tindakan'] ?? null,
+                                'bukti' => $row['bukti'] ?? null,
+                            ];
+                        }
+                    }
+                }
+            }
+
+            session([$sessionKey => $formData]);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Error saving RTL session:', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
+        }
+    }
+
+    public function session_monitoring_auditor(Request $request, string $monitoring, string $auditor): JsonResponse
+    {
+        if ($request->ajax()) {
+            try {
+                $totalPages = $request->input('totalPage');
+                for ($i = 1; $i <= $totalPages; $i++) {
+                    $page = $request->input(('page_' . $i));
+
+                    if (empty($page)) {
+                        continue;
+                    }
+
+                    $sessionKey = 'form_monitoring-page_' . $i . '-monitoringId_' . $monitoring . '-auditorId_' . $auditor;
+
+                    $formData = $request->all();
+                    $formData[('page_' . $i)] = $page;
+                    Log::info('Menyimpan data ke session:', [$sessionKey => $formData]);
+                    session([$sessionKey => $formData]);
+                }
+
+                return response()->json(['success' => true]);
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => 'Error.'], 500);
+            }
+        }
+
         return response()->json(['error' => 'Invalid Request.'], 400);
     }
+
+    public function session_monitoring_auditor_per_nomor(Request $request, string $monitoring, string $auditorId, string $formId) {}
+
 }

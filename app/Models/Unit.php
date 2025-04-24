@@ -100,5 +100,15 @@ class Unit extends Model
     {
         return $this->hasMany(RtmRtl::class, 'unit_id', 'id');
     }
+
+    public function rtl(): HasMany
+    {
+        return $this->hasMany(Rtl::class, 'unit_id', 'id');
+    }
+
+    public function monitoring(): HasMany
+    {
+        return $this->hasMany(Monitoring::class, 'unit_id', 'id');
+    }
     
 }

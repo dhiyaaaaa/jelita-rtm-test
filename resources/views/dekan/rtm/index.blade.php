@@ -52,26 +52,9 @@
                                     @if ($item->rtm_rtl->isNotEmpty())
                                         @php
                                             $rtmRtl = $item->rtm_rtl->first();
-                                            $status = $rtmRtl->status_rtm_rtl->first();
                                         @endphp
-                                        @if ($rtmRtl->status_rtm_rtl->isNotEmpty())
-                                            @php
-                                                $status = $rtmRtl->status_rtm_rtl->first();
-                                            @endphp
-                                            @if ($status->status === 'completed')
-                                                <a href="{{ route('dekan.rtm-rtl.form', ['rtmRtl' => $rtmRtl->id]) }}"
-                                                    class="btn btn-primary btn-fixed-size">Sudah Isi</a>
-                                            @else
-                                                <a href="{{ route('dekan.rtm-rtl.form', ['rtmRtl' => $rtmRtl->id]) }}"
-                                                    class="btn btn-outline-primary btn-fixed-size">Isi</a>
-                                            @endif
-                                        @else
-                                            <form action="{{ route('dekan.rtm-rtl.isi', ['rtmRtl' => $rtmRtl->id]) }}"
-                                                method="post" class="d-inline">
-                                                @csrf
-                                                <button type="submit" class="btn btn-outline-primary btn-fixed-size">Isi</button>
-                                            </form>
-                                        @endif
+                                        <a href="{{ route('dekan.rtm-rtl.show', ['rtmRtl' => $rtmRtl->id]) }}"
+                                            class="btn btn-outline-primary">Lihat</a>
                                     @else
                                         <button class="btn btn-outline-primary btn-fixed-size tindak-lanjut-btn" 
                                             data-id="{{ $item->id }}" 
@@ -94,11 +77,6 @@
                                         <li>
                                             <a class="dropdown-item" href="{{ route('dekan.jadwal-rtm.show', $item->id) }}">
                                                 <i class="fas fa-file"></i> Lihat Agenda
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="{{ route('download.rtm.fakultas', $item->id) }}">
-                                                <i class="fas fa-download"></i> Download Laporan RTM
                                             </a>
                                         </li>
 
@@ -172,7 +150,10 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" id="konfirmasiTindakLanjut">Ya, Lanjutkan</button>
+                    <button type="button" class="btn btn-primary" id="konfirmasiTindakLanjut">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span class="btn-text">Ya, Lanjutkan</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -366,6 +347,14 @@
             $('#konfirmasiModal').modal('show');
 
             $('#konfirmasiTindakLanjut').off('click').on('click', function() {
+                const $btn = $(this);
+                const $spinner = $btn.find('.spinner-border');
+                const $text = $btn.find('.btn-text');
+
+                $spinner.removeClass('d-none');
+                $text.addClass('d-none');
+                $btn.prop('disabled', true);
+
                 $.ajax({
                     url: "{{ route('dekan.rtm-rtl.store') }}",
                     method: "POST",
@@ -381,6 +370,11 @@
                     },
                     error: function(xhr) {
                         alert("Gagal menindaklanjuti: " + xhr.responseText);
+                    },
+                    complete: function(){
+                        $spinner.addClass('d-none');
+                        $text.removeClass('d-none');
+                        $btn.prop('disabled', false);
                     }
                 });
             });
