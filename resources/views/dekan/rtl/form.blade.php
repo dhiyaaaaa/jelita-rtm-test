@@ -1,10 +1,10 @@
 @extends('components.layout.auditee_layout')
 
 @section('content')
-    <form action="{{ route('dekan.rtl.store_form', ['rtl' => $rtl->id, 'auditee' => $auditeeId]) }}"method="post"
+    <form action="{{ route('dekan.rtl.store_form', ['rtl' => $rtl->id, 'auditee' => $auditeeId, 'kriteria' => $kriteria->id]) }}"method="post"
         id="create-form" enctype="multipart/form-data" class="block">
         @csrf
-        <input type="hidden" name="kriteria" value="{{ $kriteria->id }}">
+        <input type="hidden" name="kriteria_id" value="{{ $kriteria->id }}">
 
         {{-- Tampilkan judul berdasarkan kriteria --}}
         <div class="row">
@@ -53,8 +53,13 @@
                                                         @endif
                                                     </div>
                                                     <div class="mb-2">
-                                                        <span class="badge badge-{{ $item->kriteria->nama === 'Belum Memenuhi' ? 'danger' : ($item->kriteria->nama === 'Memenuhi' ? 'warning' : 'success') }}">
-                                                            {{ $item->kriteria->nama }}
+                                                        <span class = "badge
+                                                            @if($kriteria->slug === 'belum-memenuhi') badge-danger
+                                                            @elseif($kriteria->slug === 'memenuhi') badge-warning
+                                                            @elseif($kriteria->slug === 'melampuai') badge-succes
+                                                            @else badge-secondary 
+                                                            @endif">
+                                                            {{ $kriteria->nama }}
                                                         </span>
                                                     </div>
                                                     <p> {{ $no++ }}. {{ $item->form->instrumen->kode }}</p>
@@ -104,7 +109,14 @@
                                                                 <div class="mb-2">
                                                                     <p class="text-muted">
                                                                         {{ $index + 1 }}. Tindakan: {{ $tindakan->tindakan }}<br>
-                                                                        PIC: {{ $tindakan->pic }}<br>
+                                                                        PIC: {{ $tindakan->jabatan->nama }}
+                                                                            @foreach ($tindakan->user->prodi as $prodi)
+                                                                                {{ $prodi->nama }}
+                                                                            @endforeach
+
+                                                                            @foreach ($tindakan->user->fakultas as $fakultas)
+                                                                                {{ $fakultas->nama }}
+                                                                            @endforeach <br>
                                                                         Waktu: {{ $tindakan->waktu }}
                                                                     </p>
                                                                 </div>
@@ -117,15 +129,7 @@
 
                                                 {{-- Tindakan --}}
                                                 <div class="form-group">
-                                                    <label class="font-weight-bold">
-                                                        @if ($kriteriaTemuan === 'Belum Memenuhi')
-                                                            Tindakan Perbaikan yang sudah dilakukan
-                                                        @elseif ($kriteriaTemuan === 'Memenuhi')
-                                                            Tindakan Peningkatan yang sudah dilakukan
-                                                        @elseif ($kriteriaTemuan === 'Melampaui')
-                                                            Tindakan Pengembangan yang sudah dilakukan
-                                                        @endif
-                                                    </label>
+                                                    <label class="font-weight-bold">Rencana Tindakan yang sudah dibuat</label>
 
                                                     {{-- Form tindakan --}}
                                                     <div id="tindakan-inputs-{{ $item->form->id }}" class="mb-3">
@@ -235,7 +239,7 @@
                                         </button>
                                     </div>
                                 @else
-                                    @if ($paginatedTemuan->lastPage() !== 1)
+                                    @if ($paginatedTemuan->lastPage() > 1)
                                         <div>
                                             <a id="previous" href="{{ $paginatedTemuan->previousPageUrl() }}"
                                                 class="btn btn-primary mb-3">Previous</a>
@@ -461,10 +465,9 @@
 
             // Save Jawabn
             $(document).on('click', '[id^=simpan_]', function() {
-                var id = $(this).attr('id').split('_')[1];
-                $(`#simpan_${id}`).addClass('d-none');
-                $(`#simpan-button-loading_${id}`).removeClass('d-none');
-                save_jawaban(id);
+                const formId = $(this).attr('id').split('_')[1];
+
+                save_jawaban(formId);
                 save_session();
             });
 
@@ -550,7 +553,7 @@
                 }
 
                 $.ajax({
-                    url: '{{ route('dekan.rtl.save_form', ['rtl' => $rtl->id, 'auditee' => $auditeeId]) }}',
+                    url: '{{ route('dekan.rtl.save_form', ['rtl' => $rtl->id, 'auditee' => $auditeeId, 'kriteria' => $kriteria->id]) }}',
                     type: 'POST',
                     data: formData,
                     processData: false,

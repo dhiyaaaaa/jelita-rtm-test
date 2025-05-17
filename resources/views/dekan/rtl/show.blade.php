@@ -34,27 +34,27 @@
     </div>
 
     <div class="card shadow border-0 mt-3">
-        <div class="card-header border-0">
-            <h3 class="card-title title-size text-dark">Tindak Lanjut Temuan Sesuai Kriteria</h3>
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-dark"><i class="fas fa-file-alt me-2"></i>Tindak Lanjut Temuan Hasil Hasil {{ $rtl->jadwal_audit->jadwal }} Sesuai Kriteria</h3>
         </div>
 
         <div class="card-body">
             @php
-                $rtl = $rtl->first();
-                $statusBelumMemenuhi = $rtl->status_rtl->where('kriteria.nama', 'Belum Memenuhi')->first();
-                $statusMemenuhi = $rtl->status_rtl->where('kriteria.nama', 'Memenuhi')->first();
-                $statusMelampaui = $rtl->status_rtl->where('kriteria.nama', 'Melampaui')->first();
+                $kriteriaList = $rtl->status_rtl->pluck('kriteria')->unique();
             @endphp
 
             <div class="row g-3 justify-content-center">
-                @foreach (['Belum Memenuhi' => $statusBelumMemenuhi, 'Memenuhi' => $statusMemenuhi, 'Melampaui' => $statusMelampaui] as $kriteria => $status)
+                @foreach ($allKriteria as $kriteria)
+                    @php
+                        $status = $rtl->status_rtl->where('kriteria_id', $kriteria->id)->first();
+                    @endphp
                     <div class="col-12 col-md-6 col-lg-4">
                         <div class="card text-center transition-modern shadow border-0 w-100" style="border-radius: 16px;">
                             <div class="card-body py-4">
                                 <i class="{{ $status && $status->status === 'completed' ? 'fas fa-check-circle text-success' : 'fas fa-edit text-warning' }} fa-3x mb-3"></i>
-                                <h6 class="fw-bold text-dark">{{ $kriteria }}</h6>
+                                <h6 class="fw-bold text-dark">{{ $kriteria->nama }}</h6>
                                 @if (!$status)
-                                    <form action="{{ route('dekan.rtl.isi', ['rtl' => $rtl->id, 'kriteria' => $kriteria]) }}"
+                                    <form action="{{ route('dekan.rtl.isi', ['rtl' => $rtl->id, 'kriteria' => $kriteria->id]) }}"
                                         method="post" class="d-inline">
                                         @csrf
                                         <button type="submit" class="btn btn-danger w-100 py-2 transition-modern">
@@ -63,10 +63,10 @@
                                     </form>
                                 @else
                                     @if ($status->status === 'completed')
-                                        <a href="{{ route('dekan.rtl.form', ['rtl' => $rtl->id, 'kriteria' => $kriteria]) }}"
+                                        <a href="{{ route('dekan.rtl.form', ['rtl' => $rtl->id, 'kriteria' => $kriteria->id]) }}"
                                             class="btn btn-primary w-100 py-2 transition-modern"> Sudah Isi </a>
                                     @else
-                                        <a href="{{ route('dekan.rtl.form', ['rtl' => $rtl->id, 'kriteria' => $kriteria]) }}"
+                                        <a href="{{ route('dekan.rtl.form', ['rtl' => $rtl->id, 'kriteria' => $kriteria->id]) }}"
                                             class="btn btn-primary w-100 py-2 transition-modern"> Isi </a>
                                     @endif
                                 @endif

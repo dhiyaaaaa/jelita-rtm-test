@@ -63,46 +63,56 @@ class RtmRtlController extends Controller
     public function show(RtmRtl $rtmRtl)
     {
         $auditee = Auditee::where(['user_id' => $this->user->id])->first();
-        $rtmRtl = RtmRtl::with ([
+        
+        $allKriteria = Kriteria::all();
+        
+        $rtmRtl = RtmRtl::with([
             'status_rtm_rtl.kriteria',
             'status_rtm_rtl_prodi',
+            'rtm_jadwal.status_rtm_catatan',
             'jadwal_audit',
             'rtm_jadwal',
+            'auditee',
         ])->findOrFail($rtmRtl->id);
 
+        $approval = $rtmRtl->auditee->first() ? $rtmRtl->auditee->first()->pivot->approve : null;
+
         $data = [
-            'title' => 'Tindak Lanjut Hasil Audit' . ' ' . $rtmRtl->jadwal_audit->jadwal,
+            'title' => 'Rencana Tindak Lanjut Hasil Audit' . ' ' . $rtmRtl->jadwal_audit->jadwal,
             'rtmRtl' => $rtmRtl,
+            'allKriteria' => $allKriteria, 
             'auditee' => $auditee,
+            'approval' => $approval
         ];
 
         return view('dekan.rtm.rtm_rtl.show', $data);
     }
 
-    public function isi_rtm_rtl(RtmRtl $rtmRtl, string $kriteria): RedirectResponse
+    public function isi_rtm_rtl(RtmRtl $rtmRtl, $kriteria)
     {
-        $kriteriaTindakan = Kriteria::where('nama', $kriteria)->first();
-        
-        $kriteriaId = $kriteriaTindakan->id;
+        $kriteria = Kriteria::findOrFail($kriteria);
 
-        $StatusRtmRtl = StatusRtmRtl::updateOrCreate(
+        StatusRtmRtl::updateOrCreate(
             [
                 'rtm_rtl_id' => $rtmRtl->id,
-                'kriteria_id' => $kriteriaId,
+                'kriteria_id' => $kriteria->id,
             ],
             ['status' => 'in_progress']
         );
-        Log::info('Kriteria yang dikirim:', ['kriteria' => $kriteria]);
-        return redirect()->route('dekan.rtm-rtl.form', [
-            'rtmRtl' => $rtmRtl, 
-            'kriteria' => $kriteria
+
+        return response()->json([
+            'success' => true,
+            'redirect_url' => route('dekan.rtm-rtl.form', [
+                'rtmRtl' => $rtmRtl->id,
+                'kriteria' => $kriteria->id
+            ]),
         ]);
     }
-    
 
-    public function form(Request $request, RtmRtl $rtmRtl): View|RedirectResponse
+    public function form(Request $request, RtmRtl $rtmRtl, $kriteria): View|RedirectResponse
     {
         $jadwal = JadwalAudit::findOrFail($rtmRtl->jadwal_audit_id);
+        $kriteria = Kriteria::findOrFail($kriteria);
 
         $fakultas = $rtmRtl->fakultas_id ? Fakultas::find($rtmRtl->fakultas->id) : null;
         $unit = $rtmRtl->unit_id ? Unit::find($rtmRtl->unit_id) : null;
@@ -113,19 +123,10 @@ class RtmRtlController extends Controller
 
         $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $rtmRtl->jadwal_audit_id])->first();
 
-        $kriteria = $request->query('kriteria');
-        $kriteriaTemuan = ['Belum Memenuhi', 'Memenuhi', 'Melampaui'];
-
-        // Validasi kriteria
-        if (!in_array($kriteria, $kriteriaTemuan)) {
-            return back()->with('error', 'Tidak ada temuan dengan kriteria ini.');
-        }
-
-        // Ambil ID kriteria berdasarkan nama
-        $kriteriaId = Kriteria::where('nama', $kriteria)->pluck('id')->first();
-
+        $perPage = 10;
+        $currentPage = $request->query('page', 1);
         $temuanFakultas = JawabanAuditor::where('jadwal_audit_id', $rtmRtl->jadwal_audit_id)
-            ->where('kriteria_id', $kriteriaId)
+            ->where('kriteria_id', $kriteria->id)
             ->when($rtmRtl->fakultas_id, function ($query) use ($rtmRtl) {
                 return $query->where('fakultas_id', $rtmRtl->fakultas_id);
             })
@@ -142,10 +143,8 @@ class RtmRtlController extends Controller
             ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
             ->orderBy('kriteria_id', 'asc')
             ->orderBy('form.instrumen_id', 'asc')
-            ->get();
-
-        $perPage = 10;
-        $currentPage = $request->query('page', 1);
+            ->paginate($perPage);
+        
 
         $paginatedTemuanFakultas = new LengthAwarePaginator(
             $temuanFakultas->forPage($currentPage, $perPage),
@@ -184,8 +183,6 @@ class RtmRtlController extends Controller
         ->select(
             'jabatan_user.jabatan_id',
             'jabatan.nama as jabatan_nama',
-            'jabatan.type',
-            'users.name as user_name',
             'users.id as user_id',
             'prodi.nama as prodi_nama',
             'fakultas.nama as fakultas_nama',
@@ -215,15 +212,9 @@ class RtmRtlController extends Controller
         if (!empty($sessionFormData)) {
             $formData = array_merge($formData, $sessionFormData);
         }
-        
-        if (!empty($sessionFormData)) {
-            $formData = array_merge($formData, $sessionFormData);
-        }
-
-        $kriteriaTindakan = Kriteria::where('nama', $kriteria)->first();
 
         $status = StatusRtmRtl::where('rtm_rtl_id', $rtmRtl->id)
-        ->where('kriteria_id', $kriteriaTindakan->id)
+        ->where('kriteria_id', $kriteria->id)
         ->first();
 
         $data = [
@@ -232,9 +223,7 @@ class RtmRtlController extends Controller
             'paginatedTemuanFakultas' => $paginatedTemuanFakultas,
             'jawabanTindakLanjut' => $jawabanTindakLanjut,
             'sessionFormData' => $formData,
-            'kriteriaTemuan' => $kriteria,
-            'kriteria' => $kriteriaTindakan,
-            'kriteriaId' => $kriteriaId,
+            'kriteria' => $kriteria,
             'status' => $status,
             'fakultas' => $fakultas,
             'unit' => $unit,
@@ -249,32 +238,33 @@ class RtmRtlController extends Controller
         return view('dekan.rtm.rtm_rtl.form', $data);
     }
 
-    public function save_form(Request $request, string $rtmRtl, string $auditee): JsonResponse
+    public function save_form(Request $request, string $rtmRtl, string $auditee, string $kriteria): JsonResponse
     {
         if (!$request->ajax()) {
-            return response()->json(['error' => 'Invalid Request.'], 400);
+            return response()->json(['success' => false, 'message' => 'Permintaan tidak valid.'], 400);
         }
 
         try {
             $currentPage = $request->input('currentPage', 1);
             $sessionKey = 'form_rtm_rtl-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee;
-            
-            // Initialize validation structures
-            $errors = [];
-            $hasData = false;
+
+            $auditee = Auditee::where('user_id', Auth::id())->first();
+            $auditeeId = $auditee?->id;
+
+            $kriteria = Kriteria::findOrFail($kriteria);
+
             $validationRules = [];
             $validationMessages = [];
+            $hasData = false;
 
-            // Build dynamic validation rules based on request data
+            // Buat aturan validasi dinamis
             foreach ($request->all() as $key => $value) {
                 if (preg_match('/^tindakan_([a-zA-Z0-9-]+)$/', $key, $matches)) {
-                    $formId = $matches[1];
-                    
                     foreach ($value as $index => $item) {
                         $validationRules["$key.$index.tindakan"] = 'required';
                         $validationRules["$key.$index.pic"] = ['required', 'regex:/^.+\|.+$/'];
                         $validationRules["$key.$index.waktu"] = 'required';
-                        
+
                         $validationMessages["$key.$index.tindakan.required"] = 'Rencana tindakan harus diisi';
                         $validationMessages["$key.$index.pic.required"] = 'PIC harus dipilih';
                         $validationMessages["$key.$index.pic.regex"] = 'Format PIC tidak valid';
@@ -283,59 +273,53 @@ class RtmRtlController extends Controller
                 }
             }
 
-            // Validate the request
+            // Jalankan validasi
             $validator = Validator::make($request->all(), $validationRules, $validationMessages);
-
             if ($validator->fails()) {
                 return response()->json([
+                    'success' => false,
                     'message' => 'Validasi gagal',
                     'errors' => $validator->errors(),
                 ], 422);
             }
 
-            // Process the data if validation passes
+            DB::beginTransaction();
+
             foreach ($request->all() as $key => $value) {
                 if (preg_match('/^tindakan_([a-zA-Z0-9-]+)$/', $key, $matches)) {
                     $formId = $matches[1];
                     $hasData = true;
 
-                    $kriteria = Kriteria::whereHas('jawaban_auditor', function ($query) use ($formId) {
-                        $query->where('form_id', $formId);
-                    })->first();
-
-                    $auditee = Auditee::where('user_id', $this->user->id)->first();
-                    $auditeeId = $auditee ? $auditee->id : null;
-
                     $existingData = RtmTindakLanjut::where('rtm_rtl_id', $rtmRtl)
                         ->where('form_id', $formId)
                         ->get();
 
-                    $submittedData = collect($value)->filter(fn($item) => 
+                    $submittedData = collect($value)->filter(fn($item) =>
                         !empty($item['tindakan']) && !empty($item['pic']) && !empty($item['waktu'])
                     );
 
-                    // Delete old data not in new submission
-                    $toDelete = $existingData->filter(function($item) use ($submittedData) {
-                        return ! $submittedData->contains('tindakan', $item->tindakan);
+                    // Hapus data lama yang tidak lagi dikirim
+                    $toDelete = $existingData->filter(function ($item) use ($submittedData) {
+                        return !$submittedData->contains('tindakan', $item->tindakan);
                     });
 
-                    foreach($toDelete as $item) {
+                    foreach ($toDelete as $item) {
                         $item->delete();
                     }
 
-                    // Save/update data
+                    // Simpan data baru
                     foreach ($submittedData as $item) {
-                        [$picUserId, $picJabatanId] = explode('|', $item['pic']);
+                        [$userId, $jabatanId] = explode('|', $item['pic']);
 
                         RtmTindakLanjut::updateOrCreate(
                             [
                                 'rtm_rtl_id' => $rtmRtl,
                                 'form_id' => $formId,
-                                'tindakan' => $item['tindakan'],
+                                'tindakan' => $item['tindakan']
                             ],
                             [
-                                'user_id' => $picUserId,
-                                'jabatan_id' => $picJabatanId,
+                                'user_id' => $userId,
+                                'jabatan_id' => $jabatanId,
                                 'waktu' => $item['waktu'],
                                 'kriteria_id' => $kriteria->id,
                                 'auditee_id' => $auditeeId
@@ -345,56 +329,65 @@ class RtmRtlController extends Controller
                 }
             }
 
+            DB::commit();
+
             if (!$hasData) {
                 return response()->json([
+                    'success' => false,
                     'message' => 'Tidak ada data yang valid untuk disimpan.'
                 ], 422);
             }
 
             session()->forget($sessionKey);
-            return response()->json(['message' => 'Data berhasil disimpan.'], 200);
-            
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data berhasil disimpan.'
+            ]);
+
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            DB::rollBack();
+            Log::error('RTM RTL Save Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menyimpan data.',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
-    
-    public function store_form(Request $request, RtmRtl $rtmRtl, string $auditee): RedirectResponse
+
+    public function store_form(Request $request, RtmRtl $rtmRtl, string $auditee, string $kriteria): RedirectResponse
     {
         $totalPages = $request->input('totalPage');
-        $kriteriaId = $request->input('kriteria');
-        $auditeeId = $request->input('auditee');
+        $kriteriaId = $kriteria;
+        $auditeeId = $auditee;
         $allData = [];
-        $rules = [];
-        $messages = [];
         $missingFields = [];
 
-        for ($i = 1; $i <= $totalPages; $i++) {
-            $sessionKey = 'form_rtm_rtl-page_' . $i . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee;
+        // Ambil semua data dari session
+        for ($page = 1; $page <= $totalPages; $page++) {
+            $sessionKey = 'form_rtm_rtl-page_' . $page . '-rtmRtlId_' . $rtmRtl->id . '-auditeeId_' . $auditeeId;
             $pageData = session($sessionKey, []);
 
             foreach ($pageData as $formId => $formData) {
-                if (!isset($allData[$formId])) {
-                    $allData[$formId] = ['tindakan' => []];
-                }
+                foreach ($formData['tindakan'] as $tindakan) {
+                    $validator = Validator::make(
+                        $tindakan,
+                        [
+                            'tindakan' => 'required|string',
+                            'pic' => ['required', 'string', 'regex:/\|/'],
+                            'waktu' => 'required|string',
+                        ],
+                        [
+                            'tindakan.required' => 'Tindakan harus diisi',
+                            'pic.required' => 'PIC harus diisi',
+                            'waktu.required' => 'Waktu target harus diisi',
+                        ]
+                    );
 
-                foreach ($formData['tindakan'] as $index => $tindakan) {
-                    $rules["tindakan_{$formId}.{$index}.tindakan"] = 'required';
-                    $rules["tindakan_{$formId}.{$index}.pic"] = 'required';
-                    $rules["tindakan_{$formId}.{$index}.waktu"] = 'required';
-
-                    $messages["tindakan_{$formId}.{$index}.tindakan.required"] = 'Tindakan harus diisi';
-                    $messages["tindakan_{$formId}.{$index}.pic.required"] = 'PIC harus diisi';
-                    $messages["tindakan_{$formId}.{$index}.waktu.required"] = 'Target waktu harus diisi';
-
-                    if (empty($tindakan['tindakan'])) {
-                        $missingFields[] = "Tindakan di halaman $i kosong";
-                    }
-                    if (empty($tindakan['pic'])) {
-                        $missingFields[] = "PIC di halaman $i kosong";
-                    }
-                    if (empty($tindakan['waktu'])) {
-                        $missingFields[] = "Target waktu di halaman $i tidak valid";
+                    if ($validator->fails()) {
+                        return back()->withErrors($validator)->withInput();
                     }
 
                     $allData[$formId]['tindakan'][] = $tindakan;
@@ -402,42 +395,36 @@ class RtmRtlController extends Controller
             }
         }
 
-        //field kosong
         if (!empty($missingFields)) {
-            return redirect()
-                ->back()
-                ->with('error_message', 'Ada data yang belum lengkap: ' . implode(', ', $missingFields));
+            return back()->with('error_message', 'Ada data yang belum lengkap: ' . implode(', ', $missingFields));
         }
 
+        // Simpan data ke database
         DB::beginTransaction();
         try {
             foreach ($allData as $formId => $formData) {
-                //hapus data lama
-                RtmTindakLanjut::where('rtm_rtl_id', $rtmRtl->id)
-                ->where('form_id', $formId)
-                ->delete();
-
-                //simpan data baru
                 foreach ($formData['tindakan'] as $tindakan) {
+                    [$userId, $jabatanId] = explode('|', $tindakan['pic']);
 
-                    if (empty($tindakan['pic']) || !str_contains($tindakan['pic'], '|')) {
-                        continue; 
-                    }
-                    [$picUserId, $picJabatanId] = explode('|', $tindakan['pic']);
-
-                    RtmTindakLanjut::create([
-                        'rtm_rtl_id' => $rtmRtl->id,
-                        'form_id' => $formId,
-                        'kriteria_id' => $kriteriaId,
-                        'auditee_id' => $auditeeId,
-                        'tindakan' => $tindakan['tindakan'],
-                        'user_id'      => $picUserId,
-                        'jabatan_id'   => $picJabatanId,
-                        'waktu' => $tindakan['waktu'],
-                    ]);
+                    // Simpan tindak lanjut
+                    RtmTindakLanjut::updateOrCreate(
+                        [
+                            'rtm_rtl_id'   => $rtmRtl->id,
+                            'form_id'      => $formId,
+                            'kriteria_id'  => $kriteriaId,
+                            'auditee_id'   => $auditeeId,
+                        ],
+                        [
+                            'tindakan'     => $tindakan['tindakan'],
+                            'user_id'      => $userId,
+                            'jabatan_id'   => $jabatanId,
+                            'waktu'        => $tindakan['waktu'],
+                        ]
+                    );
                 }
             }
 
+            // Update status
             StatusRtmRtl::updateOrCreate(
                 [
                     'rtm_rtl_id' => $rtmRtl->id,
@@ -448,23 +435,19 @@ class RtmRtlController extends Controller
 
             DB::commit();
 
-            for ($i = 1; $i <= $totalPages; $i++) {
-                $sessionKey = 'form_rtm_rtl-page_' . $i . '-rtmRtlId_' . $rtmRtl;
+            for ($page = 1; $page <= $totalPages; $page++) {
+                $sessionKey = 'form_rtm_rtl-page_' . $page . '-rtmRtlId_' . $rtmRtl->id . '-auditeeId_' . $auditeeId;
                 session()->forget($sessionKey);
             }
 
-            return redirect()->route('admin.rtm-rtl.show', ['rtmJadwal' => $rtmRtl->rtmJadwal->id])
-            ->with('success', 'Data berhasil disimpan.');
-
+            return redirect()
+                ->route('dekan.rtm-rtl.show', $rtmRtl)
+                ->with('success', 'Data berhasil disimpan.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error saving Tindak Lanjut data: ' . $e->getMessage());
+            Log::error('Gagal simpan tindak lanjut RTM-RTL: ' . $e->getMessage());
 
-            return redirect()
-                ->route('admin.rtm-rtl.form', [
-                    'rtmRtl' => $rtmRtl->id
-                ])
-                ->with('error_message', 'Terjadi kesalahan saat menyimpan data.');
+            return back()->with('error_message', 'Terjadi kesalahan saat menyimpan data.');
         }
     }
 }

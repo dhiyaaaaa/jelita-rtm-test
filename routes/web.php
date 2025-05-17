@@ -54,6 +54,7 @@ use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\dekan\RtmJadwalController as DekanRtmJadwalController;
 use App\Http\Controllers\dekan\RtmLampiranController as DekanRtmLampiranController;
+use App\Http\Controllers\dekan\RtmCatatanController as DekanRtmCatatanController;
 use App\Http\Controllers\dekan\RtmRtlController as DekanRtmRtlController;
 use App\Http\Controllers\dekan\RtmRtlProdiController as DekanRtmRtlProdiController;
 use App\Http\Controllers\dekan\rtl\RtlController as DekanRtlController;
@@ -788,11 +789,14 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('{jadwalAudit}/zip-upps', [DownloadController::class, 'zip_upps'])->name('download.zip_upps');
 
         // Laporan RTM Fakultas PDF
-        Route::get('{rtmJadwal}/laporan-rtm-fakultas/', [DownloadController::class, 'download_rtm_fakultas'])->name('download.rtm.fakultas');
+        //Route::get('{rtmJadwal}/laporan-rtm-fakultas/', [DownloadController::class, 'download_rtm_fakultas'])->name('download.rtm.fakultas');
         
         // Laporan RTM Univ PDF
         Route::get('{rtmJadwal}/laporan-rtm-univ/', [DownloadController::class, 'download_rtm_univ'])->name('download.rtm.univ');
 
+        //Laporan RTM Fakultas
+        Route::post('form-rtl/{rtmRtl}', [DownloadController::class, 'rtm_rtl_word'])->name('download.rtm.fakultas');
+        
          // Form Tindak Lanjut (RTL)
          Route::post('form-rtl/{rtl}', [DownloadController::class, 'rtl_word'])->name('download.rtl');
 
@@ -861,9 +865,19 @@ Route::group(['middleware' => 'auth'], function () {
             //Details Pratinjau
             Route::get('/rtm/details/{rtmJadwal}', [DekanRtmJadwalController::class, 'details'])->name('rtm.details');
 
-            
             // Lampiran RTM
             Route::post('/lampiran-rtm/store', [DekanRtmLampiranController::class, 'store'])->name('dekan.lampiran-rtm.store');
+
+            //status pengisian RTM Catatan
+            Route::post('/rtm-catatan/isi/{rtmJadwal}', [DekanRtmCatatanController::class, 'isi_rtm_catatan'])->name('dekan.rtm-catatan.isi');
+            
+             //Form RTM RTL
+            Route::get('/rtm-catatan/form/{rtmJadwal}', [DekanRtmCatatanController::class, 'form'])->name('dekan.rtm-catatan.form');
+ 
+            Route::post('rtm-catatan/{rtmJadwal}/store', [DekanRtmCatatanController::class, 'store'])->name('dekan.rtm-catatan.store');
+            
+            //Save Session
+            Route::post('rtm-catatan/{rtmJadwal}/session', [SessionController::class, 'session_rtm_catatan'])->name('dekan.rtm-catatan.session');
 
             //RTM RTL 
             Route::post('/rtm-rtl/store', [DekanRtmRtlController::class, 'store'])->name('dekan.rtm-rtl.store');
@@ -875,12 +889,12 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('/rtm-rtl/isi/{rtmRtl}/{kriteria}', [DekanRtmRtlController::class, 'isi_rtm_rtl'])->name('dekan.rtm-rtl.isi');
             
             //Form RTM RTL
-            Route::get('/rtm-rtl/form/{rtmRtl}', [DekanRtmRtlController::class, 'form'])->name('dekan.rtm-rtl.form');
+            Route::get('/rtm-rtl/form/{rtmRtl}/{kriteria}', [DekanRtmRtlController::class, 'form'])->name('dekan.rtm-rtl.form');
 
-            Route::post('rtm-rtl/{rtmRtl}/store/{auditee}', [DekanRtmRtlController::class, 'store_form'])->name('dekan.rtm-rtl.store_form');
+            Route::post('rtm-rtl/{rtmRtl}/store/{auditee}/{kriteria}', [DekanRtmRtlController::class, 'store_form'])->name('dekan.rtm-rtl.store_form');
 
             // Save Form RTMRTL per nomor
-            Route::post('rtm-rtl/{rtmRtl}/save/{auditee}', [DekanRtmRtlController::class, 'save_form'])->name('dekan.rtm-rtl.save_form');
+            Route::post('rtm-rtl/{rtmRtl}/save/{auditee}/{kriteria}', [DekanRtmRtlController::class, 'save_form'])->name('dekan.rtm-rtl.save_form');
 
             //Save Session
             Route::post('rtm-rtl/{rtmRtl}/session/{auditee}', [SessionController::class, 'session_rtm_rtl_dekan'])->name('dekan.rtm-rtl.session');
@@ -892,7 +906,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('/rtm-rtl-prodi/isi/{rtmRtl}', [DekanRtmRtlProdiController::class, 'isi_rtm_rtl_prodi'])->name('dekan.rtm-rtl-prodi.isi');
             
             //RTM RTL FORM PRODI
-            Route::get('/rtm-rtl/form-prodi/{rtmRtl}', [DekanRtmRtlProdiController::class, 'form'])->name('dekan.rtm-rtl.form_prodi');
+            Route::get('/rtm-rtl/form-prodi/{rtmRtl}', [DekanRtmRtlProdiController::class, 'form'])->name('dekan.rtm-rtl-prodi.form');
 
             Route::post('rtm-rtl-prodi/{rtmRtl}/store/{auditee}', [DekanRtmRtlProdiController::class, 'store_form'])->name('dekan.rtm-rtl-prodi.store_form');
 
@@ -902,9 +916,8 @@ Route::group(['middleware' => 'auth'], function () {
             //Save Session RTMRTLPRODI
             Route::post('rtm-rtl-prodi/{rtmRtl}/session/{auditee}', [SessionController::class, 'session_rtm_rtl_prodi'])->name('dekan.rtm-rtl-prodi.session');
 
-            Route::post('/rtm-rtl/update-status/{rtmRtl}', [DekanRtmRtlProdiController::class, 'updateStatus'])->name('dekan.rtm-rtl-prodi.update-status');
-            // Laporan RTM PDF
-            //Route::get('{rtmJadwal}/laporan-rtm-fakultas/', [DownloadController::class, 'download_rtm_fakultas'])->name('download.rtm.fakultas');
+            // Approve RTM RTL
+            Route::post('rtm-rtl/{rtmRtl}/approve/{auditee}', [ApproveController::class, 'rtm_rtl_approve'])->name('dekan.rtm-rtl.approve');
         });
 
         Route::prefix('tindak-lanjut-ptk')->group(function () {
@@ -917,16 +930,16 @@ Route::group(['middleware' => 'auth'], function () {
             Route::get('rtl/{rtl}', [DekanRtlController::class, 'show'])->name('dekan.rtl.show');
 
             //Form RTL
-            Route::get('rtl/{rtl}/form/', [DekanRtlController::class, 'form'])->name('dekan.rtl.form');
+            Route::get('rtl/{rtl}/kriteria/{kriteria}/form/', [DekanRtlController::class, 'form'])->name('dekan.rtl.form');
 
             //Status Isi RTL
-            Route::post('/rtl/{rtl}/{kriteria}', [DekanRtlController::class, 'isi_rtl_form'])->name('dekan.rtl.isi');
+            Route::post('/rtl/{rtl}/kriteria/{kriteria}', [DekanRtlController::class, 'isi_rtl_form'])->name('dekan.rtl.isi');
 
             //Save Form
-            Route::post('rtl/{rtl}/save/{auditee}', [DekanRtlController::class, 'save_form'])->name('dekan.rtl.save_form');
+            Route::post('rtl/{rtl}/save/{auditee}/kriteria/{kriteria}', [DekanRtlController::class, 'save_form'])->name('dekan.rtl.save_form');
 
             //Store Form
-            Route::post('rtl/{rtl}/store/{auditee}', [DekanRtlController::class, 'store_form'])->name('dekan.rtl.store_form');  
+            Route::post('rtl/{rtl}/store/{auditee}/kriteria/{kriteria}', [DekanRtlController::class, 'store_form'])->name('dekan.rtl.store_form');  
             
             // Save Session Form RTL 
             Route::post('{rtl}/auditee/{auditee}', [SessionController::class, 'session_rtl_auditee'])->name('dekan.rtl.session');
@@ -1047,13 +1060,13 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('/rtm-rtl-univ/store', [TindakLanjutController::class, 'store'])->name('admin.rtm-rtl.store');
 
             //status pengisian
-            Route::post('/rtm-rtl-univ/isi/{rtmRtl}', [TindakLanjutController::class, 'isi_rtm_rtl'])->name('admin.rtm-rtl.isi');
+            Route::post('/rtm-rtl-univ/isi/{rtmRtl}', [TindakLanjutController::class, 'isi_rtm_rtl_univ'])->name('admin.rtm-rtl.isi');
             
             //Form RTM RTL
             Route::get('/rtm-rtl-univ/form/{rtmRtl}', [RtmRtlController::class, 'form'])->name('admin.rtm-rtl.form');
 
             //Store Form
-            Route::post('rtm-rtl-univ/{rtmRtl}/store', [RtmRtlController::class, 'store_form'])->name('admin.rtm-rtl.store_form');
+            Route::post('rtm-rtl-univ/{rtmRtl}/store-rtm', [RtmRtlController::class, 'store_form'])->name('admin.rtm-rtl.store_form');
 
             // Save Form RTMRTL per nomor
             Route::post('rtm-rtl-univ/{rtmRtl}/save', [RtmRtlController::class, 'save_form'])->name('admin.rtm-rtl.save_form');

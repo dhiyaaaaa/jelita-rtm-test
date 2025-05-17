@@ -7,13 +7,6 @@
         <a href="{{ route("dekan.jadwal-rtm.index") }}" class="btn btn-outline-secondary">Kembali</a>
     </div>
 
-    <!-- Tampilkan pesan success jika ada -->
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <!-- Menampilkan detail jadwal RTM -->
     <div class="card">
         <div class="card-body">

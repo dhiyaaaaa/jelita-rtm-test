@@ -1,10 +1,10 @@
 @extends('components.layout.auditee_layout')
 
 @section('content')
-    <form action="{{ route('dekan.rtm-rtl.store_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}"
+    <form action="{{ route('dekan.rtm-rtl.store_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId, 'kriteria' => $kriteria->id]) }}"
         method="post" id="create-form" enctype="multipart/form-data" class="block">
         @csrf
-        <input type="hidden" name="kriteria" value="{{ $kriteriaId }}">
+        <input type="hidden" name="kriteria_id" value="{{ $kriteria->id }}">
         
         <div class="row">
             <div class="col-md-9">
@@ -32,7 +32,6 @@
                                     if (isset($status) && $status->status === 'completed' || !$auditee) {
                                         $isDisabled = true;
                                     }
-
                                 @endphp
                                 <div class="col-12">
                                     <div class="card mb-3">
@@ -49,17 +48,14 @@
                                                     @endif
                                                 </div>
                                                 <div class="mb-2">
-                                                    @if ($item->kriteria->slug === 'belum-memenuhi')
-                                                        <span class="badge badge-danger">{{ $item->kriteria->nama }}</span>
-                                                    @elseif ($item->kriteria->slug === 'memenuhi')
-                                                        <span class="badge badge-warning">{{ $item->kriteria->nama }}</span>
-                                                    @elseif ($item->kriteria->slug === 'melampaui')
-                                                        <span
-                                                            class="badge badge-success">{{ $item->kriteria->nama }}</span>
-                                                    @else
-                                                        <span
-                                                            class="badge badge-secondary">{{ $item->kriteria->nama }}</span>
-                                                    @endif
+                                                    <span class = "badge
+                                                        @if($kriteria->slug === 'belum-memenuhi') badge-danger
+                                                        @elseif($kriteria->slug === 'memenuhi') badge-warning
+                                                        @elseif($kriteria->slug === 'melampuai') badge-succes
+                                                        @else badge-secondary 
+                                                        @endif">
+                                                        {{ $kriteria->nama }}
+                                                    </span>
                                                 </div>
                                                 <p class="mb-1">{{ $no++ }}. {{ $item->form->instrumen->kode }}
                                                 </p>
@@ -76,6 +72,8 @@
                                                             @foreach ($item->form->ptk_form_deskripsi as $deskripsi)
                                                                 <p class="text-muted">{{ $deskripsi->deskripsi }}</p>
                                                             @endforeach
+                                                        @elseif ($jawabanAuditor && $jawabanAuditor->catatan)
+                                                            <p class="text-muted">{{ $jawabanAuditor->catatan }}</p>
                                                         @else
                                                             <p class="text-muted">Tidak ada catatan</p>
                                                         @endif
@@ -90,6 +88,8 @@
                                                             @foreach ($item->form->laporan_form as $kelebihan)
                                                                 <p class="text-muted">{{ $kelebihan->kelebihan }}</p>
                                                             @endforeach
+                                                        @elseif ($jawabanAuditor && $jawabanAuditor->catatan)
+                                                            <p class="text-muted">{{ $jawabanAuditor->catatan }}</p>
                                                         @else
                                                             <p class="text-muted">Tidak ada catatan</p>
                                                         @endif
@@ -112,17 +112,18 @@
                                                     @if (!empty($sessionFormData[$item->form->id]['tindakan']))
                                                         @foreach ($sessionFormData[$item->form->id]['tindakan'] as $index => $tindakan)
                                                             <div class="input-group mb-2 tindakan-row">
-                                                                <!-- Textarea for Tindakan -->
-                                                                <textarea
-                                                                    name="tindakan_{{ $item->form->id }}[{{ $index }}][tindakan]"
-                                                                    class="form-control small-textarea @error('tindakan_'.$item->form->id.'.'.$index.'.tindakan') is-invalid @enderror"
-                                                                    placeholder="{{ $item->kriteria->slug === 'belum-memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan' }}"
-                                                                    {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['tindakan'] ?? '' }}</textarea>
-                                                                @error('tindakan_'.$item->form->id.'.'.$index.'.tindakan')
-                                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                                @enderror
+
+                                                            <!-- Tindakan -->
+                                                            <textarea
+                                                                name="tindakan_{{ $item->form->id }}[{{ $index }}][tindakan]"
+                                                                class="form-control small-textarea @error('tindakan_'.$item->form->id.'.'.$index.'.tindakan') is-invalid @enderror"
+                                                                placeholder="{{ $item->kriteria->slug === 'belum-memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan' }}"
+                                                                {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['tindakan'] ?? '' }}</textarea>
+                                                            @error('tindakan_'.$item->form->id.'.'.$index.'.tindakan')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                            @enderror
                                                 
-                                                                <!-- Select for PIC -->
+                                                            <!-- Select PIC -->
                                                             <select name="tindakan_{{ $item->form->id }}[{{ $index }}][pic]" 
                                                                 class="form-control select-pic @error('tindakan_'.$item->form->id.'.'.$index.'.pic') is-invalid @enderror"
                                                                 {{ $isDisabled ? 'disabled' : '' }}>
@@ -130,13 +131,11 @@
                                                                 @foreach($picData as $pic)
                                                                     <option value="{{ $pic->user_id }}|{{ $pic->jabatan_id }}"
                                                                         {{ (isset($tindakan['pic']) && $tindakan['pic'] == ($pic->user_id . '|' . $pic->jabatan_id)) ? 'selected' : '' }}>
-                                                                        {{ $pic->user_name }} ({{ $pic->jabatan_nama }})
+                                                                        {{ $pic->jabatan_nama }}
                                                                         @if ($pic->prodi_nama)
                                                                             - {{ $pic->prodi_nama }}
                                                                         @elseif ($pic->fakultas_nama)
                                                                             - {{ $pic->fakultas_nama }}
-                                                                        @elseif ($pic->unit_nama)
-                                                                            - {{ $pic->unit_nama }}
                                                                         @endif
                                                                     </option>
                                                                 @endforeach
@@ -144,37 +143,36 @@
                                                             @error('tindakan_'.$item->form->id.'.'.$index.'.pic')
                                                             <div class="invalid-feedback">{{ $message }}</div>
                                                             @enderror
-                                                            
+
+                                                            <!--  Waktu -->
+                                                            <textarea
+                                                                name="tindakan_{{ $item->form->id }}[{{ $index }}][waktu]"
+                                                                class="form-control small-textarea @error('tindakan_'.$item->form->id.'.'.$index.'.waktu') is-invalid @enderror"
+                                                                placeholder="{{ $item->kriteria->slug === 'belum-memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"
+                                                                {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['waktu'] ?? '' }}</textarea>
+                                                            @error('tindakan_'.$item->form->id.'.'.$index.'.waktu')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                            @enderror
                                                 
-                                                                <!-- Textarea for Waktu -->
-                                                                <textarea
-                                                                    name="tindakan_{{ $item->form->id }}[{{ $index }}][waktu]"
-                                                                    class="form-control small-textarea @error('tindakan_'.$item->form->id.'.'.$index.'.waktu') is-invalid @enderror"
-                                                                    placeholder="{{ $item->kriteria->slug === 'belum-memenuhi' ? 'Waktu Perbaikan' : 'Waktu Peningkatan' }}"
-                                                                    {{ $isDisabled ? 'disabled' : '' }}>{{ $tindakan['waktu'] ?? '' }}</textarea>
-                                                                @error('tindakan_'.$item->form->id.'.'.$index.'.waktu')
-                                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                                @enderror
-                                                
-                                                                <!-- Button to remove -->
+                                                                <!-- Remove -->
                                                                 <button type="button" class="btn btn-danger btn-sm remove-tindakan ml-2" {{ $isDisabled ? 'disabled' : '' }}>Hapus</button>
                                                             </div>
                                                         @endforeach
                                                     @else
                                                         <div class="input-group mb-2 tindakan-row">
-                                                            <!-- Textarea for Tindakan -->
+                                                            <!-- Tindakan -->
                                                             <textarea
                                                                 name="tindakan_{{ $item->form->id }}[0][tindakan]"
                                                                 class="form-control small-textarea"
                                                                 placeholder="{{ $item->kriteria->slug === 'belum-memenuhi' ? 'Rencana Perbaikan' : 'Rencana Peningkatan' }}"
                                                                 {{ $isDisabled ? 'disabled' : '' }}></textarea>
                                                 
-                                                            <!-- Select for PIC -->
+                                                            <!-- Select PIC -->
                                                             <select name="tindakan_{{ $item->form->id }}[0][pic]" class="form-control select-pic">
                                                                 <option value="">Pilih PIC</option>
                                                                 @foreach($picData as $pic)
                                                                     <option value="{{ $pic->user_id }}|{{ $pic->jabatan_id }}">
-                                                                        {{ $pic->user_name }} ({{ $pic->jabatan_nama }})
+                                                                        {{ $pic->jabatan_nama }}
                                                                         @if ($pic->prodi_nama)
                                                                             - {{ $pic->prodi_nama }}
                                                                         @elseif ($pic->fakultas_nama)
@@ -184,7 +182,7 @@
                                                                 @endforeach
                                                             </select>
                                                 
-                                                            <!-- Textarea for Waktu -->
+                                                            <!--  Waktu -->
                                                             <textarea
                                                                 name="tindakan_{{ $item->form->id }}[0][waktu]"
                                                                 class="form-control small-textarea"
@@ -202,8 +200,8 @@
                                                         @if (!$isDisabled)
                                                             <div class="mb-3">
                                                                 <button type="button" class="btn btn-secondary btn-sm" {{ $isDisabled ? 'disabled' : '' }}
-                                                                    onclick="addTindakanInput('{{ $item->form->id }}', '{{ $item->kriteria->nama }}')">
-                                                                    Tambah Rencana
+                                                                    onclick="addTindakanInput('{{ $item->form->id }}', '{{ $kriteria->nama }}')">
+                                                                    +Tambah Rencana
                                                                 </button>
                                                             </div>
                                                         @endif
@@ -222,7 +220,6 @@
                                                             aria-hidden="true"></span>
                                                         Loading...
                                                     </button>
-                                                    <p class="mt-2 text-muted">Harap tekan tombol "Simpan" untuk menyimpan perubahan.</p>
                                                 </div>
                                             @endif
                                         </div>
@@ -280,7 +277,7 @@
 
                             @if (isset($status) && $status->status === 'completed')
                                 <div class="mb-3">
-                                    <button type="button" class="btn btn-warning" id="edit-button">Ubah</button>
+                                    <button type="button" class="btn btn-warning" id="edit-button" data-kriteria="{{ $kriteria->id }}">Ubah</button>
                                     <button id="button-edit-loading" class="btn btn-warning d-none" type="button"
                                         disabled>
                                         <span class="spinner-border spinner-border-sm" role="status"
@@ -289,17 +286,9 @@
                                     </button>
                                 </div>
                             @endif 
-
-
-                            {{-- Kembali ke halaman jadwal --}}
+                            
                             <div class="d-flex justify-content-start">
-                                @role(['pj_fakultas', 'gpm', 'gkm'])
-                                <a href="{{ route('dekan.rtm-rtl.form_prodi', $rtmRtl->id) }}" class="btn btn-primary mr-2">Temuan
-                                    Prodi</a>
-                                @endrole 
-
-                                <a href="{{ route('dekan.jadwal-rtm.index') }}" class="btn btn-outline-secondary mr-2">Kembali</a>
-                                
+                                <a href="{{ route('dekan.rtm-rtl.show', ['rtmRtl' => $rtmRtl->id]) }}" class="btn btn-outline-secondary mr-2">Kembali</a>
                             </div>
                         </div>
                     </div>
@@ -443,7 +432,7 @@
                             <option value="">Pilih PIC</option>
                             @foreach($picData as $pic)
                                 <option value="{{ $pic->user_id }}|{{ $pic->jabatan_id }}">
-                                    {{ $pic->user_name }} ({{ $pic->jabatan_nama }})
+                                    {{ $pic->jabatan_nama }}
                                     @if ($pic->prodi_nama)
                                         - {{ $pic->prodi_nama }}
                                     @elseif ($pic->fakultas_nama)
@@ -470,7 +459,7 @@
                 // Jangan hapus jika hanya tersisa satu row
                 if (container.find('.tindakan-row').length > 1) {
                     row.remove();
-                    saveSession();
+                    save_session();
                 } else {
                     Swal.fire({
                         icon: 'warning',
@@ -526,7 +515,6 @@
                 });
             }
             
-            // Function to save answers - MODIFIED TO KEEP LOADING STATE
             function save_jawaban(formId) {
                 event.preventDefault();
                 let isValid = true;
@@ -593,7 +581,7 @@
                 showLoading(`simpan_${formId}`);
                 
                 $.ajax({
-                    url: '{{ route('dekan.rtm-rtl.save_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
+                    url: '{{ route('dekan.rtm-rtl.save_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId, 'kriteria' => $kriteria->id]) }}',
                     type: 'POST',
                     data: formData,
                     processData: false,
@@ -646,18 +634,22 @@
                     cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        showLoading('button-submit');
+                        $('#button-submit').addClass('d-none');
+                        $('#button-submit-loading').removeClass('d-none');
+                        
                         save_session(function() {
-                            form.off('submit').submit();
+                            $('#create-form').off('submit').submit();
                         });
                     }
                 });
             });
 
             $('#edit-button').on('click', function() {
+                const kriteriaId = $(this).data('kriteria');
+                
                 Swal.fire({
                     title: 'Ubah Data?',
-                    text: 'Anda akan mengubah status data menjadi dapat diedit kembali',
+                    text: 'Anda akan dapat mengedit jawaban kembali',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
@@ -670,16 +662,33 @@
                         $('#button-edit-loading').removeClass('d-none');
                         
                         $.ajax({
-                            url: "{{ route('dekan.rtm-rtl.isi', ['rtmRtl' => $rtmRtl->id, 'kriteria' => $kriteriaId]) }}",
+                            url: "{{ route('dekan.rtm-rtl.isi', ['rtmRtl' => $rtmRtl->id, 'kriteria' => $kriteria->id]) }}",
                             type: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            data: {
+                                kriteria: kriteriaId,
+                                _token: "{{ csrf_token() }}"
                             },
-                            success: function() {
-                                location.reload();
+                            success: function(response) {
+                                if (response.success) {
+                                    window.location.href = response.redirect_url;
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: response.message || 'Terjadi kesalahan'
+                                    });
+                                    $('#edit-button').removeClass('d-none');
+                                    $('#button-edit-loading').addClass('d-none');
+                                }
                             },
-                            error: function() {
-                                Swal.fire('Error!', 'Terjadi kesalahan', 'error');
+                            error: function(xhr) {
+                                console.error(xhr);
+                                let response = xhr.responseJSON;
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error!',
+                                    text: response?.message || 'Terjadi kesalahan'
+                                });
                                 $('#edit-button').removeClass('d-none');
                                 $('#button-edit-loading').addClass('d-none');
                             }
@@ -687,8 +696,7 @@
                     }
                 });
             });
-            
-            
+
             $(document).on('click', '.pagination a', function(event) {
                 event.preventDefault();
                 const url = $(this).attr('href');
@@ -703,4 +711,5 @@
             });
         });
     </script>
+
 @endsection

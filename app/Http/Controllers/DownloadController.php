@@ -8,7 +8,12 @@ use App\Models\RtmJadwal;
 use App\Models\RtmTindakLanjut;
 use App\Models\RtmLampiran;
 use App\Models\JawabanAuditor;
+use App\Models\Kriteria;
+use App\Models\Laporan;
+use App\Models\PtkForm;
+use App\Models\LaporanForm;
 use App\Models\Prodi;
+use App\Models\RtmRtl;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\QrCode;
@@ -1827,6 +1832,308 @@ class DownloadController extends Controller
         ]);
     }
     
+    //RTM FAKULTAS 
+    private function rtmRtl($id)
+    {
+        $title = "Laporan RTM Fakultas";
+            // 1. Ambil data utama
+            $rtmRtl = RtmRtl::with(['rtm_jadwal', 'rtm_tindak_lanjut'])->find($id);
+            if (!$rtmRtl) {
+                throw new \Exception('Data RTM tidak ditemukan');
+            }
+
+            $rtmJadwal = $rtmRtl->rtm_jadwal;
+            if (!$rtmJadwal) {
+                throw new \Exception('Data jadwal RTM tidak ditemukan');
+            }
+
+            // 2. Ambil data unit/fakultas
+            $unitData = $this->get_unit($rtmJadwal);
+            if (!$unitData) {
+                throw new \Exception('Data unit tidak ditemukan');
+            }
+
+            // 3. Query data temuan dan tindakan
+            $tindakLanjutItems = DB::table('rtm_tindak_lanjut')
+                ->where('rtm_rtl_id', $id)
+                ->join('kriteria', 'rtm_tindak_lanjut.kriteria_id', '=', 'kriteria.id')
+                ->join('form', 'rtm_tindak_lanjut.form_id', '=', 'form.id')
+                ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+                ->join('standar', 'instrumen.standar_id', '=', 'standar.id')
+                ->leftJoin('kategori', 'instrumen.kategori_id', '=', 'kategori.id')
+                ->leftJoin('jabatan', 'rtm_tindak_lanjut.jabatan_id', '=', 'jabatan.id')
+                ->leftJoin('jabatan_user', function($join) {
+                    $join->on('rtm_tindak_lanjut.user_id', '=', 'jabatan_user.user_id')
+                        ->on('rtm_tindak_lanjut.jabatan_id', '=', 'jabatan_user.jabatan_id');
+                })
+                ->leftJoin('fakultas', 'jabatan_user.fakultas_id', '=', 'fakultas.id')
+                ->leftJoin('unit', 'jabatan_user.unit_id', '=', 'unit.id')
+                ->leftJoin('prodi', 'jabatan_user.prodi_id', '=', 'prodi.id')
+                ->select([
+                    'standar.kode as kode_standar',
+                    'standar.nama as nama_standar',
+                    'kategori.nama as nama_kategori',
+                    'kriteria.id as kriteria_id',
+                    'instrumen.kode as kode_instrumen',
+                    'instrumen.pernyataan as pernyataan',
+                    'rtm_tindak_lanjut.tindakan',
+                    'rtm_tindak_lanjut.waktu',
+                    'rtm_tindak_lanjut.form_id',
+                    'jabatan.nama as jabatan_nama',
+                    'fakultas.nama as fakultas_nama',
+                    'unit.nama as unit_nama',
+                    'prodi.nama as prodi_nama'
+                ])
+                ->orderBy('standar.nama')
+                ->orderBy('kategori.nama')
+                ->orderBy('instrumen.kode')
+                ->orderBy('kriteria.id')
+                ->get();
+
+            // 4. Group data by standar dan pernyataan
+            $groupedData = [];
+            
+            foreach ($tindakLanjutItems as $item) {
+                $standarKategoriKey = $item->nama_standar . '|' . $item->nama_kategori;
+                $formKey = $item->kode_instrumen . '|' . $item->pernyataan;
+
+                if (!isset($groupedData[$standarKategoriKey])) {
+                    $groupedData[$standarKategoriKey] = [
+                        'nama_standar' => $item->nama_standar,
+                        'nama_kategori' => $item->nama_kategori,
+                        'items' => []
+                    ];
+                }
+                
+                if (!isset($groupedData[$standarKategoriKey]['items'][$formKey])) {
+                    $groupedData[$standarKategoriKey]['items'][$formKey] = [
+                        'kode_instrumen' => $item->kode_instrumen,
+                        'pernyataan' => $item->pernyataan,
+                        'kriteria_items' => []
+                    ];
+                }
+
+                $kriteriaFound = false;
+                foreach ($groupedData[$standarKategoriKey]['items'][$formKey]['kriteria_items'] as &$kriteriaItem) {
+                    if ($kriteriaItem['kriteria_id'] == $item->kriteria_id) {
+                        $kriteriaItem['tindak_lanjut'][] = $this->formatRencana($item->tindakan, $item->waktu, $item->jabatan_nama, 
+                        $item->fakultas_nama, $item->unit_nama, $item->prodi_nama);
+                        $kriteriaFound = true;
+                        break;
+                    }
+                }
+                
+                if (!$kriteriaFound) {
+                    $groupedData[$standarKategoriKey]['items'][$formKey]['kriteria_items'][] = [
+                        'kriteria_id' => $item->kriteria_id,
+                        'kriteria_nama' => $this->getKriteriaName($item->kriteria_id),
+                        'temuan' => $this->formatTemuan($item->form_id, $item->kriteria_id),
+                        'tindak_lanjut' => [$this->formatRencana($item->tindakan, $item->waktu, $item->jabatan_nama, 
+                        $item->fakultas_nama, $item->unit_nama, $item->prodi_nama)]
+                    ];
+                }
+            }
+
+            // Auditan
+            $auditan = DB::table('rtm_rtl_approve as rtm_rtl_auditan')
+                ->where('rtm_rtl_auditan.rtm_rtl_id', $id)
+                ->leftJoin('auditee', 'rtm_rtl_auditan.auditee_id', '=', 'auditee.id')
+                ->leftJoin('users', 'auditee.user_id', '=', 'users.id')
+                ->select(
+                    'auditee.id as id',
+                    'users.name as nama',
+                    'rtm_rtl_auditan.approve as approve',
+                    'rtm_rtl_auditan.updated_at as updated_at'
+                )
+                ->first();
+
+            // 5. Generate Word Document
+            $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(
+                storage_path('app/public/template/template_rtm_fakultas.docx')
+            );
+
+            // Set header dokumen
+            \Carbon\Carbon::setLocale('id');
+            $date = \Carbon\Carbon::parse($rtmRtl->tgl);
+            
+            $templateProcessor->setValues([
+                'unit' => $rtmJadwal->fakultas->nama,
+                'tahun' => $date->isoFormat('YYYY'),
+                'date' => $date->isoFormat('dddd, D MMMM YYYY'),
+                'tempat' => $rtmJadwal->tempat,
+                'waktu' => $rtmJadwal->jam_mulai . ' - ' . $rtmJadwal->jam_selesai,
+                'jadwal' => $rtmJadwal->jadwal_audit->jadwal,
+                'pimpinan' => $rtmJadwal->pimpinan,
+                'peserta' => $rtmJadwal->peserta,
+            ]);
+
+            // 6. Isi data standar ke template
+            $standarKategori = null;
+            $no = 1;
+
+            foreach ($groupedData as $group) {
+                $templateProcessor->setValue('standar_kategori', 
+                    "STANDAR: {$group['nama_standar']} | {$group['nama_kategori']}");
+            
+            $rows = [];
+            foreach ($group['items'] as $item) {
+                $firstKriteria = true;
+
+                foreach ($item['kriteria_items'] as $kriteria) {
+                    $mergedRencana = implode("\n\n", $kriteria['tindak_lanjut']);
+
+                    $rows[] = [
+                        'no' => $firstKriteria ? $no : '',
+                        'kode_instrumen' => $firstKriteria ? $item['kode_instrumen'] : '',
+                        'pernyataan' => $firstKriteria ? $item['pernyataan'] : '',
+                        'kriteria' => $kriteria['kriteria_nama'],
+                        'temuan' => $kriteria['temuan'],
+                        'rencana' => $mergedRencana
+                    ];
+                    $firstKriteria = false;
+                }
+                $no++;
+            }
+            $templateProcessor->cloneRow('row_no', count($rows));
+                
+            foreach ($rows as $i => $row) {
+                $j = $i + 1;
+                    
+                $templateProcessor->setValue("row_no#{$j}", $row['no']);
+                $templateProcessor->setValue("row_kode_instrumen#{$j}", $row['kode_instrumen']);
+                $templateProcessor->setValue("row_pernyataan#{$j}", $row['pernyataan']);
+                $templateProcessor->setValue("row_kriteria#{$j}", $row['kriteria']);
+                $templateProcessor->setValue("row_temuan#{$j}", $row['temuan']);
+                $templateProcessor->setValue("row_rencana#{$j}", $row['rencana']);
+            }
+        }
+                
+        $this->auditan($templateProcessor, $auditan, $unitData, $title);
+            
+        return [
+            'templateProcessor' => $templateProcessor,
+            'unitData' => $unitData,
+            'date' => $date,
+            'title' => $title
+        ];
+    }
+
+    private function formatTemuan($formId, $kriteriaId)
+    { 
+        // Format temuan fakultas
+        $temuan = '';
+
+        if ($kriteriaId == 1) {
+            // Belum Memenuhi
+                $ptkForm = PtkForm::with(['ptk.prodi', 'ptk.fakultas', 'ptk.unit'])
+                    ->where('form_id', $formId)
+                    ->first();
+
+                if ($ptkForm) {
+                    $ptk = $ptkForm->ptk;
+
+                    $unitNama = $ptk->prodi?->nama
+                                ? "Prodi {$ptk->prodi->nama}" 
+                                :($ptk->fakultas?->nama
+                                    ? "Fakultas {$ptk->fakultas->nama}" 
+                                    :($ptk->unit?->nama
+                                        ? "Unit {$ptk->unit->nama}" 
+                                        : "Unit tidak diketahui"));
+                    
+                    return "{$unitNama } : {$ptkForm->analisis} (Kategori {$ptkForm->kategori_temuan})";
+                } 
+        }
+                
+        if ($kriteriaId == 3) {
+            // Belum Memenuhi
+                $laporanForm = LaporanForm::with(['laporan.prodi', 'laporan.fakultas', 'laporan.unit'])
+                    ->where('form_id', $formId)
+                    ->first();
+
+                if ($laporanForm) {
+                    $laporan = $laporanForm->laporan;
+
+                    $unitNama = $laporan->prodi?->nama
+                                ? "Prodi {$laporan->prodi->nama}" 
+                                :($laporan->fakultas?->nama
+                                    ? "Fakultas {$laporan->fakultas->nama}" 
+                                    :($laporan->unit?->nama
+                                        ? "Unit {$laporan->unit->nama}" 
+                                        : "Unit tidak diketahui"));
+                    
+                    return "{$unitNama} : {$laporanForm->ruang_peningkatan}";
+                } 
+        }
+        //Jawaban Auditor
+        $jawabanAuditor = JawabanAuditor::with(['prodi', 'fakultas', 'unit'])
+            ->where('form_id', $formId)
+            ->where('kriteria_id', $kriteriaId)
+            ->first();
+
+            if ($jawabanAuditor) {
+                $unitNama = $jawabanAuditor->prodi?->nama
+                            ? "Prodi {$jawabanAuditor->prodi->nama}" 
+                            :($jawabanAuditor->fakultas?->nama
+                                ? "Fakultas {$jawabanAuditor->fakultas->nama}" 
+                                :($jawabanAuditor->unit?->nama
+                                    ? "Unit {$jawabanAuditor->unit->nama}" 
+                                    : "Unit tidak diketahui"));
+                    
+                    return "{$unitNama} : " . ($jawabanAuditor->catatan ?? 'Tidak ada temuan auditor');
+            }
+        return $temuan;
+    }
+
+    private function formatRencana($tindakan, $waktu, $jabatan, $fakultas, $unit, $prodi)
+    {
+        $picInfo = $jabatan;
+        if ($jabatan) {
+            if ($fakultas) {
+                $picInfo .= ' - ' . $fakultas;
+            } elseif ($unit) {
+                $picInfo .= ' - ' . $unit;
+            } elseif ($prodi) {
+                $picInfo .= ' - ' . $prodi;
+            }
+        }
+
+        $tindakanArr = explode(';', $tindakan ?? '');
+        $waktuArr = explode(';', $waktu ?? '');
+        $result = [];
+        
+        foreach ($tindakanArr as $i => $t) {
+            if (trim($t)) {
+                $item = ($i + 1) . ". " . trim($t);
+                if ($picInfo) $item .= " \n PIC: $picInfo";
+                if (!empty($waktuArr[$i])) $item .= " \n Waktu: " . trim($waktuArr[$i]) . "\n";
+                $result[] = $item;
+            }
+        }
+        
+        return !empty($result) ? implode("\n", $result) : 'Tidak ada rencana';
+    }
+
+    private function getKriteriaName($kriteriaId)
+    {
+        return match($kriteriaId) {
+            1 => 'Belum Memenuhi',
+            2 => 'Memenuhi',
+            3 => 'Melampaui',
+            default => 'Tidak Diketahui'
+        };
+    }
+
+    public function rtm_rtl_word(string $rtmRtl)
+    {
+        try {
+            $tp = $this->rtmRtl($rtmRtl);
+            return $this->word($tp['templateProcessor'], $tp['unitData'], $tp['date'], $tp['title']);
+        } catch (\Exception $e) {
+            Log::error('Error generating RTM RTL Word: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan saat mengunduh RTL!');
+        }
+    }
+
     //Form 6 tindak lanjut koreksi (RTL)
     private function rtl($id)
     {

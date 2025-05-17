@@ -40,6 +40,16 @@ class RtmJadwal extends Model
         return $this->hasMany(RtmLampiran::class, 'rtm_jadwal_id');
     }
 
+    public function rtm_catatan(): HasMany
+    {
+        return $this->hasMany(RtmCatatan::class, 'rtm_jadwal_id');
+    }
+
+    public function status_rtm_catatan(): HasMany
+    {
+        return $this->hasMany(StatusRtmCatatan::class, 'rtm_jadwal_id');
+    }
+
     public function rtm_rtl(): HasMany
     {
         return $this->hasMany(RtmRtl::class, 'rtm_jadwal_id');
@@ -50,15 +60,6 @@ class RtmJadwal extends Model
         return $this->hasMany(RtmTindakLanjut::class, 'rtm_jadwal_id');
     }
 
-    public function rtm_ptk(): HasMany
-    {
-        return $this->hasMany(RtmPtk::class, 'rtm_jadwal_id');
-    }
-
-    public function rtm_ptk_form(): HasMany
-    {
-        return $this->hasMany(RtmPtkForm::class, 'rtm_jadwal_id');
-    }
     public static function boot()
     {
         parent::boot();

@@ -88,4 +88,9 @@ class Auditee extends Model
     {
         return $this->belongsToMany(Rtl::class, 'rtl_auditee', 'auditee_id', 'rtl_id')->withPivot('approve')->withTimestamps();
     }
+
+    public function rtm_rtl(): BelongsToMany
+    {
+        return $this->belongsToMany(RtmRtl::class, 'rtm_rtl_approve', 'auditee_id', 'rtm_rtl_id')->withPivot('approve')->withTimestamps();
+    }
 }

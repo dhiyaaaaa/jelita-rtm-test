@@ -5,9 +5,11 @@ namespace App\Http\Controllers\admin\rtm_univ\tindak_lanjut;
 use App\Http\Controllers\Controller;
 use App\Models\RtmJadwal;
 use App\Models\RtmRtl;
-use App\Models\RtmRtlForm;
+use App\Models\Kriteria;
+use App\Models\StatusRtmRtlUniv;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class TindakLanjutController extends Controller
@@ -20,17 +22,20 @@ class TindakLanjutController extends Controller
             abort(404, 'Jadwal audit tidak ditemukan');
         }
 
+        $kriteriaOptions = Kriteria::all();
+        $selectedKriteria = request('kriteria', []);
+
         $fakultas = DB::table('fakultas')
             ->leftJoin('rtm_rtl', function ($join) use ($rtmJadwal) {
                 $join->on('fakultas.id', '=', 'rtm_rtl.fakultas_id')
                     ->where('rtm_rtl.jadwal_audit_id', $rtmJadwal->jadwal_audit_id);
             })
-            ->leftJoin('rtm_rtl_form', 'rtm_rtl.id', '=', 'rtm_rtl_form.rtm_rtl_id')
+            ->leftJoin('status_rtm_rtl_univ', 'rtm_rtl.id', '=', 'status_rtm_rtl_univ.rtm_rtl_id')
             ->select([
                 'fakultas.id',
                 'fakultas.nama',
                 'rtm_rtl.id as rtm_rtl_id',
-                'rtm_rtl_form.status',
+                'status_rtm_rtl_univ.status',
                 DB::raw("'fakultas' as jenis_unit")
             ])
             ->orderBy('fakultas.nama', 'asc')
@@ -42,23 +47,24 @@ class TindakLanjutController extends Controller
                 $join->on('unit.id', '=', 'rtm_rtl.unit_id')
                     ->where('rtm_rtl.jadwal_audit_id', $rtmJadwal->jadwal_audit_id);
             })
-            ->leftJoin('rtm_rtl_form', 'rtm_rtl.id', '=', 'rtm_rtl_form.rtm_rtl_id')
+            ->leftJoin('status_rtm_rtl_univ', 'rtm_rtl.id', '=', 'status_rtm_rtl_univ.rtm_rtl_id')
             ->select([
                 'unit.id',
                 'unit.nama',
                 'rtm_rtl.id as rtm_rtl_id',
-                'rtm_rtl_form.status',
+                'status_rtm_rtl_univ.status',
                 DB::raw("'unit' as jenis_unit")
             ])
             ->orderBy('unit.nama', 'asc')
-            ->get();
+            ->get(); 
 
         $units = $fakultas->merge($unit);
 
         $data = [
             'title' => 'Tindak Lanjut Hasil Audit',
             'rtmJadwal' => $rtmJadwal,
-            'units' => $units
+            'units' => $units,
+            'kriteriaOptions' => $kriteriaOptions
         ];
 
         return view('admin.rtm_univ.tindak_lanjut.show', $data);
@@ -84,13 +90,17 @@ class TindakLanjutController extends Controller
         return response()->json(['success' => 'Tindak lanjut berhasil ditambahkan.']);
     }
 
-    public function isi_rtm_rtl(string $rtmRtl)
+    public function isi_rtm_rtl_univ(RtmRtl $rtmRtl)
     {
-        RtmRtlform::where('rtm_rtl_id', $rtmRtl)->update(['status' => 'in_progress']);
+        StatusRtmRtlUniv::updateOrCreate(
+            [
+                'rtm_rtl_id' => $rtmRtl->id,
+            ],
+            ['status' => 'in_progress']
+        );
 
-        return redirect()->route('dekan.rtm-rtl.form', [
-            'rtmRtl' => $rtmRtl,
+        return redirect()->route('admin.rtm-rtl.form', [
+            'rtmRtl' => $rtmRtl, 
         ]);
     }
-
 }

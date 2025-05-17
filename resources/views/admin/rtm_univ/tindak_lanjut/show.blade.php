@@ -7,7 +7,7 @@
     {{-- INFO RTM --}}
     <div class="card shadow border-0" style="background: linear-gradient(135deg, #6694ea, #614ba2); color: white;">
         <div class="card-header border-0">
-            <h3 class="card-title title-size text-white">Tindak Lanjut Permintaan Tindakan Koreksi</h3>
+            <h3 class="card-title title-size text-white">Rapat Tinjauan Manajemen</h3>
         </div>
 
         <div class="card-body">
@@ -17,12 +17,46 @@
 
             <table class="table table-borderless text-white">
                 <tr>
-                    <td class="fw-bold" width="10%">Jadwal</td>
+                    <td class="fw-bold" width="30%">Agenda</td>
+                    <td width="5%">:</td>
+                    <td>{{ $rtmJadwal->agenda }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold" width="10%">Pimpinan Rapat</td>
+                    <td width="5%">:</td>
+                    <td>{{ $rtmJadwal->pimpinan }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">Tanggal</td>
+                    <td>:</td>
+                    <td>
+                        {{ Carbon::parse($rtmJadwal->tanggal)->translatedFormat('l, j F Y') }}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="fw-bold">Waktu</td>
+                    <td>:</td>
+                    <td>
+                        {{ Carbon::parse($rtmJadwal->jam_mulai)->translatedFormat('H:i') }} - {{ Carbon::parse($rtmJadwal->jam_selesai)->translatedFormat('H:i') }}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="fw-bold" width="10%">Tempat</td>
+                    <td width="5%">:</td>
+                    <td>{{ $rtmJadwal->tempat }}</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold" width="10%">Jumlah Kehadiran</td>
+                    <td width="5%">:</td>
+                    <td>{{ $rtmJadwal->peserta }} Peserta Rapat</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold" width="10%">Hasil AIMA</td>
                     <td width="5%">:</td>
                     <td>{{ $rtmJadwal->jadwal_audit->jadwal }}</td>
                 </tr>
                 <tr>
-                    <td class="fw-bold">Periode</td>
+                    <td class="fw-bold">Periode AIMA</td>
                     <td>:</td>
                     <td>
                         {{ Carbon::parse($rtmJadwal->jadwal_audit->tgl_mulai)->translatedFormat('j F Y') }} - 
@@ -32,10 +66,47 @@
             </table>
         </div>
     </div>
+    
+    <div class="card shadow border-0 mt-3">
+        <div class="card-body">
+             <div class="d-flex justify-content mb-3">
+                <a href="/"
+                    class="btn btn-primary"> <i class="fas fa-pencil-alt"></i>Sudah Isi </a>
+             </div>
+        </div>
+    </div>
 
     <div class="card shadow-lg border-0 rounded-lg">
         <div class="card-body">
-
+            <div class="mb-3 p-3 bg-light rounded">
+                <h5>Pilih Kriteria:</h5>
+                <form method="GET">
+                    <div class="row">
+                        @foreach($kriteriaOptions as $kriteria)
+                        <div class="col-md-3">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" 
+                                       class="custom-control-input" 
+                                       id="kriteria_{{ $kriteria->id }}" 
+                                       name="kriteria[]" 
+                                       value="{{ $kriteria->id }}"
+                                       @if(in_array($kriteria->id, request('kriteria', []))) checked @endif>
+                                <label class="custom-control-label" for="kriteria_{{ $kriteria->id }}">
+                                    {{ $kriteria->nama }}
+                                </label>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary mr-2">Terapkan Filter</button>
+                        @if(request()->has('kriteria'))
+                            <a href="{{ url()->current() }}" class="btn btn-outline-secondary">Reset</a>
+                        @endif
+                    </div>
+                </form>
+            </div>
             <table id="rtm" class="table table-hover table-striped">
                 <thead class="bg-dark text-white text-center">
                     <tr>
@@ -63,14 +134,14 @@
                                 @if($item->rtm_rtl_id)
                                     @if(!empty($item->status))
                                         @if($item->status === 'completed')
-                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_id]) }}"
+                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_id]) }}?{{ http_build_query(request()->query()) }}"
                                                 class="btn btn-primary btn-fixed-size">Sudah Isi</a>
                                         @else
-                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_id]) }}"
+                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_id]) }}?{{ http_build_query(request()->query()) }}"
                                                 class="btn btn-outline-primary btn-fixed-size">Isi</a>
                                         @endif
                                     @else
-                                        <form action="{{ route('admin.rtm-rtl.isi', [$item->rtm_rtl_id]) }}"
+                                        <form action="{{ route('admin.rtm-rtl.isi', [$item->rtm_rtl_id]) }}?{{ http_build_query(request()->query()) }}"
                                             method="post" class="d-inline">
                                             @csrf
                                             <button type="submit" class="btn btn-outline-primary btn-fixed-size">Isi</button>
@@ -91,6 +162,51 @@
             </table>
         </div>
     </div>
+
+    <div class="row align-items-stretch mb-4">
+        <div class="col-sm-6 mb-3 mb-sm-0 d-flex">
+            <div class="card w-100 h-100">
+                <div class="card-body">
+                    <h5 class="card-title title-size text-dark">Download dan Approve Rencana Tindak Lanjut Hasil Audit</h5>
+                    <p class="card-text">Silahkan download dan approve, setelah mengisi rencana Hasil Audit.</p>
+                    <div class="mb-2">
+                            <form action="/" method="post">
+                                @csrf
+                            <button type="submit" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-thumbs-up"></i> Approval Rektor
+                                </button>
+                            </form>
+                    </div>
+                    <div class="mb-2">
+                            <form action="/" method="post">
+                                @csrf
+                            <button type="submit" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-thumbs-up"></i> Approval Ketua LPMPP
+                                </button>
+                            </form>
+                    </div>
+                    <div>
+                        <form action="/" 
+                            method="post"class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-download"></i> Download Laporan RTM
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 mb-3 mb-sm-0 d-flex">
+            <div class="card shadow border-0 w-100 h-100" style="background: linear-gradient(135deg, #6694ea, #614ba2); color: white;">
+                <div class="card-body">
+                    <h5 class="card-title title-size text-dark"><i class="fas fa-info-circle me-2"></i> Informasi Temuan Audit</h5>
+                    <p class="card-text">Temuan ini merupakan hasil dari audit yang sudah dilaksanakan. Pengelompokkan temuan hasil audit sesuai dengan jawaban auditor yang sudah dikelompokkan berdasarkan kriteria. </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Konfirmasi Pembuatan RTL -->
     <div class="modal fade" id="konfirmasiModal" tabindex="-1" aria-labelledby="konfirmasiModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -128,8 +244,6 @@
 <script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
 <script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
 <script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
-
-
 
 <!-- Page specific script -->
 <script>
@@ -208,4 +322,26 @@ $(function() {
     });
 
 </script>
+
+@if(session('info_message'))
+<script>
+    Swal.fire({
+        icon: 'info',
+        title: 'Informasi',
+        text: '{{ session('info_message') }}',
+        timer: 3000,
+        showConfirmButton: false
+    });
+</script>
+@endif
+
+@if(session('warning'))
+<script>
+    Swal.fire({
+        icon: 'warning',
+        title: 'Peringatan',
+        text: '{{ session('warning') }}'
+    });
+</script>
+@endif
 @endsection

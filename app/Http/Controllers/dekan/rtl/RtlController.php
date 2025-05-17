@@ -116,38 +116,44 @@ class RtlController extends Controller
             ];
         }
 
+        $allKriteria = Kriteria::all();
+
         $data = [
             'title' => 'Tindak Lanjut Ptk',
             'rtl' => $rtl,
             'auditee' => $auditee,
             'items' => $items,
+            'allKriteria' => $allKriteria,
         ];
 
         return view('dekan.rtl.show', $data);
     }
 
-    public function isi_rtl_form(Rtl $rtl, Kriteria $kriteria): RedirectResponse
+    public function isi_rtl_form(Rtl $rtl, $kriteria)
     {
+        $kriteria = Kriteria::findOrFail($kriteria);
 
-        $statusRtl = StatusRtl::updateOrCreate(
+        StatusRtl::updateOrCreate(
             [
                 'rtl_id' => $rtl->id,
                 'kriteria_id' => $kriteria->id,
             ],
-            [
-                'status' => 'in_progress',
-            ]
+            ['status' => 'in_progress']
         );
+         return response()->json([
+            'success' => true,
+            'redirect_url' => route('dekan.rtl.form', [
+                'rtl' => $rtl->id,
+                'kriteria' => $kriteria->id
+            ]),
+        ]);
 
-        return redirect()->route('dekan.rtl.form', ['rtl' => $rtl->id, 'kriteria' => $kriteria->id]);
+        return response()->json(['success' => true]);
     }
 
-    public function form(Request $request, Rtl $rtl): View|RedirectResponse
+    public function form(Request $request, Rtl $rtl, $kriteria): View|RedirectResponse
     {
         $jadwal = JadwalAudit::findOrFail($rtl->jadwal_audit_id);
-
-        $fakultas = $rtl->fakultas_id ? Fakultas::find($rtl->fakultas_id) : null;
-        $unit = $rtl->unit_id ? Unit::find($rtl->unit_id) : null;
 
         $jabatanUserId = optional($this->user->jabatan->first())->id;
         $jabatanUser = Jabatan::find($jabatanUserId);
@@ -157,21 +163,19 @@ class RtlController extends Controller
 
         $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $rtl->jadwal_audit_id])->first();
 
-        $kriteria = $request->query('kriteria');
-        $kriteriaTemuan = ['Belum Memenuhi', 'Memenuhi', 'Melampaui'];
-        if (!in_array($kriteria, $kriteriaTemuan)) {
-            return back()->with('error', 'Tidak ada temuan dengan kriteria ini.');
-        }
+        $kriteria = Kriteria::findOrFail($kriteria);
+        $auditee = $this->auditee;
 
+        $fakultas = $rtl->fakultas_id ? Fakultas::find($rtl->fakultas_id) : null;
         $unit = $rtl->unit_id ? Unit::find($rtl->unit_id) : null;
 
+        $perPage = 10;
+        $currentPage = $request->query('page', 1);
         if ($unit) {
             $temuan = JawabanAuditor::where('jadwal_audit_id', $rtl->jadwal_audit_id)
+                ->where('kriteria_id', $kriteria->id)
                 ->when($rtl->unit_id, function ($query) use ($rtl) {
                     return $query->where('unit_id', $rtl->unit_id);
-                })
-                ->whereHas('kriteria', function ($query) use ($kriteria) {
-                    $query->where('nama', $kriteria);
                 })
                 ->with([
                     'form.instrumen.jabatan',
@@ -182,29 +186,15 @@ class RtlController extends Controller
                     'kriteria',
                 ])
                 ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
-                ->orderByRaw("
-                    CASE
-                        WHEN EXISTS (
-                            SELECT 1 FROM instrumen_jabatan
-                            WHERE instrumen_jabatan.jabatan_id = ?
-                            AND instrumen_jabatan.instrumen_id = form.instrumen_id
-                        ) THEN 1
-                        ELSE 2
-                    END
-                ", [$jabatanUser->id])
-                ->orderBy('kriteria_id', 'asc')
                 ->orderBy('form.instrumen_id', 'asc')
                 ->get();
         } else {
             $prodiList = $fakultas ? Prodi::where('fakultas_id', $fakultas->id)->pluck('id')->toArray() : [];
 
-            $temuan = JawabanAuditor::where('jadwal_audit_id', $rtl->jadwal_audit_id)
-                ->when($rtl->fakultas_id, function ($query) use ($rtl) {
-                    return $query->where('fakultas_id', $rtl->fakultas_id);
-                })
-                ->whereHas('kriteria', function ($query) use ($kriteria) {
-                    $query->where('nama', $kriteria);
-                })
+            $temuan = JawabanAuditor::select('jawaban_auditor.*', 'form.instrumen_id')
+                ->where('jadwal_audit_id', $rtl->jadwal_audit_id)
+                ->where('kriteria_id', $kriteria->id)
+                ->where('fakultas_id', $rtl->fakultas_id)
                 ->with([
                     'form.instrumen.jabatan',
                     'form.jawaban_auditee',
@@ -213,29 +203,12 @@ class RtlController extends Controller
                     'form.rtm_tindak_lanjut',
                     'kriteria',
                 ])
-                ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
-                ->orderByRaw("
-                    CASE
-                        WHEN EXISTS (
-                            SELECT 1 FROM instrumen_jabatan
-                            WHERE instrumen_jabatan.jabatan_id = ?
-                            AND instrumen_jabatan.instrumen_id = form.instrumen_id
-                        ) THEN 1
-                        ELSE 2
-                    END
-                ", [$jabatanUser->id])
-                ->orderBy('kriteria_id', 'asc')
-                ->orderBy('form.instrumen_id', 'asc')
-                ->get();
-
-            $temuanProdi = JawabanAuditor::select('jawaban_auditor.*', 'jawaban_auditor.catatan')
-                ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
-                ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
-                ->where('jawaban_auditor.jadwal_audit_id', $rtl->jadwal_audit_id)
-                ->whereIn('jawaban_auditor.prodi_id', $prodiList)
-                ->whereHas('kriteria', function ($query) use ($kriteria) {
-                    $query->where('nama', $kriteria);
-                })
+                ->join('form', 'jawaban_auditor.form_id', '=', 'form.id');
+                
+            $temuanProdi = JawabanAuditor::select('jawaban_auditor.*', 'form.instrumen_id')
+                ->where('jadwal_audit_id', $rtl->jadwal_audit_id)
+                ->where('kriteria_id', $kriteria->id)
+                ->whereIn('prodi_id', $prodiList)
                 ->with([
                     'prodi', 
                     'form.jawaban_auditor', 
@@ -245,15 +218,13 @@ class RtlController extends Controller
                     'form.laporan_form',
                     'form.rtm_tindak_lanjut',
                 ])
-                ->orderByRaw("REGEXP_REPLACE(instrumen.kode, '[^0-9]', '', 'g')::int NULLS FIRST, REGEXP_REPLACE(instrumen.kode, '[0-9]', '', 'g') ASC")
-                ->orderBy('jawaban_auditor.kriteria_id', 'asc')
-                ->get();
+                ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
+                ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id');
 
-            $temuan = $temuan->merge($temuanProdi);
+            $temuan = $temuan->union($temuanProdi)
+            ->orderBy('instrumen_id', 'asc')
+            ->get();
         }
-
-        $perPage = 10;
-        $currentPage = $request->query('page', 1);
 
         $paginatedTemuan = new LengthAwarePaginator(
             $temuan->forPage($currentPage, $perPage),
@@ -272,7 +243,6 @@ class RtlController extends Controller
         $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditeeId;
         $sessionFormData = session()->get($sessionKey, []);
 
-        // Struktur data yang lebih terorganisir
         $formData = [];
         foreach ($jawabanRtl as $jawaban) {
             if (!isset($formData[$jawaban->form_id])) {
@@ -289,13 +259,8 @@ class RtlController extends Controller
             $formData = array_merge($formData, $sessionFormData);
         }
 
-        $kriteria = $request->query('kriteria');
-        $kriteriaTemuan = ['Belum Memenuhi', 'Memenuhi', 'Melampaui'];
-
-        $kriteriaTindakan = Kriteria::where('nama', $kriteria)->first();
-
         $status = StatusRtl::where('rtl_id', $rtl->id)
-        ->where('kriteria_id', $kriteriaTindakan->id)
+        ->where('kriteria_id', $kriteria->id)
         ->first();
 
         $data = [
@@ -306,8 +271,7 @@ class RtlController extends Controller
             'jawabanRtl' => $jawabanRtl,
             'sessionFormData' => $formData,
             'currentPage'=> $currentPage,
-            'kriteriaTemuan' => $kriteria,
-            'kriteria' => $kriteriaTindakan,
+            'kriteria' => $kriteria,
             'fakultas' => $fakultas,
             'unit' => $unit,
             'auditee' => $auditee,
@@ -315,14 +279,14 @@ class RtlController extends Controller
             'status' => $status,
             'rtl' => $rtl,
             'jawabanAuditor' => $jawaban_auditor,
-            'isDisabled' => !$this->auditee,
+            'isDisabled' => !$auditee,
         ];
 
         return view('dekan.rtl.form', $data);
     }
 
 
-    public function save_form(Request $request, string $rtl, string $auditee): JsonResponse
+    public function save_form(Request $request, string $rtl, string $auditee, string $kriteria): JsonResponse
     {
         if (!$request->ajax()) {
             return response()->json(['message' => 'Invalid request'], 400);
@@ -332,47 +296,43 @@ class RtlController extends Controller
             $currentPage = $request->input('currentPage', 1);
             $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl . '-auditeeId_' . $auditee;
 
-            $errors = [];
+            $auditee = Auditee::where('user_id', Auth::id())->first();
+            $auditeeId = $auditee?->id;
+
+            $kriteria = Kriteria::findOrFail($kriteria);
+
+            $validationRules = [];
+            $validationMessages = [];
             $hasData = false;
 
             foreach ($request->all() as $key => $value) {
-                if (preg_match('/^(tindakan_|bukti_)([a-zA-Z0-9-]+)$/', $key, $matches)) {
-                    $formId = $matches[2];
-
-                    // Validasi Item
+                if (preg_match('/^tindakan_([a-zA-Z0-9-]+)$/', $key, $matches)) {
                     foreach ($value as $index => $item) {
-                        if (empty($item['tindakan']) || empty($item['bukti'])) {
-                            $errors["tindakan_{$formId}.{$index}.tindakan"] = ['Tindakan dan bukti harus diisi.'];
-                            continue;
-                        }
-                        if (!empty($item['bukti']) && !filter_var($item['bukti'], FILTER_VALIDATE_URL)) {
-                            $errors["tindakan_{$formId}.{$index}.bukti"] =['Bukti harus berupa URL valid (contoh: https://example.com)'];
-                                continue;
-                        }
-                        $hasData = true;
+                        $validationRules["$key.$index.tindakan"] = 'required';
+                        $validationRules["$key.$index.bukti"] = 'required';
+
+                        $validationMessages["$key.$index.tindakan.required"] = 'Rencana tindakan harus diisi';
+                        $validationMessages["$key.$index.bukti.required"] = 'Target waktu harus diisi';
                     }
                 }
             }
-            if (!empty($errors)) {
+
+            $validator = Validator::make($request->all(), $validationRules, $validationMessages);
+            if ($validator->fails()) {
                 return response()->json([
-                    'message' => 'Data tidak lengkap',
-                    'errors' => $errors
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors(),
                 ], 422);
             }
     
-            if (!$hasData) {
-                return response()->json([
-                    'message' => 'Tidak ada data yang valid untuk disimpan.'
-                ], 422);
-            }
+            DB::beginTransaction();
 
             foreach ($request->all() as $key => $value) {
-                if (preg_match('/^(tindakan_|bukti_)([a-zA-Z0-9-]+)$/', $key, $matches)) {
-                    $formId = $matches[2];
+                if (preg_match('/^tindakan_([a-zA-Z0-9-]+)$/', $key, $matches)) {
+                    $formId = $matches[1];
 
-                    $kriteria = Kriteria::whereHas('jawaban_auditor', function ($query) use ($formId) {
-                        $query->where('form_id', $formId);
-                    })->first();
+                    $hasData = true;
 
                     $existingData = RtlForm::where('rtl_id', $rtl)
                         ->where('form_id', $formId)
@@ -400,14 +360,21 @@ class RtlController extends Controller
                                 'tindakan' => $item['tindakan'],
                             ],
                             [
-                                'auditee_id' => $auditee,
+                                'auditee_id' => $auditeeId,
                                 'kriteria_id' => $kriteria->id,
                                 'bukti' => $item['bukti'],
                             ]
                         );
                     }
-
                 }
+            }
+            DB::commit();
+
+            if (!$hasData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada data yang valid untuk disimpan.'
+                ], 422);
             }
             // Hapus session setelah berhasil disimpan ke database
             session()->forget($sessionKey);
@@ -419,10 +386,10 @@ class RtlController extends Controller
         }
     }
 
-    public function store_form(Request $request, Rtl $rtl, string $auditee): RedirectResponse
+    public function store_form(Request $request, Rtl $rtl, string $auditee, string $kriteria): RedirectResponse
     {
         $totalPages = $request->input('totalPage');
-        $kriteriaId = $request->input('kriteria');
+        $kriteriaId = $kriteria;
         $allData = [];
         $rules = [];
         $messages = [];

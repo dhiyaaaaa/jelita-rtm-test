@@ -14,6 +14,7 @@ use App\Models\PtkAuditor;
 use App\Models\RtlAuditee;
 use App\Models\MonitoringAuditee;
 use App\Models\MonitoringAuditor;
+use App\Models\RtmRtlApprove;
 use Illuminate\Http\Request;
 
 class ApproveController extends Controller
@@ -59,6 +60,11 @@ class ApproveController extends Controller
     public function approve_laporan_auditee(string $laporan, string $auditee)
     {
         return $this->approve(LaporanAuditee::class, 'auditee', 'laporan', $laporan, $auditee);
+    }
+
+    public function rtm_rtl_approve(string $rtmRtl, string $auditee)
+    {
+        return $this->approve(RtmRtlApprove::class, 'auditee', 'rtm_rtl', $rtmRtl, $auditee);
     }
 
     public function approve_rtl_auditee(string $rtl, string $auditee)

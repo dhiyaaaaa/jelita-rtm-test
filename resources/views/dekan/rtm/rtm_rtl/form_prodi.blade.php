@@ -2,44 +2,41 @@
 
 @section('content')
 
-    <form method="GET" action="{{ route('dekan.rtm-rtl.form_prodi', $rtmRtl->id) }}" class="mb-4">
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-light">
-                        <h5 class="card-title mb-0">Filter Kriteria</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                @foreach($kriteriaOptions as $kriteria)
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" 
-                                        name="kriteria_ids[]" 
-                                        id="kriteria_{{ $kriteria->id }}" 
-                                        value="{{ $kriteria->id }}"
-                                        {{ in_array($kriteria->id, $selectedKriteria) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="kriteria_{{ $kriteria->id }}">
-                                        {{ $kriteria->nama }}
-                                    </label>
-                                </div>
-                                @endforeach
-                            </div>
-                            <div class="col-md-4 d-flex align-items-center">
-                                <button type="submit" class="btn btn-primary mr-2">
-                                    <i class="fas fa-filter"></i> Filter
-                                </button>
-                                <a href="{{ route('dekan.rtm-rtl.form_prodi', $rtmRtl->id) }}" 
-                                class="btn btn-outline-secondary">
-                                    <i class="fas fa-sync-alt"></i> Reset
-                                </a>
-                            </div>
+    <form method="GET" action="{{ route('dekan.rtm-rtl-prodi.form', $rtmRtl->id) }}" class="mb-4">
+        <input type="hidden" name="page" value="{{ request('page', 1) }}">
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">Pilih kriteria temuan hasil temuan yang akan diberikan rencana tindak lanjut.</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap mb-3">
+                    @foreach($kriteriaOptions as $kriteria)
+                        <div class="form-check form-check-inline mr-3">
+                            <input class="form-check-input" type="checkbox" 
+                                name="kriteria_ids[]" 
+                                id="kriteria_{{ $kriteria->id }}" 
+                                value="{{ $kriteria->id }}"
+                                {{ in_array($kriteria->id, $selectedKriteria) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="kriteria_{{ $kriteria->id }}">
+                                {{ $kriteria->nama }}
+                            </label>
                         </div>
-                    </div>
+                    @endforeach
+                </div>
+                <div class="d-flex justify-content-start">
+                    <button type="submit" class="btn btn-primary mr-2">
+                        <i class="fas fa-filter"></i> Terapkan Filter
+                    </button>
+                    <a href="{{ route('dekan.rtm-rtl-prodi.form', $rtmRtl->id) }}" 
+                    class="btn btn-outline-secondary">
+                        <i class="fas fa-sync-alt"></i> Reset
+                    </a>
                 </div>
             </div>
         </div>
     </form>
+
 
     <form action="{{ route('dekan.rtm-rtl-prodi.store_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}"
         method="post" id="create-form" enctype="multipart/form-data" class="block">
@@ -170,7 +167,7 @@
                                                                             <div class="invalid-feedback">{{ $message }}</div>
                                                                         @enderror
                                                             </div>
-                                                            <div class="col-md-2 d-flex align-items-center justify-content-around">
+                                                            <div class="col-md-2 d-flex align-items-center">
                                                                 <button type="button" {{ $isDisabled ? 'disabled' : '' }}
                                                                         class="btn btn-danger btn-sm me-2 remove-tindakan">
                                                                     <i class="fas fa-trash"></i>
@@ -229,22 +226,13 @@
                                     
                                     @if (isset($status) && $status->status !== 'completed')
                                         <div class="mb-3">
-                                            <button id="simpan_{{ $formId }}" 
-                                                    class="btn btn-warning"
-                                                    type="button" 
-                                                    {{ $isDisabled ? 'disabled' : '' }}>
-                                                Simpan
-                                            </button>
+                                            <button id="simpan_{{ $formId }}" class="btn btn-warning"type="button" {{ $isDisabled ? 'disabled' : '' }}>Simpan</button>
 
-                                            <button id="simpan-button-loading_{{ $formId }}"
-                                                    class="btn btn-warning d-none" 
-                                                    type="button" 
-                                                    disabled>
-                                                <span class="spinner-border spinner-border-sm" role="status"
-                                                    aria-hidden="true"></span>
-                                                Loading...
+                                            <button id="simpan-button-loading_{{ $formId }}" class="btn btn-warning d-none" type="button" disabled>
+                                                    <span class="spinner-border spinner-border-sm" role="status"
+                                                        aria-hidden="true"></span>
+                                                    Loading...
                                             </button>
-                                            <p class="mt-2 text-muted">Harap tekan tombol "Simpan" untuk menyimpan jawaban.</p>
                                         </div>
                                     @endif
                                 </div>
@@ -268,6 +256,10 @@
                                     <div class="text-center">
                                         <input type="hidden" name="final" value="final">
                                         <button type="submit" id="button-submit" class="btn btn-primary" {{ $isDisabled ? 'disabled' : '' }}>Submit</button>
+                                        <button id="button-submit-loading" class="btn btn-primary d-none" type="button" disabled>
+                                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            Loading...
+                                        </button>
                                     </div>
                                 @endif
                             @else
@@ -283,10 +275,15 @@
                             @if (isset($status) && $status->status === 'completed')
                                 <div class="text-center mt-3">
                                     <button type="button" class="btn btn-warning" id="edit-button">Ubah</button>
+
+                                    <button id="button-edit-loading" class="btn btn-warning d-none" type="button" disabled>
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        Loading...
+                                    </button>
                                 </div>
                             @endif
                             <div class="text-center mt-3">
-                                <a href="{{ route('dekan.rtm-rtl.form', $rtmRtl->id) }}"
+                                <a href="{{ route('dekan.rtm-rtl.show', $rtmRtl->id) }}"
                                    class="btn btn-outline-secondary">Kembali</a>
                             </div>
                         </div>
@@ -413,7 +410,7 @@
                                     class="form-control small-textarea" 
                                     placeholder="${waktuPlaceholder}" required></textarea>
                         </div>
-                        <div class="col-md-2 d-flex align-items-center justify-content-around">
+                        <div class="col-md-2 d-flex align-items-center">
                             <button type="button" class="btn btn-danger btn-sm me-2 remove-tindakan">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -426,7 +423,7 @@
                 `);
                 
                 container.append(newRow);
-                saveSession();
+                save_session();
             };
 
             // Fungsi untuk menghapus input tindakan
@@ -437,7 +434,7 @@
                 // Jangan hapus jika hanya tersisa satu row
                 if (container.find('.tindakan-row').length > 1) {
                     row.remove();
-                    saveSession();
+                    save_session();
                 } else {
                     Swal.fire({
                         icon: 'warning',
@@ -448,7 +445,7 @@
             });
 
             // Fungsi untuk menyimpan data ke session
-            function saveSession(callback) {
+            function save_session(callback) {
                 const currentPage = $('input[name^="page_"]').val();
                 const formData = new FormData();
                 const formIds = [];
@@ -520,17 +517,16 @@
             }
 
             // Fungsi untuk menyimpan jawaban per form
-            function saveJawaban(formId) {
+            function save_jawaban(formId) {
                 const formData = new FormData();
                 let isValid = true;
                 const errorMessages = [];
 
                 const kriteriaContainers = $(`[id^="tindakan-inputs-${formId}-"]`);
                 
-                // PERBAIKAN: Gunakan data attribute untuk ambil kriteriaId
                 kriteriaContainers.each(function() {
                     const container = $(this);
-                    const kriteriaId = container.data('kriteria-id'); // Ambil dari data attribute
+                    const kriteriaId = container.data('kriteria-id');
                     
                     container.find('.tindakan-row').each(function(index) {
                         const row = $(this);
@@ -565,13 +561,11 @@
                     return;
                 }
 
-                // Kirim data ke server
                 formData.append('formId', formId);
                 formData.append('currentPage', $('input[name^="page_"]').val());
                 
                 const kriteriaIds = [];
                 
-                // Kumpulkan kriteriaIds sebagai array number
                 $('[id^="tindakan-inputs-' + formId + '-"]').each(function() {
                     const kriteriaId = parseInt($(this).data('kriteria-id'));
                     if (!isNaN(kriteriaId)) {
@@ -579,33 +573,30 @@
                     }
                 });
                 formData.append('kriteriaIds', JSON.stringify(kriteriaIds));
+
+                $(`#simpan_${formId}`).addClass('d-none');
+                $(`#simpan-button-loading_${formId}`).removeClass('d-none');
+
                 $.ajax({
                     url: '{{ route('dekan.rtm-rtl-prodi.save_form', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
                     type: 'POST',
                     data: formData,
                     processData: false,
                     contentType: false,
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
                     success: function(response) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil',
                             text: response.message
-                        }).then(() => {
-                            location.reload();
-                        });
+                        }).then(() => location.reload());
                     },
                     error: function(xhr) {
-                        let response = xhr.responseJSON;
+                        let response = JSON.parse(xhr.responseText);
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            html: response?.message || 'Terjadi kesalahan saat menyimpan data'
+                            html: response.message
                         });
-                    },
-                    complete: function() {
                         $(`#simpan_${formId}`).removeClass('d-none');
                         $(`#simpan-button-loading_${formId}`).addClass('d-none');
                     }
@@ -613,11 +604,11 @@
             }
 
             // Handle klik tombol simpan per form
-            $(document).on('click', '[id^=simpan_]', function() {
+            $(document).on('click', '[id^=simpan_]', function(e) {
+                e.preventDefault();
                 const formId = $(this).attr('id').split('_')[1];
-                
-                saveJawaban(formId);
-                saveSession();
+                save_jawaban(formId);
+                save_session();
             });
 
             // Handle submit final form
@@ -635,12 +626,10 @@
                     cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Tampilkan loading
                         $('#button-submit').addClass('d-none');
                         $('#button-submit-loading').removeClass('d-none');
                         
-                        // Simpan session terakhir sebelum submit
-                        saveSession(function() {
+                        save_session(function() {
                             form.off('submit').submit();
                         });
                     }
@@ -684,14 +673,14 @@
 
             // Auto-save saat ada perubahan
             $(document).on('input change', 'textarea, select', function() {
-                saveSession();
+                save_session();
             });
 
             // Debounce untuk auto-save
             let debounceTimer;
-            function debounceSaveSession() {
+            function debounceSave_session() {
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(saveSession, 1000);
+                debounceTimer = setTimeout(save_session, 1000);
             }
 
             // Handle pagination
@@ -699,7 +688,7 @@
                 e.preventDefault();
                 const url = $(this).attr('href');
                 
-                saveSession(function() {
+                save_session(function() {
                     window.location.href = url;
                 });
             });

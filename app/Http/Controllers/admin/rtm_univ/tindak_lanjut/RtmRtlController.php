@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\RtmRtl;
 use App\Models\RtmTindakLanjut;
-use App\Models\StatusRtmRtl;
+use App\Models\StatusRtmRtlUniv;
 use App\Models\Jabatan;
 use App\Models\Fakultas;
 use App\Models\Unit;
 use App\Models\JadwalAudit;
-use App\Models\Auditee;
+use App\Models\JawabanAuditor;
 use App\Models\Kriteria;
+use App\Models\Prodi;
 use App\Models\RtmRtlForm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -37,108 +38,104 @@ class RtmRtlController extends Controller
     public function form(Request $request, RtmRtl $rtmRtl): View|RedirectResponse
     {
         $jadwal = JadwalAudit::findOrFail($rtmRtl->jadwal_audit_id);
+        $selectedKriteria = $request->input('kriteria', []);
 
-        $hasilRtm = RtmTindakLanjut::whereHas('rtm_rtl', function($query) use ($rtmRtl) {
-            $query->where('jadwal_audit_id', $rtmRtl->jadwal_audit_id);
-        })->first();
+        $order_by_kode = DB::raw("
+            CASE
+                WHEN REGEXP_REPLACE((SELECT kode FROM instrumen WHERE instrumen.id = form.instrumen_id), '[^0-9]', '', 'g') ~ '^[0-9]+$'
+                THEN CAST(REGEXP_REPLACE((SELECT kode FROM instrumen WHERE instrumen.id = form.instrumen_id), '[^0-9]', '', 'g') AS INTEGER)
+                ELSE NULL
+            END
+        ");
 
-        if (!$hasilRtm) {
-            return back()->with('error', 'Belum ada temuan yang masuk untuk diajukan pembahasan RTM Universitas');
-        }
-
-        $fakultas = $rtmRtl->fakultas_id ? Fakultas::find($rtmRtl->fakultas_id) : null;
-        $unit = $rtmRtl->unit_id ? Unit::find($rtmRtl->unit_id) : null;
-        $jabatanOptions = Jabatan::all();
-
-        $temuanFakultas = RtmTindakLanjut::whereHas('rtm_rtl', function($query) use ($rtmRtl) {
-            $query->where('jadwal_audit_id', $rtmRtl->jadwal_audit_id);
+        $temuanRtm = RtmTindakLanjut::join('form', 'rtm_tindak_lanjut.form_id', '=', 'form.id')
+            ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+            ->where('rtm_rtl_id', $rtmRtl->id)
+            ->whereHas('jabatan', function($query) {
+                $query->where('type', 'universitas'); 
             })
-            ->when($rtmRtl->unit_id, function ($query) use ($rtmRtl) {
-                return $query->where('unit_id', $rtmRtl->unit_id);
-            })
-            ->when($request->filled('jabatan_id'), function ($query) use ($request) {
-                $query->whereHas('jabatan', function($q) use ($request) {
-                    $q->whereIn('id', (array)$request->jabatan_id);
-                });
+            ->when(!empty($selectedKriteria), function($query) use ($selectedKriteria) {
+                return $query->whereIn('kriteria_id', $selectedKriteria);
             })
             ->with([
-                'form.instrumen.jabatan',
-                'form.jawaban_auditee',
+                'form.instrumen',
+                'form.jawaban_auditor',
                 'form.ptk_form_deskripsi',
                 'form.laporan_form',
                 'kriteria',
-                'rtm_rtl',
-                'user',
                 'jabatan',
             ])
-            ->join('form', 'rtm_tindak_lanjut.form_id', '=', 'form.id')
-            ->orderBy('form.instrumen_id', 'asc')
+            ->orderBy($order_by_kode)
             ->get()
-            ->map(function($item) use ($request) {
-                if ($request->filled('jabatan_id')) {
-                    $item->filtered_tindakan = $item->form->rtm_tindak_lanjut
-                        ->whereIn('jabatan_id', (array)$request->jabatan_id);
-                } else {
-                    $item->filtered_tindakan = $item->form->rtm_tindak_lanjut;
+            ->unique('form_id') 
+            ->values();
+        
+        if ($temuanRtm->isEmpty()) {
+            $temuanAuditor = JawabanAuditor::join('form', 'jawaban_auditor.form_id', '=', 'form.id')
+                ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+                ->where('jadwal_audit_id', $rtmRtl->jadwal_audit_id)
+                 ->where(function($query) use ($rtmRtl) {
+                    if ($rtmRtl->fakultas_id) {
+                        $query->where('fakultas_id', $rtmRtl->fakultas_id);
+                    } else {
+                        $query->where('unit_id', $rtmRtl->unit_id);
+                    }
+                })
+                ->when(!empty($selectedKriteria), function($query) use ($selectedKriteria) {
+                    return $query->whereIn('jawaban_auditor.kriteria_id', $selectedKriteria);
+                })
+                ->with([
+                    'form.instrumen',
+                    'form.jawaban_auditor',
+                    'form.ptk_form_deskripsi',
+                    'form.laporan_form',
+                    'kriteria',
+                ])
+                ->orderBy($order_by_kode)
+                ->get()
+                ->unique('form_id') 
+                ->values();
+
+                if ($temuanAuditor->isEmpty()) {
+                    return back()->with('warning', 'Tidak ada data temuan hasil audit yang tersedia');
                 }
-                return $item;
-            })
-            ->unique('id');
-
-        //Paginasi filter
-        $filteredForPagination = $temuanFakultas;
-            
-        if ($request->filled('jabatan_id')) {
-            $filteredForPagination = $temuanFakultas->filter(function($item) use ($request) {
-                return in_array(optional($item->jabatan)->id, (array)$request->jabatan_id);
-            });
+                
+                $temuan = $temuanAuditor;
+                $infoMessage = 'Menampilkan data hasil audit karena belum ada rencana tindak lanjut';
+        } else {
+            $temuan = $temuanRtm;
+            $infoMessage = null;
         }
-
-        $isEmptyWithFilter = $request->filled('jabatan_id') && $filteredForPagination->isEmpty();
-
-        if ($isEmptyWithFilter) {
-            return redirect()
-                ->route('admin.rtm-ptk.form', ['rtmPtk' => $rtmRtl->id])
-                ->with('warning', 'Tidak ditemukan temuan untuk PIC dengan jabatan yang dipilih');
-        }
-
+        
         $perPage = 10;
         $currentPage = $request->query('page', 1);
-
-        $paginatedTemuanFakultas = new LengthAwarePaginator(
-            $filteredForPagination->forPage($currentPage, $perPage),
-            $filteredForPagination->count(),
+        $paginatedTemuan = new LengthAwarePaginator(
+            $temuan->forPage($currentPage, $perPage),
+            $temuan->count(),
             $perPage,
             $currentPage,
             ['path' => $request->url(), 'query' => $request->query()]
         );
-
-        if ($temuanFakultas->isEmpty()) {
-            return back()->with('error', 'Tidak ada temuan untuk ditindaklanjuti.');
-        }
         
+
         $jawabanRtm = RtmRtlForm::where('rtm_rtl_id', $rtmRtl->id)->get();
 
-        $sessionFormData = session()->get('form_rtmRtl-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl->id, []);
+        $sessionFormData = session()->get('form_rtmRtl_univ-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl, []);
         
-
-        $status = StatusRtmRtl::where('rtm_rtl_id', $rtmRtl->id)->first();
+        $status = StatusRtmRtlUniv::where('rtm_rtl_id', $rtmRtl->id)->first();
 
         $data = [
-            'title' => 'Tindak Lanjut Hasil Audit Fakultas',
-            'rtmRtl' => $rtmRtl,
-            'paginatedTemuanFakultas' => $paginatedTemuanFakultas,
+            'title' => 'Tindak Lanjut Hasil Audit',
+            'rtmRtlId' => $rtmRtl->id,
+            'paginatedTemuan' => $paginatedTemuan,
             'jawabanRtm' => $jawabanRtm,
             'sessionFormData' => $sessionFormData,
             'currentPage' => $currentPage,
             'status' => $status,
-            'fakultas' => $fakultas,
-            'unit' => $unit,
-            'temuanFakultas' => $temuanFakultas,
-            'jabatanOptions' => $jabatanOptions,
-            'hasilRtm' => $hasilRtm,
-            'isEmptyWithFilter' => $isEmptyWithFilter,
-            'selectedJabatan' => $request->jabatan_id ? Jabatan::whereIn('id', (array)$request->jabatan_id)->get() : collect(),
+            'infoMessage' => $infoMessage,
+            'temuan' => $temuan,
+            'jawabanRtm' => $jawabanRtm,
+            'selectedKriteria' => $selectedKriteria,
         ];
 
         return view('admin.rtm_univ.tindak_lanjut.form', $data);
@@ -149,25 +146,34 @@ class RtmRtlController extends Controller
         if ($request->ajax()) {
             try {
 
-                $user = $this->user;
+                $user = $this->user->id;
                 $response = [];
 
                 foreach ($request->all() as $key => $value) {
                     if (strpos($key, 'rekomendasi_') === 0) {
-                        $id = substr($key, strlen('rekomendasi_'));
-                        $rekomendasiKey = 'rekomendasi_' . $id;
-                        $koreksiKey = 'koreksi_' . $id;
+                        $formId = substr($key, strlen('rekomendasi_'));
+                        $rekomendasi = $request->input($key, null);
+                        $koreksi = $request->input('koreksi_' . $formId, null);
 
+                        if (empty($rekomendasi) || empty($koreksi)) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Rekomendasi dan Koreksi harus diisi!'
+                            ], 422);
+                        }
+    
                         $data = [
+                            'rtm_rtl_id' => $rtmRtl,
+                            'form_id' => $formId,
                             'user_id' => $user,
-                            'rekomendasi' => $request->input($rekomendasiKey, null),
-                            'koreksi' => $request->input($koreksiKey, null),
+                            'rekomendasi' => $rekomendasi,
+                            'koreksi' => $koreksi,
                         ];
 
                         RtmRtlForm::updateOrCreate(
                             [
                                 'rtm_rtl_id' => $rtmRtl,
-                                'form_id' => $id,
+                                'form_id' => $formId,
                             ],
                             $data
                         );
@@ -189,18 +195,20 @@ class RtmRtlController extends Controller
         ], 400);
     }
 
-    public function store_form(Request $request, RtmRtl $rtmRtl)
+    public function store_form(Request $request, string $rtmRtl)
     {
+        
         $totalPages = $request->input('totalPage');
         $sessionFormData = [];
         $errorPage = null;
-
-        $user = $this->user;
+        $user = $this->user->id;
+        $rtmRtl = RtmRtl::findOrFail($rtmRtl);
 
         for ($i = 1; $i <= $totalPages; ++$i) {
-            $sessionKey = 'form_rtmrtl-page_' . $i . '-rtmRtlId_' . $rtmRtl;
+            $sessionKey = 'form_rtmRtl_univ-page_' . $i . '-rtmRtlId_' . $rtmRtl;
             $sessionFormData[$i] = session()->get($sessionKey, []);
         }
+        Log::debug('Session retrieved:', [$sessionKey => session()->get($sessionKey)]);
 
         $rules = [];
         $messages = [];
@@ -251,7 +259,7 @@ class RtmRtlController extends Controller
                 $errorMessage = $errors->first();
             }
 
-            return redirect()->route('admin.rtm.rtl.save_form', ['rtmRtl' => $rtmRtl, 'page' => $errorPage])
+            return redirect()->route('admin.rtm-rtl.form', ['rtmRtl' => $rtmRtl, 'page' => $errorPage])
                 ->withErrors($errors)
                 ->withInput()
                 ->with('error_message', $errorMessage)
@@ -262,7 +270,7 @@ class RtmRtlController extends Controller
             if (empty($sessionFormData[$i])) {
                 $errorPage = $i;
 
-                return redirect()->route('admin.rtm-rtl.save_form', ['rtmRtl' => $rtmRtl, 'page' => $errorPage])
+                return redirect()->route('admin.rtm-rtl.form', ['rtmRtl' => $rtmRtl, 'page' => $errorPage])
                     ->with('error_message', 'Data tidak ditemukan. Silakan periksa halaman tersebut.')
                     ->withInput();
             }
@@ -291,7 +299,7 @@ class RtmRtlController extends Controller
         }
 
         if ($requestData['final'] == 'final') {
-            $status = StatusRtmRtl::where('rtm_rtl_id', $rtmRtl)->first();
+            $status = StatusRtmRtlUniv::where('rtm_rtl_id', $rtmRtl)->first();
 
             if ($status && $status->status == 'in_progress') {
                 $status->status = 'completed';

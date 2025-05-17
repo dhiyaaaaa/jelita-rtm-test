@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RtmJadwal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -214,19 +215,16 @@ class SessionController extends Controller
             foreach ($formIds as $formId) {
                 $tindakan = json_decode($request->input('tindakan_' . $formId), true);
                 
-                $formData[$formId] = [
-                    'tindakan' => [],
-                ];
+                $validTindakan = array_filter($tindakan, function($row) {
+                    return !empty($row['tindakan']) || !empty($row['pic']) || !empty($row['waktu']);
+                    
+                });
 
-                if (is_array($tindakan)) {
-                    foreach ($tindakan as $row) {
-                        if (!empty($row['tindakan']) || !empty($row['bukti'])) {
-                            $formData[$formId]['tindakan'][] = [
-                                'tindakan' => $row['tindakan'] ?? null,
-                                'pic' => $row['pic'] ?? null,
-                                'waktu' => $row['waktu'] ?? null,
-                            ];
-                        }
+                if (!empty($validTindakan)) {
+                    $formData[$formId] = ['tindakan' => $validTindakan];
+                } else {
+                    if (session()->has($sessionKey . '.' . $formId)) {
+                        session()->forget($sessionKey . '.' . $formId);
                     }
                 }
             }
@@ -261,6 +259,9 @@ class SessionController extends Controller
                     $tindakanData = json_decode($request->input($tindakanKey, '[]'), true);
                     
                     if (is_array($tindakanData)) {
+                        if (!isset($formData[$formId])) {
+                            $formData[$formId] = [];
+                        }
                         $formData[$formId][$kriteriaId] = [
                             'tindakan' => array_filter($tindakanData, function($item) {
                                 return !empty($item['tindakan']) || !empty($item['pic']) || !empty($item['waktu']);
@@ -278,8 +279,30 @@ class SessionController extends Controller
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
         }
     }
+
+    public function session_rtm_catatan(Request $request, RtmJadwal $rtmJadwal)
+    {
+        if (!$request->ajax()) {
+            return response()->json(['error' => 'Invalid Request.'], 400);
+        }
+
+        try {
+
+            $catatanData = $request->input('catatan', []);
+            $sessionKey = 'rtm_catatan_' . $rtmJadwal->id;
+            
+            // Simpan ke session
+            session([$sessionKey => $catatanData]);
+            
+            return response()->json(['success' => true, 'message' => 'Data berhasil disimpan sementara']);
+
+        } catch (\Exception $e) {
+            Log::error('Error saving RTM Catatan session:', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
+        }
+    }
     
-    public function session_rtm_ptk_univ (Request $request, string $rtmPtk): JsonResponse
+    public function session_rtm_rtl_univ(Request $request, string $rtmRtl): JsonResponse
     {
         if ($request->ajax()) {
             try {
@@ -290,21 +313,20 @@ class SessionController extends Controller
                     if (empty($page)) {
                         continue;
                     }
-
-                    $sessionKey = 'form_rtmPtk-page_' .  $page . '-rtmPtkId_' . $rtmPtk;
-
+                    $sessionKey = 'form_rtmRtl_univ-page_' . $page . '-rtmRtlId_' . $rtmRtl;
+    
                     $formData = $request->all();
                     $formData[('page_' . $i)] = $page;
 
                     session([$sessionKey => $formData]);
+                    Log::debug('Session data received:', $request->all());
                 }
-
+            
                 return response()->json(['success' => true]);
             } catch (\Exception $e) {
                 return response()->json(['success' => false, 'message' => 'Error.'], 500);
             }
         }
-
         return response()->json([
             'error' => 'Invalid Request.'
         ], 400);

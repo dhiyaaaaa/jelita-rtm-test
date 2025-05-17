@@ -38,7 +38,7 @@
                             </td>
 
                             {{-- RTL --}}
-                            <td class="text-center">
+                            <td class="text-center align-middle">
                                 @if ($item->rtl->isNotEmpty())
                                     @php
                                         $rtl = $item->rtl->first();
