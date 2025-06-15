@@ -44,7 +44,7 @@
 
                 <!-- /.form-group -->
                 <div>
-                    <a href="{{ route('auditor.lapangan.show', $jadwalId) }}" class="btn btn-outline-secondary">Kembali</a>
+                    <a href="{{ route('auditor.tindak-lanjut.show', $jadwalId) }}" class="btn btn-outline-secondary">Kembali</a>
                     <x-button-submit text="Tambah Form Monitoring RTL" formId="create-form" />
                 </div>
             </div>

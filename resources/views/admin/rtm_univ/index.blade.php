@@ -12,6 +12,11 @@
         <!-- /.card-header -->
         <div class="card-body">
             <a href="{{ route('admin.rtm-univ.create')}}" class="btn btn-outline-primary mr-2 mb-3">Buat Agenda RTM</a>
+            <div class="">
+                <a href="{{ asset('user_manual/RTM_Univ.pdf') }}" target="_blank" class="btn btn-outline-info mr-2 mb-3">
+                    <i class="fa fa-book mr-2"></i> User Manual
+                </a>
+            </div>
             <table id="rtm" class="table table-bordered table-striped">
                 <thead>
                     <tr>

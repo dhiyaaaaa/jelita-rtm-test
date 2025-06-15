@@ -17,7 +17,7 @@
 
             <table class="table table-borderless text-white">
                 <tr>
-                    <td class="fw-bold" width="30%">Agenda</td>
+                    <td class="fw-bold" width="15%">Agenda</td>
                     <td width="5%">:</td>
                     <td>{{ $rtmRtl->rtm_jadwal->agenda }}</td>
                 </tr>
@@ -69,34 +69,14 @@
 
     <div class="card shadow border-0 mt-3">
         <div class="card-header bg-white border-bottom">
-            @php
-                $statusCatatan = $rtmRtl->rtm_jadwal->status_rtm_catatan->first();
-            @endphp
             <h5 class="mb-0 text-dark"><i class="fas fa-file-alt me-2"></i> Narasi Laporan RTM</h5>
-            @if($statusCatatan)
-                <span class="badge bg-{{ $statusCatatan->status === 'completed' ? 'success' : 'warning' }}">
-                    {{ $statusCatatan->status === 'completed' ? 'Selesai' : 'Dalam Proses' }}
-                </span>
-            @endif
         </div>
         
         <div class="card-body">
             <p class="text-muted">Silakan tambahkan kata pengantar laporan RTM untuk menjelaskan konteks dan tujuan laporan ini, jika diperlukan.</p>
             <div class="d-flex justify-content">
-                @if (!$statusCatatan)
-                    <form action="{{ route('dekan.rtm-catatan.isi', $rtmRtl->rtm_jadwal->id) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="btn btn-warning"><i class="fas fa-pencil-alt me-1"></i>Mulai Isi</button>
-                    </form>
-                @else
-                    @if ($statusCatatan->status === 'completed')
-                        <a href="{{ route('dekan.rtm-catatan.form', [$rtmRtl->rtm_jadwal->id]) }}"
-                            class="btn btn-primary"><i class="fas fa-check-alt me-1"></i> Sudah Isi </a>
-                    @else
-                        <a href="{{ route('dekan.rtm-catatan.form', [$rtmRtl->rtm_jadwal->id]) }}"
-                            class="btn btn-primary"><i class="fas fa-pencil-alt me-1"></i> Isi </a>
-                    @endif
-                @endif
+                <a href="{{ route('dekan.rtm-catatan.form', [$rtmRtl->rtm_jadwal->id]) }}"
+                    class="btn btn-primary"><i class="fas fa-edit me-1"></i> Isi </a>
             </div>
         </div>
     </div>
@@ -142,7 +122,7 @@
                     </div>
                 @endforeach
             </div>
-            <div class="row g-3 justify-content-center">
+            {{-- <div class="row g-3 justify-content-center">
                 @php
                     $statusProdi = $rtmRtl->status_rtm_rtl_prodi->first();
                 @endphp
@@ -168,7 +148,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> --}}
         </div>
     </div>
 
@@ -181,8 +161,8 @@
                 <div class="card-body">
                     <p class="card-text">Silahkan download dan approve, setelah mengisi rencana Hasil Audit.</p>
                     <div class="mb-2">
-                        @if (!$rtmRtl->auditee->first() || $rtmRtl->auditee->first()->pivot->approve == 0)
-                            <form action="{{ route('dekan.rtm-rtl.approve', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditee->id]) }}" method="post">
+                        @if (!$rtmRtl->user->first() || $rtmRtl->user->first()->pivot->approve == 0)
+                            <form action="{{ route('dekan.rtm-rtl.approve', ['rtmRtl' => $rtmRtl->id, 'user' => $user]) }}" method="post">
                                 @csrf
                             <button type="submit" class="btn btn-outline-success w-100">
                                     <i class="fas fa-thumbs-up"></i> Approve Laporan RTM
@@ -194,9 +174,8 @@
                         @endif
                     </div>
                     <div>
-                        <form action="{{ route('download.rtm.fakultas', $rtmRtl->id) }}" 
-                            method="post"class="d-inline">
-                            @csrf
+                        <form action="{{ route('download.rtm.fakultas', $rtmRtl->rtm_jadwal->id) }}" 
+                            class="d-inline">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="fas fa-download"></i> Download Laporan RTM
                             </button>
@@ -220,7 +199,6 @@
 
 @section('style')
 <style>
-    /* Efek hover lebih menarik */
     .transition-modern {
         transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     }

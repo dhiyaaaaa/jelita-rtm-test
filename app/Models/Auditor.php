@@ -28,10 +28,22 @@ class Auditor extends Model
             ->withPivot('prodi_id', 'fakultas_id', 'unit_id', 'jadwal_audit_id')
             ->withTimestamps();;
     }
-
+    
     public function auditee_auditor(): HasMany
     {
         return $this->hasMany(AuditeeAuditor::class, 'auditor_id');
+    }
+
+    public function auditeePtk(): BelongsToMany
+    {
+        return $this->belongsToMany(Auditee::class, 'auditee_auditor_ptk', 'auditor_id', 'auditee_id')
+            ->withPivot('fakultas_id', 'unit_id', 'jadwal_audit_id')
+            ->withTimestamps();;
+    }
+
+    public function auditee_auditor_ptk(): HasMany
+    {
+        return $this->hasMany(AuditeeAuditorPtk::class, 'auditor_id');
     }
 
     public function jadwal_audit(): BelongsTo
@@ -62,6 +74,11 @@ class Auditor extends Model
     public function laporan(): BelongsToMany
     {
         return $this->belongsToMany(Laporan::class, 'laporan_auditor', 'auditor_id', 'laporan_id')->withPivot('approve')->withTimestamps();
+    }
+
+    public function monitoring(): BelongsToMany
+    {
+        return $this->belongsToMany(Monitoring::class, 'monitoring_auditor', 'auditor_id', 'laporan_id')->withPivot('approve')->withTimestamps();
     }
 
     public function assessment_jawaban_penilai(): HasMany

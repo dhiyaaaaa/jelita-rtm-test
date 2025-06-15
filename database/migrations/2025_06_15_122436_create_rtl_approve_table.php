@@ -11,13 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rtm_rtl_form', function (Blueprint $table) {
+        Schema::create('rtl_approve', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('rtm_rtl_id')->constrained('rtm_rtl', 'id')->onDelete('cascade');
-            $table->foreignUuid('form_id')->constrained('form', 'id')->onDelete('cascade');
+            $table->foreignUuid('rtl_id')->constrained('rtl', 'id')->onDelete('cascade');
             $table->foreignUuId('user_id')->constrained('users', 'id')->onDelete('cascade');
-            $table->text('rekomendasi');
-            $table->text('koreksi');
+            $table->boolean('approve')->default(0);
             $table->timestamps();
         });
     }
@@ -27,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('rtm_rtl_form');
+        Schema::dropIfExists('rtl_approve');
     }
 };

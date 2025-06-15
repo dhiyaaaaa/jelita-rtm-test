@@ -8,14 +8,21 @@ use App\Models\BeritaAcaraAuditor;
 use App\Models\Laporan;
 use App\Models\LaporanAuditee;
 use App\Models\LaporanAuditor;
+use App\Models\MonitoringApprove;
 use App\Models\Ptk;
 use App\Models\PtkAuditee;
 use App\Models\PtkAuditor;
 use App\Models\RtlAuditee;
 use App\Models\MonitoringAuditee;
 use App\Models\MonitoringAuditor;
+use App\Models\RtlApprove;
 use App\Models\RtmRtlApprove;
+use App\Models\RtmRtlApproved;
+use App\Models\RtmRtlUniv;
+use App\Models\RtmRtlUnivApprove;
+use App\Models\RtmUnivApprove;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ApproveController extends Controller
 {
@@ -62,14 +69,31 @@ class ApproveController extends Controller
         return $this->approve(LaporanAuditee::class, 'auditee', 'laporan', $laporan, $auditee);
     }
 
-    public function rtm_rtl_approve(string $rtmRtl, string $auditee)
+    //RTM RTL Fakultas
+    public function rtm_rtl_approved(string $rtmRtl, string $user)
     {
-        return $this->approve(RtmRtlApprove::class, 'auditee', 'rtm_rtl', $rtmRtl, $auditee);
+        return $this->approve(RtmRtlApproved::class, 'user', 'rtm_rtl', $rtmRtl, $user);
+    }
+
+    //RTM UNIV
+    public function approve_rtm_univ(string $rtmJadwal, string $user)
+    {
+        return $this->approve(RtmUnivApprove::class, 'user', 'rtm_jadwal', $rtmJadwal, $user);
+    }
+
+    public function approve_rtm_rtl_univ(string $rtmRtlUniv, string $user)
+    {
+        return $this->approve(RtmRtlUnivApprove::class, 'user', 'rtm_rtl_univ', $rtmRtlUniv, $user);
     }
 
     public function approve_rtl_auditee(string $rtl, string $auditee)
     {
         return $this->approve(RtlAuditee::class, 'auditee', 'rtl', $rtl, $auditee);
+    }
+
+    public function approve_rtl(string $rtl, string $user)
+    {
+        return $this->approve(RtlApprove::class, 'user', 'rtl', $rtl, $user);
     }
 
     public function approve_monitoring_auditee(string $monitoring, string $auditee)
@@ -82,5 +106,8 @@ class ApproveController extends Controller
         return $this->approve(MonitoringAuditor::class, 'auditor', 'monitoring', $monitoring, $auditor);
     }
     
-
+    public function approve_monitoring(string $monitoring, string $user)
+    {
+        return $this->approve(MonitoringApprove::class, 'user', 'monitoring', $monitoring, $user);
+    }
 }

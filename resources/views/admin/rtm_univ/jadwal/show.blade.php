@@ -7,13 +7,6 @@
         <a href="{{ route("admin.rtm-univ.index") }}" class="btn btn-outline-secondary">Kembali</a>
     </div>
 
-    <!-- Tampilkan pesan success jika ada -->
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <!-- Menampilkan detail jadwal RTM -->
     <div class="card">
         <div class="card-body">
@@ -63,14 +56,11 @@
                         </select>
                     </div>
                     
-
                     <div class="mb-3">
                         <label for="peserta" class="form-label">Jumlah Peserta Rapat:</label>
                         <small class="form-text text-muted">Masukkan jumlah peserta rapat (dalam format angka)</small>
                         <input type="text" name="peserta" id="peserta" class="form-control" value="{{ old('peserta', $item->peserta) }}" required>
-                        
                     </div>
-
                     <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                 </form>
             @else

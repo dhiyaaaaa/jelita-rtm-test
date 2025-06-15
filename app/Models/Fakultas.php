@@ -44,6 +44,11 @@ class Fakultas extends Model
         return $this->belongsToMany(Auditor::class, 'auditee_auditor', 'fakultas_id', 'auditor_id')->withPivot('auditee_id', 'jadwal_audit_id')->withTimestamps();;
     }
 
+    public function auditorPtk(): BelongsToMany
+    {
+        return $this->belongsToMany(Auditor::class, 'auditee_auditor_ptk', 'fakultas_id', 'auditor_id')->withPivot('auditee_id', 'jadwal_audit_id')->withTimestamps();;
+    }
+
     public function berita_acara(): HasMany
     {
         return $this->hasMany(BeritaAcara::class, 'fakultas_id', 'id');

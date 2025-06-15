@@ -37,6 +37,10 @@
                 <i class="fas fa-user fa-sm fa-fw mr-2"></i>
                 Profile
             </a>
+            <a class="dropdown-item text-gray-400" href="{{ route('mainmenu') }}">
+                <i class="fas fa-bars fa-sm fa-fw mr-2"></i>
+                Main Menu
+            </a>
             <div class="dropdown-divider"></div>
             <form action="{{ route('logout') }}" method="post" class="d-inline">
                 @csrf

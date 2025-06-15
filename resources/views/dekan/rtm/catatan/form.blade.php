@@ -1,233 +1,262 @@
 @extends('components.layout.main_layout')
 
 @section('content')
-<div class="container-fluid px-4">
-    <form id="catatan-form" action="{{ route('dekan.rtm-catatan.store', ['rtmJadwal' => $rtmJadwal]) }}" method="POST" id="catatan-form">
+    <form id="catatan-form" action="{{ route('dekan.rtm-catatan.store', ['rtmJadwal' => $rtmJadwal]) }}" method="POST">
         @csrf
-
+        <input type="hidden" name="rtm_jadwal_id" value="{{ $rtmJadwal->id }}">
+        <div class="d-flex justify-content-start">
+            <a href="{{ route('dekan.rtm-rtl.show', ['rtmRtl' => $rtmRtl->id]) }}" class="btn btn-outline-dark mb-3">
+                <i class="fas fa-arrow-left"></i> Kembali
+            </a>
+        </div>
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title text-bold">{{ $title }}</h3>
             </div>
-
             <div class="card-body">
-                @php
-                    // isDisabled
-                    $isDisabled = false;
-                    if (isset($status) && $status->status === 'completed') {
-                        $isDisabled = true;
-                    }
-                @endphp
                 <div id="catatan-container">
-                    @if (!empty($rtmCatatan))
-                        @foreach($rtmCatatan as $index => $catatan)
-                            <div class="catatan-group mb-4 p-3 border rounded">
-                                <input type="hidden" name="catatan[{{$index}}][id]" value="{{ $catatan['id'] ?? $catatan->id ?? '' }}">
-                                
-                                <div class="form-group">
-                                    <label>Judul</label>
-                                    <input type="text" name="catatan[{{$index}}][judul]" 
-                                        value="{{ $catatan['judul'] ?? $catatan->judul ?? old('catatan.'.$index.'.judul', '') }}" 
-                                        class="form-control" required {{ $isDisabled ? 'disabled' : '' }}>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Catatan Narasi</label>
-                                    <textarea name="catatan[{{$index}}][catatan]" 
-                                        class="form-control" rows="5" {{ $isDisabled ? 'disabled' : '' }} required>{{ $catatan['catatan'] ?? $catatan->catatan ?? old('catatan.'.$index.'.catatan', '') }}</textarea>
-                                </div>
-                                
-                                @if(!$isDisabled)
-                                    <button type="button" class="btn btn-danger btn-sm remove-catatan">Hapus</button>
-                                @endif
-                            </div>
-                        @endforeach
-                    @else
-                        <div class="catatan-group mb-4 p-3 border rounded">
-                            <div class="form-group">
-                                <label>Judul</label>
-                                <input type="text" name="catatan[0][judul]" class="form-control" required {{ $isDisabled ? 'disabled' : '' }}>
-                            </div>
-                            <div class="form-group">
-                                <label>Catatan Narasi</label>
-                                <textarea name="catatan[0][catatan]" class="form-control" rows="5" required {{ $isDisabled ? 'disabled' : '' }}></textarea>
-                            </div>
-                        </div>
-                    @endif
-                </div>
-                <div class="mt-3">
-                    <button type="button" id="add-catatan" class="btn btn-secondary">+ Tambah Narasi</button>
-
-                    @if(isset($status) && $status->status === 'completed')
-                        <button type="button" id="edit-button" class="btn btn-warning">Ubah</button>
-                        <button id="edit-button-loading" class="btn btn-warning d-none" type="button" disabled>
-                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            Loading...
-                        </button>
-                    @else
+                    <div class="form-group">
+                        <label>Judul</label>
+                            <input type="text" class="form-control" name="judul" 
+                            placeholder="Tambahkan judul narasi" required 
+                            value="{{ $sessionCatatan['judul'] ?? old('judul') }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Isi</label>
+                            <textarea class="form-control summernote" name="isi" 
+                            placeholder="Tambahkan isian narasi" required>
+                            {{ $sessionCatatan['isi'] ?? old('isi') }}</textarea>
+                    </div>
+                    <div class="mt-3">
                         <button type="submit" id="submit-button" class="btn btn-primary">Submit</button>
-                        <button id="submit-button-loading" class="btn btn-primary d-none" type="button" disabled>
-                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            Loading...
-                        </button>
-                    @endif
-                </div>
-                <div class="d-flex justify-content-start mt-4">
-                    <a href="{{ route('dekan.rtm-rtl.show', ['rtmRtl' => $rtmRtl->id]) }}" class="btn btn-outline-dark mb-3">
-                        <i class="fas fa-arrow-left"></i> Kembali
-                    </a>
+                    </div>
                 </div>
             </div>
         </div>
     </form>
-</div>
+
+    <div class="card">
+        <div class="card-body">
+            <div>
+                <table id="catatan" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th class="text-center">No</th>
+                            <th class="text-center">Judul</th>
+                            <th class="text-center">Isi</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($rtmCatatan as $index => $item)
+                            <tr data-id="{{ $item->id }}">
+                                <td class="text-center">{{$index+1}}</td>
+                                <td class="text-center">{{ $item->judul }}</td>
+                                <td>{!! $item->isi !!}</td>
+                                <td class="text-center">
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-warning edit-btn" 
+                                        data-toggle="collapse" 
+                                        data-target="#editForm-{{ $item->id }}">
+                                        <i class="fas fa-pencil-alt me-1"></i></button>
+
+                                        <form action="{{ route('dekan.rtm-catatan.destroy', ['rtmCatatan' => $item->id]) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger btn-sm" data-confirm-delete="true"><i class="fas fa-trash-alt" ></i></button>
+                                        </form>
+
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>    
+                @foreach ($rtmCatatan as $item)
+                    <div class="collapse mt-3 mb-4 border p-3 rounded" id="editForm-{{ $item->id }}">
+                        <form action="{{ route('dekan.rtm-catatan.update', $item->id) }}" method="POST">
+                            @csrf
+                            @method('PUT')
+                            <div class="row">
+                                <div class="col-md-4 form-group">
+                                    <label>Judul</label>
+                                    <input type="text" name="judul" class="form-control" value="{{ $item->judul }}" required>
+                                </div>
+                                <div class="col-md-12 form-group mt-2">
+                                    <label>Isi</label>
+                                    <textarea name="isi" class="form-control summernote-edit" required>{{ $item->isi }}</textarea>
+                                </div>
+                                <div class="col-md-12 mt-2 text-end">
+                                    <button type="submit" class="btn btn-success btn-sm me-2">
+                                        Simpan Perubahan
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm cancel-edit" 
+                                        data-target="#editForm-{{ $item->id }}">
+                                        Batal
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div> 
+                @endforeach
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('style')
+    <!-- DataTables -->
+    <link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+
+    <!-- Summernote -->
+    <link rel="stylesheet" href="{{ asset('plugins/summernote/summernote-bs4.min.css') }}">
+    <!-- Bootstrap 4 -->
+    <link rel="stylesheet" href="{{ asset('plugins/bootstrap/css/bootstrap.min.css') }}">
+
+    <style>
+        /* Nonaktifkan resize untuk semua textarea */
+        textarea.form-control {
+            resize: none;
+            min-height: 150px;
+        }
+        
+        /* Nonaktifkan resize untuk Summernote */
+        .note-editor .note-editable {
+            resize: none !important;
+            overflow: auto !important;
+        }
+    </style>
 @endsection
 
 @section('script')
-<script>
+    <script src="{{ asset('plugins/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('plugins/summernote/summernote-bs4.min.js') }}"></script>
+    <script src="{{ asset('plugins/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
 
-    $(document).ready(function() {
-
-        @if(session('success'))
+    @if (session('error_message'))
+        <script>
             Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: '{{ session('success') }}',
-                timer: 3000,
-                showConfirmButton: false
+                icon: 'error',
+                title: 'Oops...',
+                text: "{{ session('error_message') }}"
             });
-        @endif
+        </script>
+    @endif
 
-        // Form submission with SweetAlert confirmation
-        $('#catatan-form').on('submit', function(e) {
-            e.preventDefault();
-            
-            Swal.fire({
-                title: 'Simpan Catatan?',
-                text: "Apakah Anda yakin ingin menyimpan catatan ini?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: 'primary',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Simpan!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $('#submit-button').addClass('d-none');
-                    $('#submit-button-loading').removeClass('d-none');
-                    
-                    this.submit();
-                }
+    <script>
+        $(document).ready(function() {
+            // Inisialisasi DataTables
+            $('#catatan').DataTable({
+                responsive: true,
+                autoWidth: false,
+                "columnDefs": [{
+                        "width": "5%",
+                        "targets": [0]
+                    },
+                    {
+                        "width": "20%",
+                        "targets": [1]
+                    },
+                    {
+                        "width": "65%",
+                        "targets": [2]
+                    },
+                    {
+                        "width": "10%",
+                        "targets": [3]
+                    }
+                ]
             });
-        });
 
-        // Edit button functionality
-        $('#edit-button').on('click', function() {
-            Swal.fire({
-                title: 'Ubah Catatan?',
-                text: "Apakah Anda yakin ingin mengubah catatan yang sudah disimpan?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: 'primary',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Ubah!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $('#edit-button').addClass('d-none');
-                    $('#edit-button-loading').removeClass('d-none');
-                    
-                    $.ajax({
-                        url: "{{ route('dekan.rtm-catatan.isi', ['rtmJadwal' => $rtmJadwal]) }}",
-                        type: 'POST',
-                        data: {
-                            _token: "{{ csrf_token() }}"
-                        },
-                        success: function(response) {
-                            window.location.reload();
-                        },
-                        error: function(xhr) {
-                            $('#edit-button').removeClass('d-none');
-                            $('#edit-button-loading').addClass('d-none');
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error!',
-                                text: 'Terjadi kesalahan saat memproses permintaan'
-                            });
+            // Summernote untuk form create
+            $('.summernote').summernote({
+                height: 150,
+                disableResizeEditor: true,
+                placeholder: 'Tambahkan isian narasi',
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['strikethrough', 'superscript', 'subscript']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['height', ['height']]
+                ],
+                callbacks: {
+                    onInit: function() {
+                        var sessionIsi = @json($sessionCatatan['isi'] ?? '');
+                        if (sessionIsi) {
+                            $(this).summernote('code', sessionIsi)
                         }
-                    });
+                    }
                 }
             });
-        });
 
-        // Tambah narasi baru
-        $('#add-catatan').on('click', function() {
-            const container = $('#catatan-container');
-            const index = container.find('.catatan-group').length;
-            
-            const newGroup = $(`
-                <div class="catatan-group mb-4 p-3 border rounded">
-                    <div class="form-group">
-                        <label>Judul</label>
-                        <input type="text" name="catatan[${index}][judul]" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Catatan Narasi</label>
-                        <textarea name="catatan[${index}][catatan]" class="form-control" rows="5" required></textarea>
-                    </div>
-                    <button type="button" class="btn btn-danger btn-sm remove-catatan">Hapus</button>
-                </div>
-            `);
-            
-            container.append(newGroup);
-            save_session();
-        });
+            // Toggle form edit
+            $(document).on('click', '.edit-btn', function() {
+                var target = $(this).data('target');
+                $(target).collapse('toggle');
+                
+                // Tutup semua form edit 
+                $('.collapse').not(target).collapse('hide');
+            });
 
-        // Hapus narasi
-        $(document).on('click', '.remove-catatan', function() {
-            if($('.catatan-group').length > 1) {
-                $(this).closest('.catatan-group').remove();
-            } else {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Peringatan',
-                    text: 'Minimal harus ada satu catatan!'
+            // Tombol batal
+            $(document).on('click', '.cancel-edit', function() {
+                var target = $(this).data('target');
+                $(target).collapse('hide');
+            });
+
+            // Summernote untuk form edit
+            $(document).on('shown.bs.collapse', function(e) {
+                $(e.target).find('.summernote-edit').summernote({
+                    height: 150,
+                    disableResizeEditor: true,
+                    toolbar: [
+                        ['style', ['bold', 'italic', 'underline', 'clear']],
+                        ['font', ['strikethrough', 'superscript', 'subscript']],
+                        ['para', ['ul', 'ol', 'paragraph']],
+                        ['height', ['height']]
+                    ]
+                });
+            });
+
+            $(document).on('hidden.bs.collapse', function(e) {
+                var note = $(e.target).find('.summernote-edit');
+                if (note.summernote('isEmpty')) {
+                    note.summernote('destroy');
+                }
+            });
+
+            function save_session() {
+                const formData = $('#catatan-form').serialize();
+
+                $.ajax({
+                    url: '{{ route('rtm-catatan-fakultas.session', ['rtmJadwal' => $rtmJadwal->id]) }}',
+                    type: 'POST',
+                    data: formData,
+                    success: function() {
+                        console.log('Session tersimpan');
+                    },
+                    error: function(xhr) {
+                        console.error('Gagal menyimpan session');
+                    }
                 });
             }
-            save_session();
+
+            function debounce(func, delay) {
+                let debounceTimer;
+                return function() {
+                    const context = this;
+                    const args = arguments;
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => func.apply(context, args), delay);
+                };
+            }
+
+            $('input, textarea').on('input', debounce(save_session, 500));
+            $('.summernote').on('summernote.change', debounce(save_session, 500));
         });
-
-        function save_session() {
-            const formData = new FormData(document.getElementById('catatan-form'));
-
-            $.ajax({
-                url: "{{ route('dekan.rtm-catatan.session', ['rtmJadwal' => $rtmJadwal]) }}",
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function() {
-                    console.log('Berhasil disimpan ke sesssion');
-                }
-            });
-        }
-
-        $(document).ready(function() {
-            setInterval(save_session, 5000);
-            
-            $('input, textarea').on('input', debounce(function() {
-                save_session();
-            }, 1000));
-        });
-
-        // Fungsi debounce sama persis dengan kode pertama
-        function debounce(func, delay) {
-            let debounceTimer;
-            return function() {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => func.apply(this, arguments), delay);
-            };
-        }
-    });
-</script>
+    </script>
 @endsection
+

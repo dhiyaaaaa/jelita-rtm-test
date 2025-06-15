@@ -12,10 +12,10 @@ class StatusRtmRtlUniv extends Model
 
     protected $table = 'status_rtm_rtl_univ';
 
-    protected $fillable = ['status', 'rtm_rtl_id'];
+    protected $fillable = ['status', 'rtm_rtl_univ_id'];
 
-    public function rtm_rtl(): BelongsTo
+    public function rtm_rtl_univ(): BelongsTo
     {
-        return $this->belongsTo(RtmRtl::class, 'rtm_rtl_id');
+        return $this->belongsTo(RtmRtlUniv::class, 'rtm_rtl_univ_id');
     }
 }

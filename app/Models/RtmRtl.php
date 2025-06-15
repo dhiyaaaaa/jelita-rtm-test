@@ -54,8 +54,8 @@ class RtmRtl extends Model
         return $this->hasMany(StatusRtmRtlProdi::class, 'rtm_rtl_id');
     }
     
-    public function auditee(): BelongsToMany
+    public function user(): BelongsToMany
     {
-        return $this->belongsToMany(Auditee::class, 'rtm_rtl_approve', 'rtm_rtl_id', 'auditee_id')->withPivot('approve')->withTimestamps();
+        return $this->belongsToMany(User::class, 'rtm_rtl_approved', 'rtm_rtl_id', 'user_id')->withPivot('approve')->withTimestamps();
     }
 }

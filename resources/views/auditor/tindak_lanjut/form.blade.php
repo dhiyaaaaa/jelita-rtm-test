@@ -2,10 +2,10 @@
 
 @section('content')
     <form
-        action="{{ route('auditor.tindak-lanjut.store_form', ['monitoring' => $monitoring->id, 'auditor' => $auditor->id]) }}"
+        action="{{ route('auditor.tindak-lanjut.store_form', ['monitoring' => $monitoring->id, 'auditor' => $auditor->id, 'kriteria' => $kriteria->id]) }}"
         method="post" id="create-form" enctype="multipart/form-data" class="block">
         @csrf
-        <input type="hidden" name="kriteria" value="{{ $kriteriaId }}">
+        <input type="hidden" name="kriteria" value="{{ $kriteria->id }}">
         
         <div class="row">
             <div class="col-md-9 ">
@@ -19,8 +19,8 @@
                         @endphp
 
                         <input type="hidden" name="totalPage" value="{{ $temuanNegatif->lastPage() }}">
-                        <input type="hidden" name="page_{{ $temuanNegatif->currentPage() }}"
-                            value="{{ $temuanNegatif->currentPage() }}"value="{{ $temuanNegatif->currentPage() }}">
+                        <input type="hidden" name="currentPage_{{ $temuanNegatif->currentPage() }}"
+                            value="{{ $temuanNegatif->currentPage() }}">
 
                         @foreach ($temuanNegatif as $item)
                             @php
@@ -39,9 +39,9 @@
                                         : $sessionFormData['catatan_' . $item->form->id] ?? [];
 
                                 //Disabled
-                                $isDisabled = true;
-                                if (isset($status) && $status->status !== 'completed') {
-                                    $isDisabled = false;
+                                $isDisabled = false;
+                                    if (isset($status) && $status->status === 'completed') {
+                                        $isDisabled = true;
                                 }
                             @endphp
 
@@ -72,7 +72,20 @@
                                                     </div>
                                                 @endforeach
                                             @else
-                                                <p class="text-muted">Tidak ada Rencana</p>
+                                                <p class="text-muted">Tidak ada rencana</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="font-weight-bold">Rekomendasi RTM Universitas</label>
+                                        <div class="mt-2">
+                                            @if ($item->form->rtm_rtl_form->isNotEmpty())
+                                                <p class="text-muted">
+                                                    Rekomendasi: {{ $$item->form->rtm_rtl_form->rekomendasi }}<br>
+                                                    Permintaan Tindakan Koreksi: {{ $item->form->rtm_rtl_form->koreksi }}<br>
+                                                </p>
+                                            @else
+                                                <p class="text-muted">Tidak ada rekomendasi dan PTK dari RTM Fakultas</p>
                                             @endif
                                         </div>
                                     </div>
@@ -141,9 +154,9 @@
                                     <div class="form-group">
                                         <label for="">Keterangan/Catatan Auditor</label>
                                         <span class="text-danger">&#42;</span>
-                                        <div class="mb-3" {{ $isDisabled ? 'disabled' : '' }}>
-                                            <button type="button" class="btn btn-secondary btn-sm"
-                                                onclick="addCatatanInput('{{ $item->form->id }}')">+Tambah
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-secondary btn-sm" {{ $isDisabled ? 'disabled' : '' }}
+                                                onclick="addCatatanInput('{{ $item->form->id }}')" >+Tambah
                                                 Keterangan/Catatan</button>
                                             <button type="button" id="remove-catatan-btn-{{ $item->form->id }}"
                                                 class="btn btn-danger btn-sm d-none"
@@ -157,7 +170,7 @@
                                                     <div class="input-group mb-2">
                                                         <textarea name="catatan_{{ $item->form->id }}[]"
                                                             class="form-control @if ($errors->has('catatan_' . $item->form->id . '.*')) is-invalid @endif"
-                                                            data-catatan-id="{{ $catatan->id ?? '' }}" cols="30" rows="3">{{ $catatan->catatan ?? $catatan }}</textarea>
+                                                            data-catatan-id="{{ $catatan->id ?? '' }}" cols="30" rows="3" {{ $isDisabled ? 'disabled' : '' }}>{{ $catatan->catatan ?? $catatan }}</textarea>
                                                         @if (!empty($catatan->id))
                                                             <input type="hidden"
                                                                 name="catatan-id-{{ $item->form->id }}[]"
@@ -184,7 +197,7 @@
                                    
                                         <div class="mt-3 mb-3">
                                             <button id="simpan_{{ $item->form->id }}" class="btn btn-warning"
-                                                type="button">Simpan</button>
+                                                type="button" {{ $isDisabled ? 'disabled' : '' }}>Simpan</button>
 
                                             <button id="simpan-button-loading_{{ $item->form->id }}"
                                                 class="btn btn-warning d-none" type="button">
@@ -203,25 +216,36 @@
             <!-- Kolom Pagination -->
             <div class="col-md-3">
                 <div class="pagination-container">
-                    <div class="card sticky-top">
-                        <div class="card-header bg-secondary text-white">Navigasi Halaman</div>
+                   <div class="card card-primary shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            Halaman
+                        </div>
                         <div class="card-body">
                             <div class="pagination-wrapper">
                                 {{ $temuanNegatif->links('pagination::bootstrap-4') }}
                             </div>
-
+                            <input type="hidden" name="totalPage" value="{{ $temuanNegatif->lastPage() }}">
+                            <input type="hidden" name="page_{{ $temuanNegatif->currentPage() }}"
+                                value="{{ $temuanNegatif->currentPage() }}">
                             @if (($temuanNegatif->currentPage() == $temuanNegatif->lastPage()) == 1)
-                                
+                                @if (isset($status) && $status->status !== 'completed')
                                     <div class="mb-3">
-                                        <input type="hidden" name="final" value="final">
-                                        <button type="submit" id="button-submit" class="btn btn-primary">Submit</button>
-                                        <button id="button-submit-loading" class="btn btn-primary d-none" type="button">
+                                        <button type="submit" id="button-submit" class="btn btn-primary" {{ $isDisabled ? 'disabled' : '' }}>Submit</button>
+                                        <button id="button-submit-loading" class="btn btn-primary d-none" type="button"
+                                            disabled>
                                             <span class="spinner-border spinner-border-sm" role="status"
                                                 aria-hidden="true"></span>
                                             Loading...
                                         </button>
                                     </div>
-                               
+                                @else
+                                    @if ($temuanNegatif->lastPage() > 1)
+                                        <div>
+                                            <a id="previous" href="{{ $temuanNegatif->previousPageUrl() }}"
+                                                class="btn btn-primary mb-3">Previous</a>
+                                        </div>
+                                    @endif
+                                @endif
                             @else
                                 <div class="mb-3">
                                     @if ($temuanNegatif->currentPage() > 1)
@@ -342,7 +366,7 @@
                 $('#button-edit-loading').removeClass('d-none');
 
                 $.ajax({
-                    url: "{{ route('auditor.tindak-lanjut.isi', ['monitoring' => $monitoring->id, 'kriteria' => $kriteriaId]) }}",
+                    url: "{{ route('auditor.tindak-lanjut.isi', ['monitoring' => $monitoring->id, 'kriteria' => $kriteria->id]) }}",
                     type: 'POST',
                     success: function(response) {
                         $('#edit-button').removeClass('d-none');
@@ -428,7 +452,7 @@
             })
 
             $.ajax({
-                url: '{{ route('auditor.tindak-lanjut.save_form', ['monitoring' => $monitoring->id, 'auditor' => $auditor->id]) }}',
+                url: '{{ route('auditor.tindak-lanjut.save_form', ['monitoring' => $monitoring->id, 'auditor' => $auditor->id, 'kriteria' => $kriteria->id]) }}',
                 type: 'POST',
                 data: formData,
                 processData: false,

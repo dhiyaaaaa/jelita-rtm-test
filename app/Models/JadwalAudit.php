@@ -47,6 +47,12 @@ class JadwalAudit extends Model
         return $this->hasMany(AuditeeAuditor::class, 'jadwal_audit_id', 'id');
     }
 
+     // Relasi Table Auditee Auditor
+    public function auditee_auditor_ptk(): HasMany
+    {
+        return $this->hasMany(AuditeeAuditorPtk::class, 'jadwal_audit_id', 'id');
+    }
+
     // Relasi Table Form
     public function form(): HasMany
     {
@@ -103,6 +109,17 @@ class JadwalAudit extends Model
     {
         return $this->hasMany(RtmJadwal::class, 'jadwal_audit_id', 'id');
     }
+
+    public function rtm_rtl(): HasMany
+    {
+        return $this->hasMany(RtmRtl::class, 'jadwal_audit_id', 'id');
+    }
+
+    public function rtm_rtl_univ(): HasMany
+    {
+        return $this->hasMany(RtmRtlUniv::class, 'jadwal_audit_id', 'id');
+    }
+
 
     public function rtl(): HasMany
     {

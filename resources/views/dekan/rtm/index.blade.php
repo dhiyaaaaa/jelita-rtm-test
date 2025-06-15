@@ -12,6 +12,12 @@
         <!-- /.card-header -->
         <div class="card-body">
             <a href="{{ route('dekan.jadwal-rtm.create')}}" class="btn btn-outline-primary mr-2 mb-3">Buat Agenda RTM</a>
+            <div class="">
+                <a href="{{ asset('user_manual/RTM_Fakultas.pdf') }}" target="_blank" class="btn btn-outline-info mr-2 mb-3">
+                    <i class="fa fa-book mr-2"></i> User Manual
+                </a>
+            </div>
+
             <table id="rtm" class="table table-bordered table-striped">
                 <thead>
                     <tr>
@@ -99,7 +105,7 @@
         </div>
     </div>
 
-    <!-- Modal Lampiran -->
+    {{-- Modal Lampiran --}}
     <div class="modal fade" id="lampiranModal" tabindex="-1" aria-labelledby="lampiranModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -338,7 +344,6 @@
             let unitId = $(this).data('unit_id');
             let auditId = $(this).data('jadwal_audit_id');
 
-            // Debugging untuk memastikan data tidak kosong
             console.log("Jadwal ID:", jadwalId);
             console.log("Fakultas ID:", fakultasId);
             console.log("Unit ID:", unitId);

@@ -1,7 +1,7 @@
 @extends('components.layout.main_layout')
 
 @section('content')
-    <form action="{{ route('admin.rtm-rtl.store_form', ['rtmRtl' => $rtmRtlId]) }}"
+    <form action="{{ route('admin.rtm-rtl.store_form', ['rtmRtlUniv' => $rtmRtlUnivId]) }}"
         method="post" id="create-form" enctype="multipart/form-data" class="block">
         @csrf
         <div class="row">
@@ -21,7 +21,11 @@
 
                         @foreach ($paginatedTemuan as $item)
                        
+
+                                <input type="hidden" name="formIds[]" value="{{ $item->form->id }}">
                                 <div class="row mb-4">
+                                    <input type="hidden" name="formId" value="{{ $item->form->id }}">
+                                    
                                     @php
                                         $jawaban = $jawabanRtm->where('form_id', $item->form->id)->first();
 
@@ -117,25 +121,28 @@
                                                             $filteredTindakan = $item->form->rtm_tindak_lanjut;
                                                         @endphp
                                                         
-                                                        @foreach ($filteredTindakan as $index => $tindakan)
-                                                            <div class="mb-2">
-                                                                <p class="text-muted">
-                                                                    {{ $index + 1 }}. Tindakan: {{ $tindakan->tindakan }}<br>
-                                                                    PIC: {{ $tindakan->jabatan->nama }}
-                                                                        @foreach ($tindakan->user->prodi as $prodi)
-                                                                            {{ $prodi->nama }}
-                                                                        @endforeach
+                                                        @if ($filteredTindakan && $filteredTindakan->isNotEmpty())
+                                                            @foreach ($filteredTindakan as $index => $tindakan)
+                                                                <div class="mb-2">
+                                                                    <p class="text-muted">
+                                                                        {{ $index + 1 }}. Tindakan: {{ $tindakan->tindakan }}<br>
+                                                                        PIC: {{ $tindakan->jabatan->nama }}-
+                                                                            @foreach ($tindakan->user->prodi as $prodi)
+                                                                                {{ $prodi->nama }}
+                                                                            @endforeach
 
-                                                                        @foreach ($tindakan->user->fakultas as $fakultas)
-                                                                            {{ $fakultas->nama }}
-                                                                        @endforeach <br>
-                                                                    Target Waktu: {{ $tindakan->waktu }}
-                                                                </p>
-                                                            </div>
-                                                        @endforeach
+                                                                            @foreach ($tindakan->user->fakultas as $fakultas)
+                                                                                {{ $fakultas->nama }}
+                                                                            @endforeach <br>
+                                                                        Target Waktu: {{ $tindakan->waktu }}
+                                                                    </p>
+                                                                </div>
+                                                            @endforeach
+                                                        @else 
+                                                            <p class="text-muted">Belum ada rencana tindak lanjut.</p>
+                                                        @endif
                                                     </div>
                                                 </div>
-                                                
 
                                                 <!-- Form Jawaban -->
                                                 <div class="form-group">
@@ -168,19 +175,17 @@
                                                 </div>
 
                                                 <!-- Tombol Simpan -->
-                                                @if (isset($status) && $status->status !== 'completed')
-                                                    <div class="mb-3">
-                                                        <button id="simpan_{{ $item->form->id }}" class="btn btn-warning" 
-                                                            type="button" {{ $isDisabled ? 'disabled' : '' }}>
-                                                            Simpan
-                                                        </button>
-                                                        <button id="simpan-button-loading_{{ $item->form->id }}" 
-                                                            class="btn btn-warning d-none" type="button" disabled>
-                                                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                            Loading...
-                                                        </button>
-                                                    </div>
-                                                @endif
+                                                <div class="mb-3">
+                                                    <button id="simpan_{{ $item->form->id }}" class="btn btn-warning" 
+                                                        type="button" {{ $isDisabled ? 'disabled' : '' }}>
+                                                        Simpan
+                                                    </button>
+                                                    <button id="simpan-button-loading_{{ $item->form->id }}" 
+                                                        class="btn btn-warning d-none" type="button" disabled>
+                                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                        Loading...
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -207,7 +212,7 @@
                                 value="{{ $paginatedTemuan->currentPage() }}">
 
                             @if ($paginatedTemuan->currentPage() == $paginatedTemuan->lastPage())
-                                @if (isset($status) && $status->status !== 'completed')
+                                @if (!isset($status) || $status->status !== 'completed')
                                     <div class="mb-3">
                                         <input type="hidden" name="final" value="final">
                                         <button type="submit" id="button-submit" class="btn btn-primary" 
@@ -251,7 +256,7 @@
 
                             <!-- Tombol Kembali -->
                             <div class="d-flex justify-content-start">
-                                <a href="/" class="btn btn-outline-secondary mr-2">Kembali</a>
+                                <a href="{{ route('admin.rtm-rtl.show', $rtmJadwal->id) }}" class="btn btn-outline-secondary mr-2">Kembali</a>
                             </div>
                         </div>
                     </div>
@@ -341,7 +346,6 @@
                 height: 150,
                 callbacks: {
                     onChange: debounce (function(contents) {
-                        var formId = $(this).attr('name').split('_')[1];
                         save_session();
                     }, 1000),
                     onInit: function() {
@@ -377,8 +381,7 @@
                     if (result.isConfirmed) {
                         $('#button-submit').addClass('d-none');
                         $('#button-submit-loading').removeClass('d-none');
-                        form.off('submit')
-                            .submit();
+                        this.submit();
                     }
                 });
             });
@@ -389,7 +392,7 @@
                 $('#button-edit-loading').removeClass('d-none');
 
                 $.ajax({
-                    url: "{{ route('admin.rtm-rtl.isi', ['rtmRtl' => $rtmRtlId]) }}",
+                    url: "{{ route('admin.rtm-rtl.isi', ['rtmRtlUniv' => $rtmRtlUnivId]) }}",
                     type: 'POST',
                     success: function(response) {
                         $('#edit-button').removeClass('d-none');
@@ -460,7 +463,7 @@
             formData.append(`koreksi_${formId}`, koreksi);
 
             $.ajax({
-                url: '{{ route('admin.rtm-rtl.save_form', ['rtmRtl' => $rtmRtlId]) }}',
+                url: '{{ route('admin.rtm-rtl.save_form', ['rtmRtlUniv' => $rtmRtlUnivId]) }}',
                 type: 'POST',
                 data: formData,
                 processData: false,
@@ -497,14 +500,14 @@
 
         // Save ke Session
         function save_session() {
-             $('.summernote').each(function() {
-                $(this).val($(this).summernote('code'));
+            $('.summernote').each(function() {
+                var $textarea = $(this);
+                $textarea.val($textarea.summernote('code'));
             });
-            
             const formData = new FormData(document.getElementById('create-form'));
-            console.log('Data yang dikirim:', Array.from(formData.entries()));
+
             $.ajax({
-                url: '{{ route('admin.rtm-rtl.session', ['rtmRtl' => $rtmRtlId]) }}',
+                url: '{{ route('admin.rtm-rtl.session', ['rtmRtlUniv' => $rtmRtlUnivId]) }}',
                 type: 'POST',
                 data: formData,
                 processData: false,

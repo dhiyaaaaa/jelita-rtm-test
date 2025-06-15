@@ -15,48 +15,72 @@ use App\Models\Prodi;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
-
-
+use Illuminate\Support\Facades\Auth;
 
 class RtmFakultasController extends Controller
 {
+    protected $user;
+
+    public function __construct()
+    {
+        $this->user = Auth::user();
+    }
+
     public function index(): View
     {
-        $jadwal = JadwalAudit::orderBy('created_at', 'DESC')->get();
+        $user = Auth::user();
         
+        $jadwalAudit = JadwalAudit::with([
+            'rtm_rtl_univ' => function($query) use ($user) {
+                $query->with(['user' => function($q) use ($user) {
+                    $q->where('users.id', $user->id)->withPivot('approve');
+                }]);
+            },
+            'rtm_jadwal' => function($query) {
+                $query->whereNull('fakultas_id')->whereNull('unit_id');
+            },
+            'rtm_rtl'
+        ])
+        ->orderBy('created_at', 'DESC')
+        ->get();
+
         $data = [
-            'title' => 'Periode Audit RTM',
-            'jadwalAudit' => $jadwal,
+            'title' => 'Tindak Lanjut Hasil Audit',
+            'jadwalAudit' => $jadwalAudit,
+            'user' => $user
         ];
 
-        return view('admin.rtm_fakultas.index', $data);
+        return view('tindak_lanjut.rtm_fakultas.index', $data);
     }
 
     public function show(JadwalAudit $jadwalAudit)
     {
         $jadwalAudit = JadwalAudit::with('rtm_jadwal')->findOrFail($jadwalAudit->id);
 
+        $fakultasList = Fakultas::all();
+        $unitList = Unit::all();
+        
         $rtmJadwalList = RtmJadwal::with(['fakultas', 'unit', 'rtm_rtl'])
             ->where('jadwal_audit_id', $jadwalAudit->id)
-            ->get(); 
+            ->get();
 
         $data = [
             'title' => 'Detail Rapat Tinjauan Manajemen',
             'jadwalAudit' => $jadwalAudit,
+            'fakultasList' => $fakultasList,
+            'unitList' => $unitList,
             'rtmJadwalList' => $rtmJadwalList,
         ];
 
-        return view('admin.rtm_fakultas.show', $data);
+        return view('tindak_lanjut.rtm_fakultas.hasil_rtm.show', $data);
     }
-
-
 
     public function detail($rtmJadwal)
     {
         $rtmJadwal = RtmJadwal::with(['jadwal_audit', 'fakultas', 'unit', 'rtm_rtl'])
             ->findOrFail($rtmJadwal);
 
-        return view('admin.rtm_fakultas.detail', [
+        return view('tindak_lanjut.rtm_fakultas.detail', [
             'title' => 'Detail Hasil RTM Fakultas',
             'rtmJadwal' => $rtmJadwal,
         ]);
@@ -118,7 +142,7 @@ class RtmFakultasController extends Controller
             'isAdminView' => true, 
         ];
 
-        return view('admin.rtm_fakultas.rtmrtl', $data);
+        return view('tindak_lanjut.rtm_fakultas.rtmrtl', $data);
     }
 
     public function rtmrtlprodi(Request $request, RtmRtl $rtmRtl): View|RedirectResponse
@@ -169,7 +193,7 @@ class RtmFakultasController extends Controller
             'jadwalAudit' => $jadwalAudit,
         ];
 
-        return view('admin.rtm_fakultas.rtmrtl_prodi', $data);
+        return view('tindak_lanjut.rtm_fakultas.rtmrtl_prodi', $data);
     }
 
 

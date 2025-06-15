@@ -209,26 +209,7 @@ class SessionController extends Controller
             $currentPage = $request->input('currentPage', 1);
             $sessionKey = 'form_rtm_rtl-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee;
 
-            $formData = [];
-            $formIds = json_decode($request->input('formIds'), true);
-
-            foreach ($formIds as $formId) {
-                $tindakan = json_decode($request->input('tindakan_' . $formId), true);
-                
-                $validTindakan = array_filter($tindakan, function($row) {
-                    return !empty($row['tindakan']) || !empty($row['pic']) || !empty($row['waktu']);
-                    
-                });
-
-                if (!empty($validTindakan)) {
-                    $formData[$formId] = ['tindakan' => $validTindakan];
-                } else {
-                    if (session()->has($sessionKey . '.' . $formId)) {
-                        session()->forget($sessionKey . '.' . $formId);
-                    }
-                }
-            }
-
+            $formData = $request->all();
             session([$sessionKey => $formData]);
 
             return response()->json(['success' => true]);
@@ -238,47 +219,48 @@ class SessionController extends Controller
         }
     }
 
-    public function session_rtm_rtl_prodi(Request $request, string $rtmRtl, string $auditee): JsonResponse
-    {
-        if (!$request->ajax()) {
-            return response()->json(['error' => 'Invalid Request.'], 400);
-        }
+    // public function session_rtm_rtl_prodi(Request $request, string $rtmRtl, string $auditee): JsonResponse
+    // {
+    //     if (!$request->ajax()) {
+    //         return response()->json(['error' => 'Invalid Request.'], 400);
+    //     }
 
-        try {
-            $currentPage = $request->input('currentPage', 1);
-            $sessionKey = 'form_rtm_rtl_prodi-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee;
+    //     try {
+    //         $currentPage = $request->input('currentPage', 1);
+    //         $sessionKey = 'form_rtm_rtl_prodi-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee;
 
-            $formData = [];
-            $formIds = json_decode($request->input('formIds', '[]'), true);
+    //         $formData = [];
+    //         $formIds = json_decode($request->input('formIds', '[]'), true);
             
-            foreach ($formIds as $formId) {
-                $kriteriaIds = json_decode($request->input("kriteriaIds_{$formId}", '[]'), true);
+    //         foreach ($formIds as $formId) {
+    //             $kriteriaIds = json_decode($request->input("kriteriaIds_{$formId}", '[]'), true);
                 
-                foreach ($kriteriaIds as $kriteriaId) {
-                    $tindakanKey = "tindakan_{$formId}_{$kriteriaId}";
-                    $tindakanData = json_decode($request->input($tindakanKey, '[]'), true);
+    //             foreach ($kriteriaIds as $kriteriaId) {
+    //                 $tindakanKey = "tindakan_{$formId}_{$kriteriaId}";
+    //                 $tindakanData = json_decode($request->input($tindakanKey, '[]'), true);
                     
-                    if (is_array($tindakanData)) {
-                        if (!isset($formData[$formId])) {
-                            $formData[$formId] = [];
-                        }
-                        $formData[$formId][$kriteriaId] = [
-                            'tindakan' => array_filter($tindakanData, function($item) {
-                                return !empty($item['tindakan']) || !empty($item['pic']) || !empty($item['waktu']);
-                            })
-                        ];
-                    }
-                }
-            }
+    //                 if (is_array($tindakanData)) {
+    //                     if (!isset($formData[$formId])) {
+    //                         $formData[$formId] = [];
+    //                     }
+    //                     $formData[$formId][$kriteriaId] = [
+    //                         'tindakan' => array_filter($tindakanData, function($item) {
+    //                             return !empty($item['tindakan']) || !empty($item['pic']) || !empty($item['waktu']);
+    //                         })
+    //                     ];
+    //                 }
+    //             }
+    //         }
 
-            session([$sessionKey => $formData]);
+    //         session([$sessionKey => $formData]);
 
-            return response()->json(['success' => true, 'message' => 'Data berhasil disimpan sementara']);
-        } catch (\Exception $e) {
-            Log::error('Error saving RTL Prodi session:', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
-        }
-    }
+    //         return response()->json(['success' => true, 'message' => 'Data berhasil disimpan sementara']);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error saving RTL Prodi session:', ['error' => $e->getMessage()]);
+    //         return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
+    //     }
+    // }
+    
 
     public function session_rtm_catatan(Request $request, RtmJadwal $rtmJadwal)
     {
@@ -288,11 +270,9 @@ class SessionController extends Controller
 
         try {
 
-            $catatanData = $request->input('catatan', []);
-            $sessionKey = 'rtm_catatan_' . $rtmJadwal->id;
-            
-            // Simpan ke session
-            session([$sessionKey => $catatanData]);
+            $sessionKey = 'session_catatan_' . $rtmJadwal->id;
+
+             session([$sessionKey => $request->only(['judul', 'isi'])]);
             
             return response()->json(['success' => true, 'message' => 'Data berhasil disimpan sementara']);
 
@@ -302,7 +282,7 @@ class SessionController extends Controller
         }
     }
     
-    public function session_rtm_rtl_univ(Request $request, string $rtmRtl): JsonResponse
+    public function session_rtm_rtl_univ(Request $request, string $rtmRtlUniv): JsonResponse
     {
         if ($request->ajax()) {
             try {
@@ -313,13 +293,12 @@ class SessionController extends Controller
                     if (empty($page)) {
                         continue;
                     }
-                    $sessionKey = 'form_rtmRtl_univ-page_' . $page . '-rtmRtlId_' . $rtmRtl;
+                    $sessionKey = 'form_rtmRtl_univ-page_' . $page . '-rtmRtlUnivId_' . $rtmRtlUniv;
     
                     $formData = $request->all();
                     $formData[('page_' . $i)] = $page;
 
                     session([$sessionKey => $formData]);
-                    Log::debug('Session data received:', $request->all());
                 }
             
                 return response()->json(['success' => true]);
@@ -342,28 +321,7 @@ class SessionController extends Controller
             $currentPage = $request->input('currentPage', 1);
             $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl . '-auditeeId_' . $auditee;
 
-            $formData = [];
-            $formIds = json_decode($request->input('formIds'), true);
-
-            foreach ($formIds as $formId) {
-                $tindakan = json_decode($request->input('tindakan_' . $formId), true);
-                
-                $formData[$formId] = [
-                    'tindakan' => [],
-                ];
-
-                if (is_array($tindakan)) {
-                    foreach ($tindakan as $row) {
-                        if (!empty($row['tindakan']) || !empty($row['bukti'])) {
-                            $formData[$formId]['tindakan'][] = [
-                                'tindakan' => $row['tindakan'] ?? null,
-                                'bukti' => $row['bukti'] ?? null,
-                            ];
-                        }
-                    }
-                }
-            }
-
+            $formData = $request->all();
             session([$sessionKey => $formData]);
 
             return response()->json(['success' => true]);
@@ -372,6 +330,47 @@ class SessionController extends Controller
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
         }
     }
+
+    // public function session_rtl_auditee(Request $request, string $rtl, string $auditee): JsonResponse
+    // {
+    //     if (!$request->ajax()) {
+    //         return response()->json(['error' => 'Invalid Request.'], 400);
+    //     }
+
+    //     try {
+    //         $currentPage = $request->input('currentPage', 1);
+    //         $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl . '-auditeeId_' . $auditee;
+
+    //         $formData = [];
+    //         $formIds = json_decode($request->input('formIds'), true);
+
+    //         foreach ($formIds as $formId) {
+    //             $tindakan = json_decode($request->input('tindakan_' . $formId), true);
+                
+    //             $formData[$formId] = [
+    //                 'tindakan' => [],
+    //             ];
+
+    //             if (is_array($tindakan)) {
+    //                 foreach ($tindakan as $row) {
+    //                     if (!empty($row['tindakan']) || !empty($row['bukti'])) {
+    //                         $formData[$formId]['tindakan'][] = [
+    //                             'tindakan' => $row['tindakan'] ?? null,
+    //                             'bukti' => $row['bukti'] ?? null,
+    //                         ];
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         session([$sessionKey => $formData]);
+
+    //         return response()->json(['success' => true]);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error saving RTL session:', ['error' => $e->getMessage()]);
+    //         return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
+    //     }
+    // }
 
     public function session_monitoring_auditor(Request $request, string $monitoring, string $auditor): JsonResponse
     {

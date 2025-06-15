@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\dekan\rtl;
+namespace App\Http\Controllers\auditeePtk\rtl;
 
 use App\Http\Controllers\Controller;
 use App\Models\JadwalAudit;
@@ -49,6 +49,17 @@ class TindakLanjutController extends Controller
             },
             
             'rtl.auditee' => function ($query) use ($auditees, $auditeeids){
+                $query->whereIn('auditee_id', $auditeeids);
+            },
+            'monitoring' =>function ($query) use ($fakultas, $unit){
+                if ($fakultas){
+                    $query->where('fakultas_id', $fakultas->id);
+                } elseif ($unit) {
+                    $query->where('unit_id', $unit->id);
+                }
+            },
+            
+            'monitoring.auditee' => function ($query) use ($auditees, $auditeeids){
                 $query->whereIn('auditee_id', $auditeeids);
             },
             

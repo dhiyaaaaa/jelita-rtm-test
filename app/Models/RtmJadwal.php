@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class RtmJadwal extends Model
 {
@@ -55,9 +55,19 @@ class RtmJadwal extends Model
         return $this->hasMany(RtmRtl::class, 'rtm_jadwal_id');
     }
 
+    public function rtm_rtl_univ(): HasMany
+    {
+        return $this->hasMany(RtmRtlUniv::class, 'rtm_jadwal_id');
+    }
+
     public function rtm_tindak_lanjut(): HasMany
     {
         return $this->hasMany(RtmTindakLanjut::class, 'rtm_jadwal_id');
+    }
+
+    public function user(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'rtm_univ_approve', 'rtm_jadwal_id', 'user_id')->withPivot('approve')->withTimestamps();
     }
 
     public static function boot()

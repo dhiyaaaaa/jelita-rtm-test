@@ -5,11 +5,17 @@
 
 @section('content')
     <div class="card card-dark">
+        
         <div class="card-header">
             <h3 class="card-title title-size">{{ $title }}</h3>
         </div>
         <!-- /.card-header -->
         <div class="card-body">
+            <div class="">
+                <a href="{{ asset('user_manual/Auditan_PTK.pdf') }}" target="_blank" class="btn btn-outline-info mr-2 mb-3">
+                    <i class="fa fa-book mr-2"></i> User Manual
+                </a>
+            </div>
             <table id="auditee" class="table table-bordered table-striped">
                 <thead>
                     <tr>
@@ -45,18 +51,21 @@
                                     @endphp
                                     <a href="{{ route('dekan.rtl.show', $rtl->id) }}"
                                         class="btn btn-outline-primary">Lihat</a>
-                                    <form action="{{ route('download.rtl', $rtl->id) }}" method="post"
-                                        class="d-inline">
+                                    <form action="{{ route('dekan.rtl.delete', $rtl->id) }}" method="POST" class="d-inline">
                                         @csrf
-                                        <button type="submit" class="btn btn-outline-dark">
-                                            <i class="fa fa-download p-1"></i>
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger" 
+                                                data-confirm-delete="true">
+                                            <i class="fas fa-trash"></i> Hapus
                                         </button>
                                     </form>
                                 @else
-                                    <button class="btn btn-outline-primary btn-fixed-size tindak-lanjut-btn"
-                                        data-jadwal_audit_id="{{ $item->id }}">
-                                        +Tindak Lanjut
-                                    </button>
+                                    <div class="d-flex justify-content-center">
+                                        <button class="btn btn-outline-primary btn-fixed-size tindak-lanjut-btn"
+                                            data-jadwal_audit_id="{{ $item->id }}">
+                                            +Tindak Lanjut
+                                        </button>
+                                    </div>
                                 @endif
                             </td>
 
@@ -72,16 +81,12 @@
                                     @endphp
                                     @if ($monitoring_auditee)
                                         @if ($monitoring_auditee->pivot->approve == 0)
-                                            @if (!$item->expired)
-                                                <form
-                                                    action="/"
-                                                    method="post" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-outline-primary">Approve</button>
-                                                </form>
-                                            @else
-                                                <button disabled="disabled" class="btn btn-secondary">Not Approved</button>
-                                            @endif
+                                            <form
+                                                action="{{ route('dekan.tindak-lanjut.approve', ['monitoring' =>$monitoring->id, 'auditee' => $monitoring->auditee->first()->pivot->auditee_id]) }}"
+                                                method="post" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-primary">Approve</button>
+                                            </form>
                                         @else
                                             <button disabled="disabled" class="btn btn-secondary">Approved</button>
                                         @endif

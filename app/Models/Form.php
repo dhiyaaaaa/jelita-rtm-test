@@ -86,9 +86,9 @@ class Form extends Model
         return $this->hasMany(MonitoringForm::class, 'form_id');
     }
 
-    public function monitoring_status_form(): HasMany
+    public function rtm_rtl_form(): HasMany
     {
-        return $this->hasMany(MonitoringFormStatus::class, 'form_id');
+        return $this->hasMany(RtmRtlForm::class, 'form_id');
     }
 
 }

@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('status_rtm_rtl_univ', function (Blueprint $table) {
+        Schema::create('monitoring_approve', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('rtm_rtl_id')->constrained('rtm_rtl', 'id')->onDelete('cascade');
-            $table->enum('status', ['not_started', 'in_progress', 'completed'])->default('not_started');
+            $table->foreignUuid('monitoring_id')->constrained('monitoring', 'id')->onDelete('cascade');
+            $table->foreignUuId('user_id')->constrained('users', 'id')->onDelete('cascade');
+            $table->boolean('approve')->default(0);
             $table->timestamps();
         });
     }
@@ -24,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('status_rtm_rtl_univ');
+        Schema::dropIfExists('monitoring_approve');
     }
 };

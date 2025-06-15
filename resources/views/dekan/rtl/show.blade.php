@@ -29,6 +29,23 @@
                         {{ Carbon::parse($rtl->jadwal_audit->tgl_selesai)->translatedFormat('j F Y') }}
                     </td>
                 </tr>
+                <tr>
+                    <td class="fw-bold" width="10%">Auditor PTK</td>
+                    <td width="5%">:</td>
+                    <td>
+                        @if ($auditorPtk->isNotEmpty())
+                            @foreach ($auditorPtk->unique('auditor_id') as $item)
+                                <p style="margin: 0; padding: 0;">{{ $loop->iteration }}.
+                                    {{ $item->auditor->user->name }}
+                                    {{ '(' . $item->auditor->user->no_telepon . ')' }}</p>
+                            @endforeach
+                        @else
+                            <div class="text-center">
+                                <a class="btn disabled">Belum ada auditor</a>
+                            </div>
+                        @endif
+                    </td>
+                </tr>
             </table>
         </div>
     </div>
@@ -84,31 +101,37 @@
                 <div class="card-body">
                     <h5 class="card-title title-size text-dark">Download dan Approve Tindak Lanjut PTK</h5>
                     <p class="card-text">Silahkan download dan approve, setelah mengisi tindak lanjut Permintaan Tindakan Koreksi (PTK).</p>
-                    @if ($rtl->auditee->isNotEmpty())
-                    @php $approval = optional($rtl->auditee->first()->pivot)->approve; @endphp
-                    <form action="{{ route('auditee.rtl.approve', ['rtl' => $rtl->id, 'auditee' => $auditee->id]) }}" method="post" class="d-inline">
-                        @csrf
-                        <button type="submit" class="btn btn-outline-{{ $approval ? 'secondary' : 'success' }} btn-sm" {{ $approval ? 'disabled' : '' }}>
-                            <i class="fas {{ $approval ? 'fa-check-circle' : 'fa-thumbs-up' }}"></i> {{ $approval ? 'Approved' : 'Approve' }}
-                        </button>
-                    </form>
-                    @endif
+                    <div class="mb-2">
+                        @if (!$rtl->auditee->first() || $rtl->auditee->first()->pivot->approve == 0)
+                            <form action="{{ route('dekan.rtl.approve', ['rtl' => $rtl->id, 'auditee' => $auditee]) }}" method="post">
+                                @csrf
+                            <button type="submit" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-thumbs-up"></i> Approve Laporan Audit PTK
+                                </button>
+                            </form>
+                        @else
+                            <button disabled class="btn btn-secondary w-100">
+                                <i class="fas fa-check-circle"></i>Laporan Audit PTK Approved</button>
+                        @endif
+                    </div>
                     
-                    <form action="{{ route('download.rtl', $rtl->id) }}" method="post"
-                        class="d-inline">
-                        @csrf
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-download"></i> Download Hasil Tindak Lanjut PTK
-                        </button>
-                    </form>
+                    <div>
+                        <form action="{{ route('download.rtl', $rtl->id) }}" method="post"
+                            class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-download"></i> Download Hasil Tindak Lanjut PTK
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-sm-6 mb-3 mb-sm-0 d-flex">
             <div class="card shadow border-0 w-100 h-100" style="background: linear-gradient(135deg, #6694ea, #614ba2); color: white;">
                 <div class="card-body">
-                    <h5 class="card-title title-size text-dark"><i class="fas fa-info-circle me-2"></i> Informasi Temuan Audit</h5>
-                    <p class="card-text">Temuan ini merupakan hasil dari audit yang sudah dilaksanakan. Pengelompokkan temuan sesuai kriteria ini sesuai dengan jawaban auditor. </p>
+                    <h5 class="card-title title-size text-dark"><i class="fas fa-info-circle me-2"></i> Informasi Temuan Audit</h5><br>
+                    <p class="card-text">Temuan ini merupakan hasil dari audit yang sudah dilaksanakan. Pengelompokkan temuan sesuai kriteria ini berdasarkan jawaban auditor. </p>
                 </div>
             </div>
         </div>
@@ -158,9 +181,12 @@
 @endsection
 
 @section('style')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<!-- DataTables -->
+    <link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
+
 <style>
-    /* Efek hover lebih menarik */
+    
     .transition-modern {
         transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
     }

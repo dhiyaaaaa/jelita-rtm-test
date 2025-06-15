@@ -1,115 +1,97 @@
 <!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan RTM</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        @page {
-            size: A4 portrait;
-            margin: 20mm;
-        }
-        body {
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background: white;
-            padding: 40px;
-            width: 210mm;
-            height: 297mm;
-            text-align: center;
-            border-radius: 10px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        .title {
-            font-size: 2em;
-            font-weight: 600;
-            color: #333;
-        }
-        .sub-title {
-            font-size: 1.2em;
-            color: #555;
-        }
-        .year {
-            background: #808000;
-            color: white;
-            padding: 8px 20px;
-            font-weight: bold;
-            display: inline-block;
-            border-radius: 20px;
-            margin-top: 10px;
-        }
-        .faculty {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #555;
-            margin-top: 15px;
-            margin-bottom: 100px;
-        }
-        .circle-image {
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            border: 10px solid #808000;
-            overflow: hidden;
-            margin: 20px auto;
-            margin-bottom: 250px;
-        }
-        .circle-image img {
-            width: 250%;
-            height: 250%;
-            object-fit: cover;
-        }
-        .footer {
-            position: absolute;
-            bottom: 20px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            font-size: 0.9em;
-            color: #444;
-            padding: 20px 40px 20px 40px;
-            box-sizing: border-box;
-        }
-        .logo {
-            width: 60px;
-            margin-right: 10px;
-        }
-        .footer-text {
-            display: inline-block;
-            margin-left: 10px;
-            text-align: left;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="title">LAPORAN RTM</div>
-        <div class="sub-title">RAPAT TINJAUAN MANAJEMEN</div>
-        <div class="year">TAHUN {{ $tahun }}</div>
-        <div class="faculty">Universitas Jenderak Soedirman</div>
-        <div class="circle-image">
-            <img src="{{ public_path('dist/img/unsoed.png') }}" alt="Cover Image">
-        </div>
+<html lang="en">
 
-        
-        <div class="footer">
-            <div class="footer-text">
-                <strong>PUSAT PENJAMINAN MUTU</strong><br>
-                <strong>DAN PENGEMBANGAN PEMBELAJARAN (LPMPP) </strong><br>
-                <strong>UNIVERSITAS JENDERAL SOEDIRMAN</strong>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>RTM</title>
+
+        <style>
+            /* General */
+            div,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            p {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+            }
+
+            /* Cover */
+            #cover {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                background-image: url({{ public_path('dist/img/cover_with_footer.png') }});
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+            }
+
+            #title {
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 10;
+                width: 470px;
+                margin: 70px 0 0 100px;
+            }
+
+            .laporan {
+                font-size: 50px;
+                font-weight: bold;
+            }
+
+            .audit {
+                font-size: 24px;
+                font-weight: 600;
+                margin: 10px 0;
+            }
+
+            .tahun {
+                margin: 12px 0;
+                background-color: #ba2552;
+                color: white;
+                width: 130px;
+                padding: 10px;
+                font-size: 20px;
+                font-weight: bold;
+            }
+
+            .unit {
+                font-size: 24px;
+                font-weight: bold;
+                margin: 15px 0;
+            }
+
+            #line {
+                margin-top: 15px;
+                width: 100%;
+                height: 2px;
+                background-color: #ba2552;
+            }
+        </style>
+
+    <body>
+        {{-- Cover --}}
+        <div id="cover"></div>
+
+        {{-- Title --}}
+        <div id="title">
+            <div>
+                <p class="laporan">Laporan RTM</p>
             </div>
+            <div>
+                <p class="audit">{{ $audit }}</p>
+            </div>
+            <div style="text-align: center;">
+                <p class="tahun">Tahun {{ $tahun }}</p>
+            </div>
+            <div id="line"></div>
         </div>
-    </div>
-</body>
+    </body>
+
 </html>

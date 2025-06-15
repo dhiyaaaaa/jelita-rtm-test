@@ -18,40 +18,42 @@ class RtmCatatanController extends Controller
         $this->user = Auth::user();
     }
 
-    public function isi_rtm_catatan(RtmJadwal $rtmJadwal){
+    // public function isi_rtm_catatan(RtmJadwal $rtmJadwal){
 
-        StatusRtmCatatan::updateOrCreate(
-            [
-                'rtm_jadwal_id' => $rtmJadwal->id,
-            ],
-            ['status' => 'in_progress']
-        );
+    //     StatusRtmCatatan::updateOrCreate(
+    //         [
+    //             'rtm_jadwal_id' => $rtmJadwal->id,
+    //         ],
+    //         ['status' => 'in_progress']
+    //     );
 
-        return redirect()->route('dekan.rtm-catatan.form', [
-            'rtmJadwal' => $rtmJadwal, 
-        ]);
-    }
+    //     return redirect()->route('dekan.rtm-catatan.form', [
+    //         'rtmJadwal' => $rtmJadwal, 
+    //     ]);
+    // }
 
     public function form(RtmJadwal $rtmJadwal)
     {
-        $status = StatusRtmCatatan::where('rtm_jadwal_id', $rtmJadwal->id)->first();
+        // Sweet Alert
+        $title = 'Hapus Narasi RTM!';
+        $text = "Apakah Anda yakin ingin menghapus narasi ini?";
+        confirmDelete($title, $text);
+
+        $rtmCatatan = RtmCatatan::where('rtm_jadwal_id', $rtmJadwal->id)
+                    ->get();
         $rtmRtl = $rtmJadwal->rtm_rtl()->latest()->first();
 
-        $dbCatatan = RtmCatatan::where('rtm_jadwal_id', $rtmJadwal->id)
-                    ->get();
-        $sessionData = session('rtm_catatan_data');
-        
-        $rtmCatatan = $sessionData && isset($sessionData['catatan']) 
-            ? collect($sessionData['catatan'])
-            : $dbCatatan;
+        $sessionKey = 'session_catatan_' . $rtmJadwal->id;
+        $sessionCatatan = session()->get($sessionKey, []);
 
         $data = [
-            'title' => 'Catatan Laporan RTM',
+            'title' => 'Narasi Laporan RTM',
             'rtmCatatan' => $rtmCatatan,
             'rtmJadwal' => $rtmJadwal,
+            'sessionCatatan' => $sessionCatatan,
             'rtmRtl' => $rtmRtl,
             'user' => $this->user,
-            'status' => $status
+            //'status' => $status
         ];
 
         return view('dekan.rtm.catatan.form', $data);
@@ -61,34 +63,43 @@ class RtmCatatanController extends Controller
     {
         // Validasi
         $request->validate([
-            'catatan' => 'required|array',
-            'catatan.*.judul' => 'required|string',
-            'catatan.*.catatan' => 'required|string',
+            'judul' => 'required|string',
+            'isi' => 'required|string',
+        ], [
+            'judul.required' => 'Judul isian wajib diisi',
+            'isi.required' => 'Isian narasi wajib diisi!',
         ]);
 
-        // Simpan ke DB
-        foreach ($request->catatan as $catatanData) {
-            RtmCatatan::updateOrCreate(
-                [
-                    'id' => $catatanData['id'] ?? null,
-                    'rtm_jadwal_id' => $rtmJadwal->id,
-                    'user_id' => $this->user->id,
-                ],
-                [
-                    'judul' => $catatanData['judul'],
-                    'catatan' => $catatanData['catatan']
-                ]
-            );
-        }
+        RtmCatatan::create([
+            'rtm_jadwal_id' => $rtmJadwal->id,
+            'user_id' => $this->user->id,
+            'judul' => $request->judul,
+            'isi' => $request->isi,
+        ]);
 
-        // Update status
-        StatusRtmCatatan::updateOrCreate(
-            ['rtm_jadwal_id' => $rtmJadwal->id],
-            ['status' => 'completed']
-        );
+        $sessionKey = 'session_catatan_' . $rtmJadwal->id;
+        session()->forget($sessionKey);
+        return redirect()->back()->with('success', 'Data berhasil disimpan.');
+    }
 
-        $rtmRtl = $rtmJadwal->rtm_rtl()->latest()->first();
+    public function update(Request $request, RtmCatatan $rtmCatatan)
+    {
+        $validated = $request->validate([
+            'judul' => 'required|string',
+            'isi' => 'required|string',
+        ]);
 
-        return redirect()->route('dekan.rtm-rtl.show', ['rtmRtl' => $rtmRtl->id])->with('success', 'Data berhasil disimpan.');
+        $rtmCatatan->update($validated);
+
+        return redirect()->back()->with('success', 'Catatan berhasil diperbarui.');
+    }
+
+
+    public function destroy(RtmCatatan $rtmCatatan)
+    {
+        $rtmJadwalId = $rtmCatatan->rtm_jadwal_id;
+        $rtmCatatan->delete();
+
+        return redirect()->back()->with('success', 'Catatan berhasil dihapus.');
     }
 }

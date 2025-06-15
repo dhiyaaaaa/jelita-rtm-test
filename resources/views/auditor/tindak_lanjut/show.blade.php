@@ -45,36 +45,36 @@
                             <td>{{ $item->type === 'fakultas' ? 'Fakultas ' . $item->nama : $item->nama }}</td>
                             <td>
                                 @if ($item->monitoring->isNotEmpty())
-                                    @php
-                                        $monitoring = $item->monitoring->first();
-                                        $statusBelumMemenuhi = $monitoring->status_monitoring->where('kriteria.nama', 'Belum Memenuhi')->first();
-                                        $statusMemenuhi = $monitoring->status_monitoring->where('kriteria.nama', 'Memenuhi')->first();
-                                        $statusMelampaui = $monitoring->status_monitoring->where('kriteria.nama', 'Melampaui')->first();
-                                    @endphp
-                                    <div class="row g-2 justify-content-center">
-                                        @foreach (['Belum Memenuhi' => $statusBelumMemenuhi, 'Memenuhi' => $statusMemenuhi, 'Melampaui' => $statusMelampaui] as $kriteria => $status)
+                                    <div class="row g-3">
+                                        @foreach ($allKriteria as $kriteria)
+                                            @php
+                                                $monitoring = $item->monitoring->first();
+                                                $status = $monitoring->status_monitoring->where('kriteria_id', $kriteria->id)->first();
+                                            @endphp
+
                                             <div class="col-12 col-md-6 col-lg-4">
-                                                <div class="card text-center transition-modern shadow border-0" style="max-width: 280px; margin: auto; border-radius: 16px;">
-                                                    <div class="card-body py-4">
-                                                        <i class="{{ $status && $status->status === 'completed' ? 'fas fa-check-circle text-success' : 'fas fa-edit text-warning' }} fa-3x mb-3"></i>
-                                                        <h6 class="fw-bold text-dark">{{ $kriteria }}</h6>
-                                                        @if (!$status)
-                                                            <form action="{{ route('auditor.tindak-lanjut.isi', ['monitoring' => $monitoring->id, 'kriteria' => $kriteria]) }}"
-                                                                method="post" class="d-inline">
-                                                                @csrf
-                                                                <button type="submit" class="btn btn-danger w-100 py-2 transition-modern">
-                                                                    Mulai Isi
-                                                                </button>
-                                                            </form>
-                                                        @else
-                                                            @if ($status->status === 'completed')
-                                                                <a href="{{ route('auditor.tindak-lanjut.form', ['monitoring' => $monitoring->id, 'kriteria' => $kriteria]) }}"
-                                                                    class="btn btn-primary w-100 py-2 transition-modern"> Sudah Isi </a>
+                                                <div class="card shadow-sm border-0 h-100" style="border-radius: 16px;">
+                                                    <div class="card-body text-center d-flex flex-column justify-content-between py-4">
+                                                        <div>
+                                                            <i class="{{ $status && $status->status === 'completed' ? 'fas fa-check-circle text-success' : 'fas fa-edit text-warning' }} fa-2x mb-2"></i>
+                                                            <h6 class="fw-semibold text-dark">{{ $kriteria->nama }}</h6>
+                                                        </div>
+
+                                                        <div class="mt-3">
+                                                            @if (!$status)
+                                                                <form action="{{ route('auditor.tindak-lanjut.isi', ['monitoring' => $monitoring->id, 'kriteria' => $kriteria->id]) }}" method="POST">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-danger w-100 py-2 rounded-3">
+                                                                        Mulai Isi
+                                                                    </button>
+                                                                </form>
                                                             @else
-                                                                <a href="{{ route('auditor.tindak-lanjut.form', ['monitoring' => $monitoring->id, 'kriteria' => $kriteria]) }}"
-                                                                    class="btn btn-primary w-100 py-2 transition-modern"> Isi </a>
+                                                                <a href="{{ route('auditor.tindak-lanjut.form', ['monitoring' => $monitoring->id, 'kriteria' => $kriteria->id]) }}"
+                                                                    class="btn btn-{{ $status->status === 'completed' ? 'success' : 'primary' }} w-100 py-2 rounded-3">
+                                                                    {{ $status->status === 'completed' ? 'Sudah Isi' : 'Isi' }}
+                                                                </a>
                                                             @endif
-                                                        @endif
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -90,6 +90,7 @@
                                     </a>
                                 @endif
                             </td>
+
                             <td>
                                 @if ($item->monitoring->isNotEmpty())
                                     @php
@@ -97,31 +98,55 @@
                                        
                                     @endphp
 
-                                    <div class="mt-2 d-flex justify-content-center gap-2">
-                                        <a class="btn btn-outline-primary btn-sm" href="{{ route('auditor.tindak-lanjut.edit', ['monitoring' => $monitoring->id]) }}">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </a>
-                                        <a class="btn btn-outline-danger btn-sm" href="{{ route('auditor.tindak-lanjut.delete', ['monitoring' => $monitoring->id]) }}" data-confirm-delete="true">
-                                            <i class="fas fa-trash"></i> Hapus
-                                        </a>
-                                    </div>
+                                    <div class="text-center">
+                                        <div class="d-flex justify-content-center gap-2 mb-2">
+                                            <a class="btn btn-warning btn-sm" href="{{ route('auditor.tindak-lanjut.edit', ['monitoring' => $monitoring->id]) }}">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <a class="btn btn-danger btn-sm" href="{{ route('auditor.tindak-lanjut.delete', ['monitoring' => $monitoring->id]) }}" data-confirm-delete="true">
+                                                <i class="fas fa-trash"></i> Hapus
+                                            </a>
 
-                                    @if ($monitoring->auditor->isNotEmpty())
-                                        @php $approval = optional($monitoring->auditor->first()->pivot)->approve; @endphp
-                                        <form action="{{ route('auditor.tindak-lanjut.approve', ['monitoring' => $monitoring->id, 'auditor' => $auditor->id]) }}" method="post" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-{{ $approval ? 'secondary' : 'success' }} btn-sm" {{ $approval ? 'disabled' : '' }}>
-                                                <i class="fas {{ $approval ? 'fa-check-circle' : 'fa-thumbs-up' }}"></i> {{ $approval ? 'Approved' : 'Approve' }}
+                                            <form action="{{ route('download.monitoring_rtl', $monitoring->id) }}" method="post" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-primary btn-sm">
+                                                    <i class="fa fa-download"></i> Download
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                        <div class = "mb-2">
+                                            <button class="btn btn-outline-primary btn-sm btn-fixed-size auditee-btn"
+                                                data-bs-toggle="modal" data-bs-target="#auditeeModal"
+                                                data-id="{{ $item->id }}"
+                                                data-type="{{ $item->type }}"
+                                                data-jadwal-id="{{ $jadwal->id }}"><i class="fa fa-eye"></i>
+                                                Lihat Auditee Auditor AIMA
                                             </button>
-                                        </form>
-                                    @endif
+                                        </div>
 
-                                    <form action="{{ route('download.monitoring_rtl', $monitoring->id) }}" method="post" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-outline-dark btn-sm">
-                                            <i class="fa fa-download"></i> Download
-                                        </button>
-                                    </form>
+                                    
+                                        @if($monitoring->auditor->isNotEmpty())
+                                            @php 
+                                                $approval = $monitoring->auditor->first()->pivot->approve ?? false;
+                                            @endphp
+                                            <form action="{{ route('auditor.tindak-lanjut.approve', ['monitoring' => $monitoring->id, 'auditor' => $auditor->id]) }}" method="post">
+                                                @csrf
+                                                <button type="submit" class="btn btn-{{ $approval ? 'secondary' : 'success' }} btn-sm btn-fixed-size" {{ $approval ? 'disabled' : '' }}>
+                                                    <i class="fas {{ $approval ? 'fa-check-circle' : 'fa-thumbs-up' }}"></i> 
+                                                    {{ $approval ? 'Approved' : 'Approve' }}
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                @else 
+                                    <button class="btn btn-outline-primary btn-sm btn-fixed-size auditee-btn"
+                                            data-bs-toggle="modal" data-bs-target="#auditeeModal"
+                                            data-id="{{ $item->id }}"
+                                            data-type="{{ $item->type }}"
+                                            data-jadwal-id="{{ $jadwal->id }}"><i class="fa fa-eye"></i>
+                                        Lihat Auditee Auditor AIMA
+                                    </button>
                                 @endif
                             </td>
                         </tr>
@@ -130,14 +155,50 @@
             </table>
         </div>
     </div>
+
+    {{-- Modal Auditee Auditor AIMA --}}
+    <div class="modal fade" id="auditeeModal" tabindex="-1" aria-labelledby="auditeeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="auditeeModalLabel"> Daftar Auditee Auditor AIMA</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-bordered table hover" id="auditeeModal">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Fakultas/Unit/Prodi</th>
+                                <th>Auditee</th>
+                                <th>Auditor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 
 @section('style')
-    <!-- DataTables -->
+    {{-- DataTables --}}
     <link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
-    {{-- <link rel="stylesheet" href="{{ asset('plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}"> --}}
+    <link rel="stylesheet" href="{{ asset('plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}">
+
+    <style>
+        .btn-fixed-size {
+            width: 200px; 
+        }
+    </style>
+
 @endsection
 
 @section('script')
@@ -146,13 +207,12 @@
     <script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
-
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Page specific script -->
     <script>
         $(function() {
-            $("#auditee").DataTable({
+            $("#auditor").DataTable({
                 "responsive": true,
                 "autoWidth": false,
                 "columnDefs": [{
@@ -160,27 +220,93 @@
                         "targets": [0]
                     },
                     {
-                        "width": "10%",
+                        "width": "15%",
                         "targets": [1]
                     },
                     {
-                        "width": "15%",
+                        "width": "40%",
                         "targets": [2]
                     },
                     {
-                        "width": "20%",
+                        "width": "40%",
                         "targets": [3]
-                    },
-                    {
-                        "width": "30%",
-                        "targets": [4]
-                    },
-                    {
-                        "width": "20%",
-                        "targets": [5]
                     },
                 ]
             });
+        })
+    </script>
+
+    <script>
+        $(document).ready(function() {
+            let modalTableInitialized = false;
+
+            $('#auditeeModal').on('show.bs.modal', function(event) {
+                const button = $(event.relatedTarget);
+                const itemId = button.data('id');
+                const type = button.data('type');
+                const jadwalId = button.data('jadwal-id');
+                const modal = $(this);
+                const table = modal.find('#auditeeModal')
+
+                //modal.find('tbody').html('<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data...</td></tr>');
+        
+                $.ajax({
+                    url: '{{ route('auditor.auditee-auditor-aima.show') }}',
+                    method: 'GET',
+                    data: {
+                        item_id: itemId,
+                        type: type,
+                        jadwal_id: jadwalId
+                    },
+                    success: function(response) {
+                        const tbody = modal.find('tbody');
+                        tbody.empty();
+                        
+                        if(response.data.length > 0) {
+                            response.data.forEach((item, index) => {
+                                tbody.append(`
+                                    <tr>
+                                        <td>${index + 1}</td>
+                                        <td>${item.unit}</td>
+                                        <td>${item.auditees}</td>
+                                        <td>${item.auditors}</td>
+                                    </tr>
+                                `);
+                            });
+                        } else {
+                            tbody.html('<tr><td colspan="4" class="text-center">Tidak ada data ditemukan</td></tr>');
+                        }
+                        if (!modalTableInitialized) {
+                            table.DataTable({
+                                responsive: true,
+                                autoWidth: false,
+                                "columnDefs": [{
+                                        "width": "5%",
+                                        "targets": [0]
+                                    },
+                                    {
+                                        "width": "25%",
+                                        "targets": [1]
+                                    },
+                                    {
+                                        "width": "35%",
+                                        "targets": [2]
+                                    },
+                                    {
+                                        "width": "35%",
+                                        "targets": [3]
+                                    },
+                                ]
+                            });
+                            modalTableInitialized = true;
+                        }
+                    },
+                    error: function() {
+                        modal.find('tbody').html('<tr><td colspan="4" class="text-center text-danger">Gagal memuat data</td></tr>');
+                    }
+                    
+                });
+            })
         })
     </script>
 @endsection

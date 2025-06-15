@@ -9,6 +9,7 @@ use App\Models\Auditee;
 use App\Models\Prodi;
 use App\Models\JawabanAuditor;
 use App\Models\AuditeeAuditor;
+use App\Models\AuditeeAuditorPtk;
 use App\Models\Monitoring;
 use App\Models\MonitoringAuditee;
 use App\Models\MonitoringForm;
@@ -56,7 +57,7 @@ class RtlController extends Controller
      */
     public function store(MonitoringAuditorStoreRequest $request, string $jadwalAudit, string $unit, string $type): RedirectResponse
     {
-        $auditors = AuditeeAuditor::select('auditor_id', 'created_at')
+        $auditors = AuditeeAuditorPtk::select('auditor_id', 'created_at')
             ->where('jadwal_audit_id', $jadwalAudit)
             ->distinct()
             ->where(get_type($type), $unit)
@@ -133,7 +134,7 @@ class RtlController extends Controller
 
         // Auditor
         $unit = get_type_model($monitoring);
-        $auditors = AuditeeAuditor::select('auditor_id', 'created_at')
+        $auditors = AuditeeAuditorPtk::select('auditor_id', 'created_at')
             ->where('jadwal_audit_id', $monitoring->jadwal_audit_id)
             ->distinct()
             ->where($unit['kolom'], $unit['value'])
@@ -169,31 +170,26 @@ class RtlController extends Controller
     }
 
     // Isi monitoring
-    public function isi_monitoring(string $monitoring, string $kriteria): RedirectResponse
+    public function isi_monitoring(Monitoring $monitoring, $kriteria)
     {
-        $kriteriaTemuan = ['Belum Memenuhi', 'Memenuhi', 'Melampaui'];
-        
-        $kriteriaTindakan = Kriteria::where('nama', $kriteria)->first();
-        
-        $kriteriaId = $kriteriaTindakan->id;
+        $kriteria = Kriteria::findOrFail($kriteria);
 
-        $statusMonitoring = StatusMonitoring::updateOrCreate(
+        StatusMonitoring::updateOrCreate(
             [
-                'monitoring_id' => $monitoring,
-                'kriteria_id' => $kriteriaId,
+                'monitoring_id' => $monitoring->id,
+                'kriteria_id' => $kriteria->id,
             ],
-            [
-                'status' => 'in_progress',
-            ]
+            ['status' => 'in_progress']
         );
-        Log::info('Kriteria yang dikirim:', ['kriteria' => $kriteria]);
-
-
-        return redirect()->route('auditor.tindak-lanjut.form', ['monitoring' => $monitoring, 'kriteria' => $kriteria]);
+        
+        return redirect()->route('auditor.tindak-lanjut.form', [
+                'monitoring' => $monitoring->id,
+                'kriteria' => $kriteria->id
+            ]);
     }
 
     
-    public function form(Request $request, Monitoring $monitoring): View|RedirectResponse
+    public function form(Request $request, Monitoring $monitoring, $kriteria): View|RedirectResponse
     {
         $unit = get_type_model($monitoring);
 
@@ -204,51 +200,44 @@ class RtlController extends Controller
 
         $jadwal = JadwalAudit::findOrFail($monitoring->jadwal_audit_id);
 
-        // Ambil kriteria dari query parameter
-        $kriteria = $request->query('kriteria');
-        $kriteriaTemuan = ['Belum Memenuhi', 'Memenuhi', 'Melampaui'];
+        $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $monitoring->jadwal_audit_id])->first();
 
-        // Validasi kriteria
-        if (!in_array($kriteria, $kriteriaTemuan)) {
-            return back()->with('error', 'Tidak ada temuan dengan kriteria ini.');
-        }
+        $kriteria = Kriteria::findOrFail($kriteria);
 
-        // Ambil ID kriteria berdasarkan nama
-        $kriteriaId = Kriteria::where('nama', $kriteria)->pluck('id')->first();
+        $perPage = 10;
+        $currentPage = $request->query('page', 1);
+        $temuan = JawabanAuditor::where('jadwal_audit_id', $monitoring->jadwal_audit_id)
+            ->where('kriteria_id', $kriteria->id)
+            ->where($unit['kolom'], $unit['value']);
 
-        // Ambil temuan berdasarkan kriteria dan unit yang diaudit
-        $temuanNegatif = JawabanAuditor::where('jadwal_audit_id', $monitoring->jadwal_audit_id)
-            ->where('kriteria_id', $kriteriaId)
-            ->where($unit['kolom'], $unit['value'])
-            ->with([
-                'form.instrumen',
-                'form.rtm_tindak_lanjut',
-                'form.ptk_form',
-                'form.rtl_form',
-            ])->get();
-
-        // Jika unit adalah fakultas, ambil temuan untuk prodi-prodi di bawah fakultas tersebut
         if ($unit['type'] === 'fakultas') {
             $prodiList = Prodi::where('fakultas_id', $unit['value'])->pluck('id')->toArray();
 
             $temuanProdi = JawabanAuditor::where('jadwal_audit_id', $monitoring->jadwal_audit_id)
                 ->whereIn('prodi_id', $prodiList)
-                ->where('kriteria_id', $kriteriaId)
-                ->with([
-                    'prodi',
-                    'form.instrumen',
-                    'form.rtm_tindak_lanjut',
-                    'form.ptk_form',
-                    'form.rtl_form',
-                ])->get();
-
-            // Gabungkan temuan fakultas dan prodi
-            $temuanNegatif = $temuanNegatif->merge($temuanProdi);
+                ->where('kriteria_id', $kriteria->id);
+                
+            $temuanNegatif = $temuan->union($temuanProdi)
+            ->with([
+                'form.instrumen',
+                'form.rtm_tindak_lanjut',
+                'form.ptk_form',
+                'form.rtl_form',
+                'form.rtm_rtl_form',
+            ])->paginate($perPage);
+        } else {
+            $temuanNegatif = $temuan
+            ->with([
+                'form.instrumen',
+                'form.rtm_tindak_lanjut',
+                'form.ptk_form',
+                'form.rtl_form',
+                'form.rtm_rtl_form',
+            ])
+            ->paginate($perPage);
         }
 
         // Paginasi
-        $perPage = 10;
-        $currentPage = $request->get('page', 1);
         $temuanNegatif = new LengthAwarePaginator(
             $temuanNegatif->forPage($currentPage, $perPage),
             $temuanNegatif->count(),
@@ -262,12 +251,9 @@ class RtlController extends Controller
 
         $sessionFormData = session()->get('form_monitoring-page_' . $currentPage . '-monitoringId_' . $monitoring->id . '-auditorId_' . $auditor->id, []);
         
-        $kriteria = $request->query('kriteria');
-
-        $kriteriaTindakan = Kriteria::where('nama', $kriteria)->first();
-
+    
         $status = StatusMonitoring::where('monitoring_id', $monitoring->id)
-        ->where('kriteria_id', $kriteriaTindakan->id)
+        ->where('kriteria_id', $kriteria->id)
         ->first();
 
         $data = [
@@ -277,21 +263,20 @@ class RtlController extends Controller
             'jadwal' => $jadwal,
             'auditor' => $auditor,
             'kriteriaTemuan' => $kriteria,
-            'kriteria' => $kriteriaTindakan,
             'status' => $status,
             'isianStatus' => $isianStatus,
             'isianCatatan' => $isianCatatan,
             'sessionFormData' => $sessionFormData,
-            'expired' => $jadwal->expired,
+            'currentPage'=> $currentPage,
             'unitType' => $unit['type'], 
             'kriteria' => $kriteria, 
-            'kriteriaId' => $kriteriaId,
+            'kriteriaId' => $kriteria,
         ];
 
         return view('auditor.tindak_lanjut.form', $data);
     }
 
-    public function save_form(Request $request, string $monitoring, string $auditor): JsonResponse
+    public function save_form(Request $request, string $monitoring, string $auditor, string $kriteria): JsonResponse
     {
         if ($request->ajax()) {
             try {
@@ -344,9 +329,7 @@ class RtlController extends Controller
                                 MonitoringForm::where('id', $id)->delete();
                             }
                         }
-                        $kriteria = Kriteria::whereHas('jawaban_auditor', function ($query) use ($id){
-                            $query->where('form_id', $id);
-                        })->first();
+                        $kriteria = Kriteria::findOrFail($kriteria);
 
                         foreach ($submittedCatatans as $catatan) {
                             if (!in_array($catatan, $existCatatan)) {
@@ -354,11 +337,11 @@ class RtlController extends Controller
                                     [
                                         'monitoring_id' => $monitoring,
                                         'form_id' => $formId,
-                                        'kriteria_id' => $kriteria->id,
                                         'catatan' => $catatan,
                                     ],
                                     [
                                         'auditor_id' => $auditor,
+                                        'kriteria_id' => $kriteria->id,
                                         'catatan' => $catatan,
                                     ]
                                 );
@@ -386,9 +369,10 @@ class RtlController extends Controller
     // Save Form per Nomor (backup)
     public function save_form_per_nomor(Request $request, string $monitoring, string $auditor, string $formId) {}
 
-    public function store_form(Request $request, Monitoring $monitoring, string $auditor): RedirectResponse
+    public function store_form(Request $request, Monitoring $monitoring, string $auditor, string $kriteria): RedirectResponse
     {
         $totalPages = $request->input('totalPage');
+        $kriteriaId = $kriteria;
         $sessionFormData = [];
         $errorPage = null;
 
@@ -481,10 +465,6 @@ class RtlController extends Controller
                 $newFormIds[] = $id;
                 $statusKey = 'status_' . $id;
 
-                $kriteria = Kriteria::whereHas('jawaban_auditor', function ($query) use ($id){
-                    $query->where('form_id', $id);
-                })->first();
-
                 $data = [
                     'monitoring_id' => $monitoring->id,
                     'form_id' => $id,
@@ -533,7 +513,7 @@ class RtlController extends Controller
                                 ],
                                 [
                                     'auditor_id' => $auditor,
-                                    'kriteria_id' => $kriteria->id,
+                                    'kriteria_id' => $kriteriaId,
                                     'catatan' => $catatan,
                                 ]
                             );
@@ -544,16 +524,13 @@ class RtlController extends Controller
         }
 
         // Update status  jika semua halaman telah diisi
-        $kriteriaId = $request->input('kriteria');
-        if ($request->input('final') === 'final') {
-            $status = StatusMonitoring::where('monitoring_id', $monitoring->id)
-            ->where('kriteria_id', $kriteriaId)
-            ->first();
-            if ($status && $status->status === 'in_progress') {
-                $status->status = 'completed';
-                $status->save();
-            }
-        }
+        StatusMonitoring::updateOrCreate(
+                [
+                    'monitoring_id' => $monitoring->id,
+                    'kriteria_id' => $kriteria,
+                ],
+                ['status' => 'completed']
+            );
 
         return redirect()->route('auditor.tindak-lanjut.show', $monitoring->jadwal_audit_id)
             ->with('success', 'Data berhasil disimpan.');

@@ -44,6 +44,11 @@ class Unit extends Model
         return $this->belongsToMany(Auditor::class, 'auditee_auditor', 'unit_id', 'auditor_id')->withPivot('auditee_id', 'jadwal_audit_id')->withTimestamps();;
     }
 
+    public function auditorPtk(): BelongsToMany
+    {
+        return $this->belongsToMany(Auditor::class, 'auditee_auditor_ptk', 'fakultas_id', 'auditor_id')->withPivot('auditee_id', 'jadwal_audit_id')->withTimestamps();;
+    }
+
     public function instrumen(): BelongsToMany
     {
         return $this->belongsToMany(Instrumen::class, 'instrumen_jenjang', 'unit_id', 'instrumen_id')

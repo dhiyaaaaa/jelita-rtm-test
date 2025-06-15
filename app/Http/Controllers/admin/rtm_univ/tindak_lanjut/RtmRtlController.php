@@ -4,7 +4,7 @@ namespace App\Http\Controllers\admin\rtm_univ\tindak_lanjut;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\RtmRtl;
+use App\Models\RtmRtlUniv;
 use App\Models\RtmTindakLanjut;
 use App\Models\StatusRtmRtlUniv;
 use App\Models\Jabatan;
@@ -14,6 +14,7 @@ use App\Models\JadwalAudit;
 use App\Models\JawabanAuditor;
 use App\Models\Kriteria;
 use App\Models\Prodi;
+use App\Models\RtmJadwal;
 use App\Models\RtmRtlForm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -35,9 +36,10 @@ class RtmRtlController extends Controller
         $this->user = Auth::user();
     }
 
-    public function form(Request $request, RtmRtl $rtmRtl): View|RedirectResponse
+    public function form(Request $request, RtmRtlUniv $rtmRtlUniv): View|RedirectResponse
     {
-        $jadwal = JadwalAudit::findOrFail($rtmRtl->jadwal_audit_id);
+        $jadwal = JadwalAudit::findOrFail($rtmRtlUniv->jadwal_audit_id);
+        $rtmJadwal = RtmJadwal::findOrFail($rtmRtlUniv->rtm_jadwal_id);
         $selectedKriteria = $request->input('kriteria', []);
 
         $order_by_kode = DB::raw("
@@ -48,37 +50,51 @@ class RtmRtlController extends Controller
             END
         ");
 
-        $temuanRtm = RtmTindakLanjut::join('form', 'rtm_tindak_lanjut.form_id', '=', 'form.id')
-            ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
-            ->where('rtm_rtl_id', $rtmRtl->id)
-            ->whereHas('jabatan', function($query) {
-                $query->where('type', 'universitas'); 
-            })
-            ->when(!empty($selectedKriteria), function($query) use ($selectedKriteria) {
-                return $query->whereIn('kriteria_id', $selectedKriteria);
-            })
-            ->with([
-                'form.instrumen',
-                'form.jawaban_auditor',
-                'form.ptk_form_deskripsi',
-                'form.laporan_form',
-                'kriteria',
-                'jabatan',
-            ])
-            ->orderBy($order_by_kode)
-            ->get()
-            ->unique('form_id') 
-            ->values();
-        
-        if ($temuanRtm->isEmpty()) {
+        if($rtmRtlUniv->fakultas_id) 
+        {
+            $temuanRtm = RtmTindakLanjut::join('rtm_rtl', 'rtm_tindak_lanjut.rtm_rtl_id', "=", 'rtm_rtl.id')
+                ->join('form', 'rtm_tindak_lanjut.form_id', '=', 'form.id')
+                ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
+                ->where(function($query) use ($rtmRtlUniv) {
+                        if ($rtmRtlUniv->fakultas_id) {
+                            $query->where('rtm_rtl.fakultas_id', $rtmRtlUniv->fakultas_id);
+                        } else {
+                            $query->where('rtm_rtl.unit_id', $rtmRtlUniv->unit_id);
+                        }
+                    })
+                ->whereHas('jabatan', function($query) {
+                    $query->where('type', 'universitas'); 
+                })
+                ->when(!empty($selectedKriteria), function($query) use ($selectedKriteria) {
+                    return $query->whereIn('kriteria_id', $selectedKriteria);
+                })
+                ->with([
+                    'form.instrumen',
+                    'form.jawaban_auditor',
+                    'form.ptk_form_deskripsi',
+                    'form.laporan_form',
+                    'kriteria',
+                    'jabatan',
+                ])
+                ->orderBy($order_by_kode)
+                ->get()
+                ->unique('form_id') 
+                ->values();
+
+                if ($temuanRtm->isEmpty()) {
+                    return back()->with('warning', 'Tidak ada rencana tindak lanjut yang sudah dibuat pada kriteria yang Anda pilih');
+                }
+                $temuan = $temuanRtm;
+            
+        } else {
             $temuanAuditor = JawabanAuditor::join('form', 'jawaban_auditor.form_id', '=', 'form.id')
                 ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
-                ->where('jadwal_audit_id', $rtmRtl->jadwal_audit_id)
-                 ->where(function($query) use ($rtmRtl) {
-                    if ($rtmRtl->fakultas_id) {
-                        $query->where('fakultas_id', $rtmRtl->fakultas_id);
+                ->where('jadwal_audit_id', $rtmRtlUniv->jadwal_audit_id)
+                 ->where(function($query) use ($rtmRtlUniv) {
+                    if ($rtmRtlUniv->fakultas_id) {
+                        $query->where('fakultas_id', $rtmRtlUniv->fakultas_id);
                     } else {
-                        $query->where('unit_id', $rtmRtl->unit_id);
+                        $query->where('unit_id', $rtmRtlUniv->unit_id);
                     }
                 })
                 ->when(!empty($selectedKriteria), function($query) use ($selectedKriteria) {
@@ -101,11 +117,7 @@ class RtmRtlController extends Controller
                 }
                 
                 $temuan = $temuanAuditor;
-                $infoMessage = 'Menampilkan data hasil audit karena belum ada rencana tindak lanjut';
-        } else {
-            $temuan = $temuanRtm;
-            $infoMessage = null;
-        }
+        } 
         
         $perPage = 10;
         $currentPage = $request->query('page', 1);
@@ -118,30 +130,30 @@ class RtmRtlController extends Controller
         );
         
 
-        $jawabanRtm = RtmRtlForm::where('rtm_rtl_id', $rtmRtl->id)->get();
+        $jawabanRtm = RtmRtlForm::where('rtm_rtl_univ_id', $rtmRtlUniv->id)->get();
 
-        $sessionFormData = session()->get('form_rtmRtl_univ-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl, []);
-        
-        $status = StatusRtmRtlUniv::where('rtm_rtl_id', $rtmRtl->id)->first();
+        $sessionFormData = session()->get('form_rtmRtl_univ-page_' . $currentPage . '-rtmRtlUnivId_' . $rtmRtlUniv->id, []);
+       
+        $status = StatusrtmRtlUniv::where('rtm_rtl_univ_id', $rtmRtlUniv->id)->first();
 
         $data = [
             'title' => 'Tindak Lanjut Hasil Audit',
-            'rtmRtlId' => $rtmRtl->id,
+            'rtmRtlUnivId' => $rtmRtlUniv->id,
             'paginatedTemuan' => $paginatedTemuan,
             'jawabanRtm' => $jawabanRtm,
             'sessionFormData' => $sessionFormData,
             'currentPage' => $currentPage,
             'status' => $status,
-            'infoMessage' => $infoMessage,
             'temuan' => $temuan,
             'jawabanRtm' => $jawabanRtm,
             'selectedKriteria' => $selectedKriteria,
+            'rtmJadwal' => $rtmJadwal,
         ];
 
         return view('admin.rtm_univ.tindak_lanjut.form', $data);
     }
 
-    public function save_form(Request $request, string $rtmRtl): JsonResponse
+    public function save_form(Request $request, string $rtmRtlUniv): JsonResponse
     {
         if ($request->ajax()) {
             try {
@@ -163,7 +175,7 @@ class RtmRtlController extends Controller
                         }
     
                         $data = [
-                            'rtm_rtl_id' => $rtmRtl,
+                            'rtm_rtl_univ_id' => $rtmRtlUniv,
                             'form_id' => $formId,
                             'user_id' => $user,
                             'rekomendasi' => $rekomendasi,
@@ -172,7 +184,7 @@ class RtmRtlController extends Controller
 
                         RtmRtlForm::updateOrCreate(
                             [
-                                'rtm_rtl_id' => $rtmRtl,
+                                'rtm_rtl_univ_id' => $rtmRtlUniv,
                                 'form_id' => $formId,
                             ],
                             $data
@@ -195,20 +207,19 @@ class RtmRtlController extends Controller
         ], 400);
     }
 
-    public function store_form(Request $request, string $rtmRtl)
+    public function store_form(Request $request, string $rtmRtlUniv)
     {
-        
         $totalPages = $request->input('totalPage');
         $sessionFormData = [];
         $errorPage = null;
+
         $user = $this->user->id;
-        $rtmRtl = RtmRtl::findOrFail($rtmRtl);
+        $rtmRtlUniv = RtmRtlUniv::findOrFail($rtmRtlUniv);
 
         for ($i = 1; $i <= $totalPages; ++$i) {
-            $sessionKey = 'form_rtmRtl_univ-page_' . $i . '-rtmRtlId_' . $rtmRtl;
+            $sessionKey = 'form_rtmRtl_univ-page_' . $i . '-rtmRtlUnivId_' . $rtmRtlUniv->id;
             $sessionFormData[$i] = session()->get($sessionKey, []);
         }
-        Log::debug('Session retrieved:', [$sessionKey => session()->get($sessionKey)]);
 
         $rules = [];
         $messages = [];
@@ -258,8 +269,12 @@ class RtmRtlController extends Controller
             if (!$customErrorMessage) {
                 $errorMessage = $errors->first();
             }
+            // Log::debug('Validasi gagal', [
+            //     'errors' => $errors->messages(),
+            //     'page' => $errorPage
+            // ]);
 
-            return redirect()->route('admin.rtm-rtl.form', ['rtmRtl' => $rtmRtl, 'page' => $errorPage])
+            return redirect()->route('admin.rtm-rtl.form', ['rtmRtlUniv' => $rtmRtlUniv, 'page' => $errorPage])
                 ->withErrors($errors)
                 ->withInput()
                 ->with('error_message', $errorMessage)
@@ -270,7 +285,8 @@ class RtmRtlController extends Controller
             if (empty($sessionFormData[$i])) {
                 $errorPage = $i;
 
-                return redirect()->route('admin.rtm-rtl.form', ['rtmRtl' => $rtmRtl, 'page' => $errorPage])
+
+                return redirect()->route('admin.rtm-rtl.form', ['rtmRtlUniv' => $rtmRtlUniv, 'page' => $errorPage])
                     ->with('error_message', 'Data tidak ditemukan. Silakan periksa halaman tersebut.')
                     ->withInput();
             }
@@ -288,9 +304,9 @@ class RtmRtlController extends Controller
                     'koreksi' => $requestData[$koreksiKey] ?? null,
                 ];
 
-                RtmRtlForm::updateOrCreate(
+                rtmRtlForm::updateOrCreate(
                     [
-                        'rtm_rtl_id' => $rtmRtl,
+                        'rtm_rtl_univ_id' => $rtmRtlUniv->id,
                         'form_id' => $id,
                     ],
                     $data
@@ -299,16 +315,16 @@ class RtmRtlController extends Controller
         }
 
         if ($requestData['final'] == 'final') {
-            $status = StatusRtmRtlUniv::where('rtm_rtl_id', $rtmRtl)->first();
+            $status = StatusRtmRtlUniv::where('rtm_rtl_univ_id', $rtmRtlUniv->id)->first();
 
             if ($status && $status->status == 'in_progress') {
                 $status->status = 'completed';
                 $status->save();
+                Log::debug('Status diubah menjadi completed');
             }
         }
-
-        return redirect()->route('admin.rtm-rtl.show', ['rtmJadwal' => $rtmRtl->rtm_jadwal])
-            ->with('success', 'Data berhasil disimpan.');
+        return redirect()->route('admin.rtm-rtl.show', ['rtmJadwal' => $rtmRtlUniv->rtm_jadwal_id]);
     }
 
 }
+ 

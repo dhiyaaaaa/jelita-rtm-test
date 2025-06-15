@@ -28,6 +28,10 @@ class Rtl extends Model
         return $this->belongsToMany(Auditee::class, 'rtl_auditee', 'rtl_id', 'auditee_id')->withPivot('approve')->withTimestamps();
     }
 
+    public function user(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'rtl_approve', 'rtl_id', 'user_id')->withPivot('approve')->withTimestamps();
+    }
 
     public function fakultas(): BelongsTo
     {

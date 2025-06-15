@@ -5,9 +5,16 @@
     <title>Halaman Menu</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ asset('plugins/fontawesome-free/css/all.min.css') }}">
+    <!-- overlayScrollbars -->
+    <link rel="stylesheet" href="{{ asset('plugins/overlayScrollbars/css/OverlayScrollbars.min.css') }}">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="{{ asset('plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css') }}">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="{{ asset('dist/css/adminlte.min.css') }}">
 
     <style>
         html, body {
@@ -94,9 +101,39 @@
 
 <div class="full-page-layout">
     <!-- Navbar -->
-    <div class="navbar-fixed d-flex align-items-center">
-        <img src="{{ asset('dist/img/logo_jelita.png') }}" alt="Logo JELITA" class="img-fluid" style="height: 40px; width: 40px;">
-        <h5 class="mb-0 ml-3 font-weight-light" style="font-size: 20px;">JELITA</h5>
+    <div class="navbar-fixed d-flex align-items-center justify-content-between px-3">
+        <div class="d-flex align-items-center">
+            <img src="{{ asset('dist/img/logo_jelita.png') }}" alt="Logo JELITA" class="img-fluid" style="height: 40px; width: 40px;">
+            <h5 class="mb-0 ml-3 font-weight-light" style="font-size: 20px;">JELITA</h5>
+        </div>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item dropdown no-arrow">
+                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false" style="margin-top:-6px">
+                    <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{ Auth::user()->name }}</span>
+                    <img class="img-profile rounded-circle" src="{{ asset('dist/img/logo_unsoed.png') }}"
+                        style="widht:30px; height:30px;">
+                </a>
+                <!-- Dropdown - User Information -->
+                <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown"
+                    style="font-size: 14px">
+                    <a class="dropdown-item text-gray-400" href="{{ route('profile') }}">
+                        <i class="fas fa-user fa-sm fa-fw mr-2"></i>
+                        Profile
+                    </a>
+                    <a class="dropdown-item text-gray-400" href="{{ route('mainmenu') }}">
+                        <i class="fas fa-bars fa-sm fa-fw mr-2"></i>
+                        Main Menu
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <form action="{{ route('logout') }}" method="post" class="d-inline">
+                        @csrf
+                        <button type="submit" class="dropdown-item"><i
+                                class="fas fa-sign-out-alt fa-sm fa-fw mr-2"></i>Logout</button>
+                    </form>
+                </div>
+            </li>
+        </ul>
     </div>
 
 
@@ -141,6 +178,11 @@
         </span>
     </footer>
 </div>
+
+<script src="{{ asset('plugins/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('plugins/jquery-ui/jquery-ui.min.js') }}"></script>
+    <!-- Bootstrap 4 -->
+    <script src="{{ asset('plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
 </body>
 </html>

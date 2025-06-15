@@ -14,16 +14,16 @@ class RtmRtlForm extends Model
 
     protected $fillable = 
     [
-        'rtm_rtl_id', 
+        'rtm_rtl_univ_id', 
         'form_id', 
         'user_id',
         'rekomendasi',
         'koreksi',
     ];
 
-    public function rtm_rtl(): BelongsTo
+    public function rtm_rtl_univ(): BelongsTo
     {
-        return $this->belongsTo(RtmRtl::class, 'rtm_rtl_id');
+        return $this->belongsTo(RtmRtlUniv::class, 'rtm_rtl_univ_id');
     }
 
     public function form(): BelongsTo

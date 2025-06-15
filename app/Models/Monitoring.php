@@ -44,6 +44,11 @@ class Monitoring extends Model
         return $this->belongsToMany(Auditor::class, 'monitoring_auditor', 'monitoring_id', 'auditor_id')->withPivot('approve')->withTimestamps();
     }
 
+    public function user(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'monitoring_approve', 'monitoring_id', 'user_id')->withPivot('approve')->withTimestamps();
+    }
+
     public function monitoring_form(): HasMany
     {
     return $this->hasMany(MonitoringForm::class, 'monitoring_id', 'id');

@@ -54,6 +54,13 @@ class Auditee extends Model
             ->withTimestamps();
     }
 
+    public function auditorPtk(): BelongsToMany
+    {
+        return $this->belongsToMany(Auditor::class, 'auditee_auditor_ptk', 'auditee_id', 'auditor_id')
+            ->withPivot('fakultas_id', 'unit_id', 'jadwal_audit_id')
+            ->withTimestamps();
+    }
+
     public function status_audit_auditee(): HasMany
     {
         return $this->hasMany(StatusAuditAuditee::class);

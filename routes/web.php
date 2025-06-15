@@ -10,6 +10,7 @@ use App\Http\Controllers\admin\audit\AssessmentController;
 use App\Http\Controllers\admin\audit\HasilAuditController;
 use App\Http\Controllers\admin\audit\InstrumenController;
 use App\Http\Controllers\admin\audit\JadwalAuditController;
+use App\Http\Controllers\admin\auditPtk\HasilAuditPtkController;
 use App\Http\Controllers\admin\dokumen\AyatController;
 use App\Http\Controllers\admin\dokumen\JenisPertanyaanController;
 use App\Http\Controllers\admin\dokumen\KategoriController;
@@ -30,7 +31,9 @@ use App\Http\Controllers\admin\user\UserController;
 use App\Http\Controllers\admin\rtm_univ\jadwal\JadwalRtmController;
 use App\Http\Controllers\admin\rtm_univ\jadwal\LampiranRtmController;
 use App\Http\Controllers\admin\rtm_univ\tindak_lanjut\TindakLanjutController;
+use App\Http\Controllers\admin\rtm_univ\tindak_lanjut\RtmCatatanController;
 use App\Http\Controllers\admin\rtm_univ\tindak_lanjut\RtmRtlController;
+use App\Http\Controllers\admin\auditPtk\AuditeeAuditorPtkController;
 use App\Http\Controllers\ApproveController;
 use App\Http\Controllers\auditee\dokumen\DokumenController as AuditeeDokumenController;
 use App\Http\Controllers\auditee\lapangan\LapanganController as AuditeeLapanganController;
@@ -57,8 +60,9 @@ use App\Http\Controllers\dekan\RtmLampiranController as DekanRtmLampiranControll
 use App\Http\Controllers\dekan\RtmCatatanController as DekanRtmCatatanController;
 use App\Http\Controllers\dekan\RtmRtlController as DekanRtmRtlController;
 use App\Http\Controllers\dekan\RtmRtlProdiController as DekanRtmRtlProdiController;
-use App\Http\Controllers\dekan\rtl\RtlController as DekanRtlController;
-use App\Http\Controllers\dekan\rtl\TindakLanjutController as DekanTindakLanjutController;
+use App\Http\Controllers\auditeePtk\rtl\RtlController as DekanRtlController;
+use App\Http\Controllers\auditeePtk\rtl\TindakLanjutController as DekanTindakLanjutController;
+use App\Http\Controllers\HasilRtmController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'guest'], function () {
@@ -87,6 +91,10 @@ Route::group(['middleware' => 'auth'], function () {
 
     // Notifikasi
     Route::get('notifikasi', [DashboardController::class, 'notifikasi'])->name('notifikasi');
+
+    //Hasil RTM 
+    Route::get('tindak-lanjut-audit', [HasilRtmController::class, 'index'])->name('hasil_rtm.index');
+    
 
     // Middleware Role Pusjamu/Admin
     Route::group(['middleware' => 'role:pusjamu'], function () {
@@ -789,16 +797,23 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('{jadwalAudit}/zip-upps', [DownloadController::class, 'zip_upps'])->name('download.zip_upps');
 
         // Laporan RTM Fakultas PDF
-        //Route::get('{rtmJadwal}/laporan-rtm-fakultas/', [DownloadController::class, 'download_rtm_fakultas'])->name('download.rtm.fakultas');
+        Route::get('{rtmJadwal}/laporan-rtm-fakultas/', [DownloadController::class, 'download_rtm_fakultas'])->name('download.rtm.fakultas');
+        
+
+        // Laporan RTM Universitas PDF
+        Route::get('{rtmJadwal}/laporan-rtm-univ/', [DownloadController::class, 'download_rtm_univ'])->name('download.rtm.univ');
         
         // Laporan RTM Univ PDF
-        Route::get('{rtmJadwal}/laporan-rtm-univ/', [DownloadController::class, 'download_rtm_univ'])->name('download.rtm.univ');
+        //Route::get('{rtmJadwal}/laporan-rtm-univ/', [DownloadController::class, 'download_rtm_univ'])->name('download.rtm.univ');
 
         //Laporan RTM Fakultas
-        Route::post('form-rtl/{rtmRtl}', [DownloadController::class, 'rtm_rtl_word'])->name('download.rtm.fakultas');
+        //Route::post('form-rtm-rtl/{rtmRtl}', [DownloadController::class, 'rtm_rtl_word'])->name('download.rtm.fakultas');
+
+        //Laporan RTM Univ
+        //Route::post('form-rtl-univ/{rtmJadwal}', [DownloadController::class, 'rtm_rtl_univ_word'])->name('download.rtm.univ');
         
          // Form Tindak Lanjut (RTL)
-         Route::post('form-rtl/{rtl}', [DownloadController::class, 'rtl_word'])->name('download.rtl');
+        Route::post('form-rtl/{rtl}', [DownloadController::class, 'rtl_word'])->name('download.rtl');
 
          // Form Monitoring Tindak Lanjut (RTL)
          Route::post('monitoring-rtl/{monitoring}', [DownloadController::class, 'monitoring_rtl_word'])->name('download.monitoring_rtl');
@@ -844,7 +859,57 @@ Route::group(['middleware' => 'auth'], function () {
         });
     });
 
-    //RTM Fakultas
+    //Tindak Lanjut Audit Pusjamu
+    Route::group(['middleware' => 'role:pusjamu'], function () {
+            // Lihat
+            //Route::get('', [RtmFakultasController::class, 'index'])->name('hasil_rtm_fakultas.index');
+            Route::get('{jadwalAudit}/show/', [RtmFakultasController::class, 'show'])->name('hasil_rtm_fakultas.show');
+            //detail agenda
+            Route::get('{rtmJadwal}/detail/', [RtmFakultasController::class, 'detail'])->name('hasil_rtm_fakultas.detail');
+
+            //RTMRTL Fakultas Unit
+            // Route::get('{rtmRtl}/rtm-rtl/', [RtmFakultasController::class, 'rtmrtl'])->name('hasil_rtm_rtl.show');
+            // Route::get('{rtmRtl}/rtm-rtl-prodi/', [RtmFakultasController::class, 'rtmrtlprodi'])->name('hasil_rtm_rtl_prodi.show');
+
+            //Audit PTK
+            //Route::get('hasil-audit-ptk/{jadwalAudit}/show/', [HasilAuditPtkController::class, 'show'])->name('hasil_audit_ptk.show');
+
+        Route::prefix('auditee-auditor-ptk')->group(function () {
+            //Auditee Auditor PTK
+            Route::get('', [AuditeeAuditorPtkController::class, 'index'])->name('auditee_auditor_ptk.index');
+
+            //Show
+            Route::get('{jadwalAudit}/show/auditee-auditor-ptk', [AuditeeAuditorPtkController::class, 'show'])->name('auditee_auditor_ptk.show');
+
+            //Attach Auditee Auditor PTK
+            Route::get('{jadwalAudit}/create/auditee-auditor-ptk/{unit}/{type}', [AuditeeAuditorPtkController::class, 'create_auditee_auditor_ptk'])->name('auditee_auditor_ptk.create');
+            Route::post('{jadwalAudit}/store/auditee-auditor-ptk/{unit}/{type}', [AuditeeAuditorPtkController::class, 'store_auditee_auditor_ptk'])->name('auditee_auditor_ptk.store');
+
+            //Edit Auditee Auditor PTK
+            Route::get('{jadwalAudit}/edit/auditee-auditor-ptk/{unit}/{type}', [AuditeeAuditorPtkController::class, 'edit_auditee_auditor_ptk'])->name('auditee_auditor_ptk.edit');
+            Route::put('{jadwalAudit}/store/auditee-auditor-ptk/{unit}/{type}', [AuditeeAuditorPtkController::class, 'update_auditee_auditor_ptk'])->name('auditee_auditor_ptk.update');
+
+            //Delete
+            Route::delete('{jadwalAudit}/destroy/auditee-auditor-ptk/{unit}/{type}', [AuditeeAuditorPtkController::class, 'destroy'])->name('auditee_auditor_ptk.delete');
+        });
+    });  
+
+    //Tindak Lanjut Audit Pusjamu
+    Route::group(['middleware' => 'check_is_admin_or_ketua_lp3m'], function () {
+        //Audit PTK
+        Route::get('hasil-audit-ptk/{jadwalAudit}/show/', [HasilAuditPtkController::class, 'show'])->name('hasil_audit_ptk.show');
+
+        //Approve RTL
+        Route::post('rtl-approve/{rtl}/approve/{user}', [ApproveController::class, 'approve_rtl'])->name('lp3m.rtl.approve');
+
+        //Approve Monitoring
+        Route::post('monitoring-approve/{monitoring}/approve/{user}', [ApproveController::class, 'approve_monitoring'])->name('lp3m.monitoring.approve');
+
+    });  
+
+
+
+    //RTM Fakultas Dekan
     Route::group(['middleware' => 'check_role_rtm'], function () {
         Route::prefix('rtm')->group(function () {
             Route::get('', [DekanRtmJadwalController::class, 'index'])->name('dekan.jadwal-rtm.index');
@@ -869,18 +934,28 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('/lampiran-rtm/store', [DekanRtmLampiranController::class, 'store'])->name('dekan.lampiran-rtm.store');
 
             //status pengisian RTM Catatan
-            Route::post('/rtm-catatan/isi/{rtmJadwal}', [DekanRtmCatatanController::class, 'isi_rtm_catatan'])->name('dekan.rtm-catatan.isi');
+           // Route::post('/rtm-catatan/isi/{rtmJadwal}', [DekanRtmCatatanController::class, 'isi_rtm_catatan'])->name('dekan.rtm-catatan.isi');
             
-             //Form RTM RTL
-            Route::get('/rtm-catatan/form/{rtmJadwal}', [DekanRtmCatatanController::class, 'form'])->name('dekan.rtm-catatan.form');
- 
-            Route::post('rtm-catatan/{rtmJadwal}/store', [DekanRtmCatatanController::class, 'store'])->name('dekan.rtm-catatan.store');
+            //Form RTM Catatan
+            Route::get('/rtm-catatan-fakultas/form/{rtmJadwal}', [DekanRtmCatatanController::class, 'form'])->name('dekan.rtm-catatan.form');
+            
+            //Store RTM Catatan
+            Route::post('rtm-catatan-fakultas/{rtmJadwal}/store', [DekanRtmCatatanController::class, 'store'])->name('dekan.rtm-catatan.store');
+            
+            //Update RTM Catatan
+            Route::put('rtm-catatan-fakultas/{rtmCatatan}/update', [DekanRtmCatatanController::class, 'update'])->name('dekan.rtm-catatan.update');
+            
+            //Delete RTM Catatan
+            Route::delete('rtm-catatan-fakultas/{rtmCatatan}', [DekanRtmCatatanController::class, 'destroy'])->name('dekan.rtm-catatan.destroy');
             
             //Save Session
-            Route::post('rtm-catatan/{rtmJadwal}/session', [SessionController::class, 'session_rtm_catatan'])->name('dekan.rtm-catatan.session');
+            Route::post('rtm-catatan-fakultas/{rtmJadwal}/session', [SessionController::class, 'session_rtm_catatan'])->name('rtm-catatan-fakultas.session');
 
             //RTM RTL 
             Route::post('/rtm-rtl/store', [DekanRtmRtlController::class, 'store'])->name('dekan.rtm-rtl.store');
+
+            //Delete RTM RTL
+            Route::delete('/rtm-rtl/delete', [DekanRtmRtlController::class, 'destroy'])->name('dekan.rtm-rtl.delete');
 
             //Show RTM RTL
             Route::get('/rtm-rtl/show/{rtmRtl}', [DekanRtmRtlController::class, 'show'])->name('dekan.rtm-rtl.show');
@@ -917,117 +992,12 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('rtm-rtl-prodi/{rtmRtl}/session/{auditee}', [SessionController::class, 'session_rtm_rtl_prodi'])->name('dekan.rtm-rtl-prodi.session');
 
             // Approve RTM RTL
-            Route::post('rtm-rtl/{rtmRtl}/approve/{auditee}', [ApproveController::class, 'rtm_rtl_approve'])->name('dekan.rtm-rtl.approve');
-        });
-
-        Route::prefix('tindak-lanjut-ptk')->group(function () {
-            Route::get('', [DekanTindakLanjutController::class, 'index'])->name('dekan.rtl.index');
-
-            //Create RTL
-            Route::post('rtl/store', [DekanRtlController::class, 'store'])->name('dekan.rtl.store');
-
-            //Show RTL
-            Route::get('rtl/{rtl}', [DekanRtlController::class, 'show'])->name('dekan.rtl.show');
-
-            //Form RTL
-            Route::get('rtl/{rtl}/kriteria/{kriteria}/form/', [DekanRtlController::class, 'form'])->name('dekan.rtl.form');
-
-            //Status Isi RTL
-            Route::post('/rtl/{rtl}/kriteria/{kriteria}', [DekanRtlController::class, 'isi_rtl_form'])->name('dekan.rtl.isi');
-
-            //Save Form
-            Route::post('rtl/{rtl}/save/{auditee}/kriteria/{kriteria}', [DekanRtlController::class, 'save_form'])->name('dekan.rtl.save_form');
-
-            //Store Form
-            Route::post('rtl/{rtl}/store/{auditee}/kriteria/{kriteria}', [DekanRtlController::class, 'store_form'])->name('dekan.rtl.store_form');  
-            
-            // Save Session Form RTL 
-            Route::post('{rtl}/auditee/{auditee}', [SessionController::class, 'session_rtl_auditee'])->name('dekan.rtl.session');
-
-            // Approve RTL
-            Route::post('rtl/{rtl}/approve/{auditee}', [ApproveController::class, 'approve_rtl_auditee'])->name('auditee.rtl.approve');
-
+            Route::post('rtm-rtl/{rtmRtl}/approve/{user}', [ApproveController::class, 'rtm_rtl_approved'])->name('dekan.rtm-rtl.approve');
 
         });
     });
 
-    //RTM Fakultas
-    Route::group(['middleware' => 'role:pusjamu'], function () {
-        // Audit
-        Route::prefix('rtm-fakultas')->group(function () {
-            // Lihat
-            Route::get('', [RtmFakultasController::class, 'index'])->name('hasil_rtm_fakultas.index');
-            Route::get('{jadwalAudit}/show/', [RtmFakultasController::class, 'show'])->name('hasil_rtm_fakultas.show');
-            //detail agenda
-            Route::get('{rtmJadwal}/detail/', [RtmFakultasController::class, 'detail'])->name('hasil_rtm_fakultas.detail');
-
-            //RTMRTL Fakultas Unit
-            Route::get('{rtmRtl}/rtm-rtl/', [RtmFakultasController::class, 'rtmrtl'])->name('hasil_rtm_rtl.show');
-            Route::get('{rtmRtl}/rtm-rtl-prodi/', [RtmFakultasController::class, 'rtmrtlprodi'])->name('hasil_rtm_rtl_prodi.show');
-
-            // Audit Dokumen
-            // Route::get('{jadwalAudit}/audit_dokumen/{unit}/{type}', [HasilAuditController::class, 'audit_dokumen'])->name('hasil_audit.audit_dokumen');
-
-            // // Daftar Tilik
-            // Route::get('{jadwalAudit}/daftar_tilik/{unit}/{type}', [HasilAuditController::class, 'daftar_tilik'])->name('hasil_audit.daftar_tilik');
-
-            // // PTK
-            // Route::get('{ptk}/ptk', [HasilAuditController::class, 'ptk'])->name('hasil_audit.ptk');
-
-        });
-    });  
-
-
-    //Monitoring Tindak Lanjut Form 7
-    Route::group(['middleware' => 'check_auditor'], function () {
-        //Tindak Lanjut 
-        Route::prefix('monitoring-tindak-lanjut')->group(function () {
-            // Index
-            Route::get('', [AuditorTindakLanjutController::class, 'index'])->name('auditor.tindak-lanjut.index');
-            
-            // Show
-            Route::get('{jadwalAudit}/show', [AuditorTindakLanjutController::class, 'show'])->name('auditor.tindak-lanjut.show');
-
-            Route::get('monitoring/{jadwalAudit}/create/{unit}/{type}', [AuditorRtlController::class, 'create'])->name('auditor.tindak-lanjut.create');
-
-            // Store
-            Route::post('monitoring/{jadwalAudit}/store/{unit}/{type}', [AuditorRtlController::class, 'store'])->name('auditor.tindak-lanjut.store');
-
-            // Edit
-            Route::get('monitoring/{monitoring}/edit', [AuditorRtlController::class, 'edit'])->name('auditor.tindak-lanjut.edit');
-
-            // Update
-            Route::put('monitoring/{monitoring}/update', [AuditorRtlController::class, 'update'])->name('auditor.tindak-lanjut.update');
-
-            // Delete
-            Route::delete('monitoring/{monitoring}/destroy', [AuditorRtlController::class, 'destroy'])->name('auditor.tindak-lanjut.delete');
-
-            // Approve monitoring
-            Route::post('monitoring/{monitoring}/approve/{auditor}', [ApproveController::class, 'approve_monitoring_auditor'])->name('auditor.tindak-lanjut.approve');
-
-            // Status monitoring
-            Route::post('monitoring/{monitoring}/{kriteria}/isi_monitoring', [AuditorRtlController::class, 'isi_monitoring'])->name('auditor.tindak-lanjut.isi');
-
-            // Form rtl
-            Route::get('rtl/{monitoring}/form', [AuditorRtlController::class, 'form'])->name('auditor.tindak-lanjut.form');
-
-            // Store Form rtl
-            Route::post('rtl/{monitoring}/store/{auditor}', [AuditorRtlController::class, 'store_form'])->name('auditor.tindak-lanjut.store_form');
-
-            // Save Form rtl
-            Route::post('rtl/{monitoring}/save/{auditor}', [AuditorRtlController::class, 'save_form'])->name('auditor.tindak-lanjut.save_form');
-            // Save Form rtl per nomor
-            Route::post('rtl/{monitoring}/save/{auditor}/{formId}', [AuditorRtlController::class, 'save_form_per_nomor'])->name('auditor.tindak-lanjut.save_form_per_nomor');
-
-            // Save Session Form rtl 
-            Route::post('{monitoring}/auditor/{auditor}', [SessionController::class, 'session_monitoring_auditor'])->name('auditor.tindak-lanjut.session');
-            // Save Session monitoring per nomor
-            Route::post('{monitoring}/auditor/{auditor}/{formId}', [SessionController::class, 'session_monitoring_auditor_per_nomor'])->name('auditor.tindak-lanjut.session_per_nomor');
-        });
-    });
-
-
-    //RTM Universitas
+    //RTM Universitas LPMPP PUSJAMU REKTOR
     Route::group(['middleware' => 'check_role_rtm_univ'], function () {
         // Main Menu
 
@@ -1053,6 +1023,21 @@ Route::group(['middleware' => 'auth'], function () {
             // Lampiran RTM
             Route::post('/lampiran-rtm-univ/store', [LampiranRtmController::class, 'store'])->name('admin.lampiran-rtm-univ.store');
 
+            //Form RTM Catatan
+            Route::get('/rtm-catatan/form/{rtmJadwal}', [RtmCatatanController::class, 'form'])->name('admin.rtm-catatan.form');
+            
+            //Store RTM Catatan
+            Route::post('rtm-catatan/{rtmJadwal}/store', [RtmCatatanController::class, 'store'])->name('admin.rtm-catatan.store');
+            
+            //Update RTM Catatan
+            Route::put('rtm-catatan/{rtmCatatan}/update', [RtmCatatanController::class, 'update'])->name('admin.rtm-catatan.update');
+            
+            //Delete RTM Catatan
+            Route::delete('rtm-catatan/{rtmCatatan}/destroy', [RtmCatatanController::class, 'destroy'])->name('admin.rtm-catatan.destroy');
+            
+            //Save Session
+            Route::post('rtm-catatan/{rtmJadwal}/session', [SessionController::class, 'session_rtm_catatan'])->name('rtm-catatan.session');
+
             //LIST Tindak Lanjut Audit
             Route::get('/rtm-rtl-univ/{rtmJadwal}', [TindakLanjutController::class, 'show'])->name('admin.rtm-rtl.show');
             
@@ -1060,26 +1045,118 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('/rtm-rtl-univ/store', [TindakLanjutController::class, 'store'])->name('admin.rtm-rtl.store');
 
             //status pengisian
-            Route::post('/rtm-rtl-univ/isi/{rtmRtl}', [TindakLanjutController::class, 'isi_rtm_rtl_univ'])->name('admin.rtm-rtl.isi');
+            Route::post('/rtm-rtl-univ/isi/{rtmRtlUniv}', [TindakLanjutController::class, 'isi_rtm_rtl_univ'])->name('admin.rtm-rtl.isi');
             
             //Form RTM RTL
-            Route::get('/rtm-rtl-univ/form/{rtmRtl}', [RtmRtlController::class, 'form'])->name('admin.rtm-rtl.form');
+            Route::get('/rtm-rtl-univ/form/{rtmRtlUniv}', [RtmRtlController::class, 'form'])->name('admin.rtm-rtl.form');
 
             //Store Form
-            Route::post('rtm-rtl-univ/{rtmRtl}/store-rtm', [RtmRtlController::class, 'store_form'])->name('admin.rtm-rtl.store_form');
+            Route::post('rtm-rtl-univ/{rtmRtlUniv}/store-rtm', [RtmRtlController::class, 'store_form'])->name('admin.rtm-rtl.store_form');
 
             // Save Form RTMRTL per nomor
-            Route::post('rtm-rtl-univ/{rtmRtl}/save', [RtmRtlController::class, 'save_form'])->name('admin.rtm-rtl.save_form');
+            Route::post('rtm-rtl-univ/{rtmRtlUniv}/save', [RtmRtlController::class, 'save_form'])->name('admin.rtm-rtl.save_form');
 
             //Save Session
-            Route::post('rtm-rtl-univ/{rtmRtl}/session', [SessionController::class, 'session_rtm_rtl_univ'])->name('admin.rtm-rtl.session');
+            Route::post('rtm-rtl-univ/{rtmRtlUniv}/session', [SessionController::class, 'session_rtm_rtl_univ'])->name('admin.rtm-rtl.session');
 
-            // // Save Session RTMRTL per nomor
-            // Route::post('rtm-rtl-univ/{rtmRtl}/session-nomor/{auditee}', [SessionController::class, 'session_rtm_rtl_dekan_per_nomor'])->name('dekan.rtm-rtl.session_per_nomor');
-
+            //Approve RTM Univ Lpmpp Rektor
+            Route::post('rtm-univ/{rtmJadwal}/approve/{user}', [ApproveController::class, 'approve_rtm_univ'])->name('approve.rtm.univ');
 
         });
     });
+
+    //Audit PTK UPPS Form 6
+    Route::group(['middleware' => 'check_auditee_ptk'], function () {
+        Route::prefix('tindak-lanjut-ptk')->group(function () {
+            Route::get('', [DekanTindakLanjutController::class, 'index'])->name('dekan.rtl.index');
+
+            //Create RTL
+            Route::post('rtl/store', [DekanRtlController::class, 'store'])->name('dekan.rtl.store');
+
+            // Delete
+            Route::delete('rtl-auditee/{rtl}/destroy', [DekanRtlController::class, 'destroy'])->name('dekan.rtl.delete');
+
+            //Show RTL
+            Route::get('rtl/{rtl}', [DekanRtlController::class, 'show'])->name('dekan.rtl.show');
+
+            //Form RTL
+            Route::get('rtl/{rtl}/kriteria/{kriteria}/form/', [DekanRtlController::class, 'form'])->name('dekan.rtl.form');
+
+            //Status Isi RTL
+            Route::post('/rtl/{rtl}/kriteria/{kriteria}', [DekanRtlController::class, 'isi_rtl_form'])->name('dekan.rtl.isi');
+
+            //Save Form
+            Route::post('rtl/{rtl}/save/{auditee}/kriteria/{kriteria}', [DekanRtlController::class, 'save_form'])->name('dekan.rtl.save_form');
+
+            //Store Form
+            Route::post('rtl/{rtl}/store/{auditee}/kriteria/{kriteria}', [DekanRtlController::class, 'store_form'])->name('dekan.rtl.store_form');  
+            
+            // Save Session Form RTL 
+            Route::post('{rtl}/auditee/{auditee}', [SessionController::class, 'session_rtl_auditee'])->name('dekan.rtl.session');
+
+            //Approve RTM Univ Lpmpp Rektor
+            Route::post('rtm-rtl-univ/{rtmRtlUniv}/approve/{user}', [ApproveController::class, 'approve_rtm_rtl_univ'])->name('dekan.rtm-rtl-univ.approve');
+
+            // Approve RTL
+            Route::post('rtl/{rtl}/approve/{auditee}', [ApproveController::class, 'approve_rtl_auditee'])->name('dekan.rtl.approve');
+
+            // Approve monitoring
+            Route::post('monitoring/{monitoring}/approve/{auditee}', [ApproveController::class, 'approve_monitoring_auditee'])->name('dekan.tindak-lanjut.approve');
+
+        });
+    });
+
+    //Monitoring Tindak Lanjut Form 7
+    Route::group(['middleware' => 'check_auditor'], function () {
+        //Tindak Lanjut 
+        Route::prefix('monitoring-tindak-lanjut')->group(function () {
+            // Index
+            Route::get('', [AuditorTindakLanjutController::class, 'index'])->name('auditor.tindak-lanjut.index');
+            
+            // Show
+            Route::get('{jadwalAudit}/show', [AuditorTindakLanjutController::class, 'show'])->name('auditor.tindak-lanjut.show');
+
+            //Auditee Auditor AIMA
+            Route::get('auditee-auditor-aima', [AuditorTindakLanjutController::class, 'auditeeAuditorAima'])->name('auditor.auditee-auditor-aima.show');
+
+            Route::get('monitoring/{jadwalAudit}/create/{unit}/{type}', [AuditorRtlController::class, 'create'])->name('auditor.tindak-lanjut.create');
+
+            // Store
+            Route::post('monitoring/{jadwalAudit}/store/{unit}/{type}', [AuditorRtlController::class, 'store'])->name('auditor.tindak-lanjut.store');
+
+            // Edit
+            Route::get('monitoring/{monitoring}/edit', [AuditorRtlController::class, 'edit'])->name('auditor.tindak-lanjut.edit');
+
+            // Update
+            Route::put('monitoring/{monitoring}/update', [AuditorRtlController::class, 'update'])->name('auditor.tindak-lanjut.update');
+
+            // Delete
+            Route::delete('monitoring/{monitoring}/destroy', [AuditorRtlController::class, 'destroy'])->name('auditor.tindak-lanjut.delete');
+
+            // Approve monitoring
+            Route::post('monitoring/{monitoring}/approve/{auditor}', [ApproveController::class, 'approve_monitoring_auditor'])->name('auditor.tindak-lanjut.approve');
+
+            // Status monitoring
+            Route::post('monitoring/{monitoring}/{kriteria}/isi_monitoring', [AuditorRtlController::class, 'isi_monitoring'])->name('auditor.tindak-lanjut.isi');
+
+            // Form rtl
+            Route::get('rtl/{monitoring}/{kriteria}/form', [AuditorRtlController::class, 'form'])->name('auditor.tindak-lanjut.form');
+
+            // Store Form rtl
+            Route::post('rtl/{monitoring}/store/{auditor}/{kriteria}}', [AuditorRtlController::class, 'store_form'])->name('auditor.tindak-lanjut.store_form');
+
+            // Save Form rtl
+            Route::post('rtl/{monitoring}/save/{auditor}/{kriteria}', [AuditorRtlController::class, 'save_form'])->name('auditor.tindak-lanjut.save_form');
+            // Save Form rtl per nomor
+            Route::post('rtl/{monitoring}/save/{auditor}/{formId}', [AuditorRtlController::class, 'save_form_per_nomor'])->name('auditor.tindak-lanjut.save_form_per_nomor');
+
+            // Save Session Form rtl 
+            Route::post('{monitoring}/auditor/{auditor}', [SessionController::class, 'session_monitoring_auditor'])->name('auditor.tindak-lanjut.session');
+            // Save Session monitoring per nomor
+            Route::post('{monitoring}/auditor/{auditor}/{formId}', [SessionController::class, 'session_monitoring_auditor_per_nomor'])->name('auditor.tindak-lanjut.session_per_nomor');
+        });
+    });
+
 
 
     // Hasil Audit untuk Rektor

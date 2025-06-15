@@ -12,11 +12,11 @@ class RtmRtlApprove extends Model
 
     protected $table = 'rtm_rtl_approve';
 
-    protected $fillable = ['rtm_rtl_id', 'auditee_id', 'approve'];
+    protected $fillable = ['rtm_rtl_id', 'user_id', 'approve'];
 
-    public function auditee(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Auditee::class, 'auditee_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function rtm_rtl(): BelongsTo

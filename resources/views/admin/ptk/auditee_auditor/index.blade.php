@@ -1,7 +1,6 @@
 @php
     use Carbon\Carbon;
 @endphp
-
 @extends('components.layout.main_layout')
 
 @section('content')
@@ -18,15 +17,14 @@
                     <thead>
                         <tr>
                             <th class="text-center">No</th>
-                            <th class="text-center">Jadwal</th>
+                            <th class="text-center">Jadwal Audit</th>
                             <th class="text-center">Tgl Mulai</th>
                             <th class="text-center">Tgl Selesai</th>
                             <th class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-
-                        @foreach ($jadwalAudit as $item)
+                        @foreach ($jadwal as $item)
                             <tr>
                                 <td class="text-center">{{ $loop->iteration }}</td>
                                 <td class="text-center">{{ $item->jadwal }}</td>
@@ -35,9 +33,15 @@
                                 <td class="text-center">{{ Carbon::parse($item->tgl_selesai)->translatedFormat('j F Y') }}
                                 </td>
                                 <td class="text-center">
-                                    <a class="btn btn-outline-primary"
-                                        href="{{ route('hasil_rtm_fakultas.show', ['jadwalAudit' => $item->id]) }}">
-                                        <i class="fa fa-eye"></i> Lihat RTM Fakultas</a>
+                                    <a href="{{ route('auditee_auditor_ptk.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}"
+                                        class="btn btn-outline-primary">Lihat
+                                        Auditan UPPS</a>
+                                    <form action="{{ route('download.auditee_auditor', $item->id) }}" method="post"
+                                        class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-secondary">Daftar Auditan
+                                            Auditor</button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach

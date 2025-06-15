@@ -8,16 +8,22 @@ use App\Models\RtmJadwal;
 use App\Models\RtmTindakLanjut;
 use App\Models\RtmLampiran;
 use App\Models\JawabanAuditor;
-use App\Models\Kriteria;
-use App\Models\Laporan;
+use App\Models\RtmRtlForm;
+use App\Models\RtmCatatan;
 use App\Models\PtkForm;
 use App\Models\LaporanForm;
 use App\Models\Prodi;
 use App\Models\RtmRtl;
+use App\Models\RtmRtlApproved;
+use App\Models\RtmRtlUniv;
+use App\Models\RtmRtlUnivApprove;
+use App\Models\RtmUnivApprove;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelLow;
 use Error;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -73,6 +79,19 @@ class DownloadController extends Controller
         return compact('unit', 'unitName', 'unitJenjang', 'type');
     }
 
+    //helper
+    private function generateQrBase64($text)
+    {
+        $result = Builder::create()
+        ->writer(new PngWriter())
+        ->data($text)
+        ->encoding(new Encoding('UTF-8'))
+        ->ErrorCorrectionLevel(ErrorCorrectionLevel::Low)
+        ->build();
+
+        return 'data:image/png;base64,' . base64_encode($result->getString());
+    }
+
     // Auditan
     private function auditan($templateProcessor, $auditan, $unitData, $title)
     {
@@ -92,6 +111,62 @@ class DownloadController extends Controller
             $templateProcessor->setValue('auditee', $auditan->nama);
         }
     }
+
+    //Aproval Jabatan User
+    private function users($templateProcessor, $users, $unitData, $title)
+    {
+        // Auditan
+        if ($users && $users->approve) {
+            $usersData = $users->approve
+                ? $title . " " . ($unitData ? $unitData['unitName'] : '') .
+                " telah ditandatangani oleh " . $users->nama .
+                " | " . \Carbon\Carbon::parse($users->updated_at)->format('H:i:s') .
+                " | " . \Carbon\Carbon::parse($users->updated_at)->isoFormat('D MMMM YYYY')
+                : '';
+
+            $this->set_barcode($templateProcessor, 'image_user', $usersData, $users->id);
+            $templateProcessor->setValue('user', $users->nama);
+        } else {
+            $templateProcessor->setValue('image_user', '');
+            $templateProcessor->setValue('user', $users->nama);
+        }
+    } 
+    // private function Users($templateProcessor, $users, $unitData, $title)
+    // {
+    //     foreach ($users as $index => $user) {
+    //         $key = $index + 1;
+
+    //         $jabatanUser = $user->jabatan()->get();
+    //         $jabatan = $jabatanUser->map(function($jabatan) use ($unitData) {
+    //             $unitName = $unitData ? $unitData['unitName'] : '';
+    //             return "{$jabatan->nama} - $unitName";
+    //         })->join(', ');
+
+    //         if ($user->approve) {
+    //             $approvedTime = \Carbon\Carbon::parse($user->updated_at);
+
+    //             $barcodeText = $title . " " ."$jabatan telah ditandatangani oleh {$user->name} | $approvedTime->format('H:i:s') | $approvedTime->isoFormat('D MMMM YYYY')";
+
+    //             $this->set_barcode($templateProcessor, "image_user#$key", $barcodeText, $user->id);
+    //         } else {
+    //             $templateProcessor->setValue("image_user#$key", '');
+    //         }
+
+    //         $templateProcessor->setValue("nomor#$key", "$key.");
+    //          $templateProcessor->setValue("no_user#$key", ucfirst($title) . " $key,");
+    //         $templateProcessor->setValue("user#$key", "{$user->name} - $jabatan");
+    //     }
+        
+    //     $totalUsers = count($users);
+    //     for ($key = $totalUsers + 1; $key <= 3; $key++) {
+    //         $templateProcessor->setValues([
+    //             "nomor#$key" => '',
+    //             "no_user#$key" => '',
+    //             "user#$key" => '',
+    //             "image_user#$key" => '',
+    //         ]);
+    //     }
+    // }
 
     // Auditor
     private function auditors($templateProcessor, $auditors, $unitData, $title)
@@ -1690,13 +1765,13 @@ class DownloadController extends Controller
             'tahun' => \Carbon\Carbon::parse($rtmJadwal->tanggal)->translatedFormat('Y'),
             'fakultas' => $rtmJadwal->fakultas->nama ?? null,
             'unit' => $rtmJadwal->unit->nama ?? null, 
+            'audit' => $rtmJadwal->jadwal_audit->jadwal ?? null,
         ];
 
-        // Ambil data RtmJadwal dengan relasi yang diperlukan
-        $rtmJadwal = RtmJadwal::with(['rtm_rtl.rtm_tindak_lanjut', 'fakultas', 'unit', 'rtm_lampiran'])
-            ->findOrFail($rtmJadwal->id);
+        //Narasi 
+        $rtmCatatan = RtmCatatan::where('rtm_jadwal_id', $rtmJadwal->id)->get();
 
-        // Ambil lampiran jika ada
+        // Lampiran
         $lampiran = RtmLampiran::where('rtm_jadwal_id', $rtmJadwal->id)->first();
 
         $temuanFakultas = JawabanAuditor::where('jadwal_audit_id', $rtmJadwal->jadwal_audit_id)
@@ -1738,22 +1813,53 @@ class DownloadController extends Controller
 
         $jawabanTindakLanjut = RtmTindakLanjut::whereIn('rtm_rtl_id', $rtmJadwal->rtm_rtl->pluck('id'))->get();
 
+        $approval = RtmRtlApproved::with('user')
+            ->whereIn('rtm_rtl_id', $rtmJadwal->rtm_rtl->pluck('id'))
+            ->where('approve', true)
+            ->latest()
+            ->first();
+
+        $barcodePath = null;
+        $approvalInfo = $approval;
+
+        if ($approval && $approval->user) {
+            $approvalText = "Disetujui oleh: " . $approval->user->nama .
+                " | " . \Carbon\Carbon::parse($approval->updated_at)->format('H:i:s') .
+                " | " . \Carbon\Carbon::parse($approval->updated_at)->isoFormat('D MMMM YYYY');
+
+            $writer = new PngWriter();
+            $qrCode = \Endroid\QrCode\QrCode::create($approvalText)
+                ->setEncoding(new Encoding('UTF-8'))
+                ->setErrorCorrectionLevel(ErrorCorrectionLevel::Low);
+
+            $qrCodeBinary = $writer->write($qrCode)->getString();
+            $barcodePath = tempnam(sys_get_temp_dir(), 'qr_') . '.png';
+            file_put_contents($barcodePath, $qrCodeBinary);
+        }
+
+        $dataCatatan = [
+            'rtmJadwal' => $rtmJadwal,
+            'rtmCatatan' => $rtmCatatan,
+        ];
+
         $dataJadwal = [
             'rtmJadwal' => $rtmJadwal,
             'fakultas' => $rtmJadwal->fakultas->nama ?? null,
             'unit' => $rtmJadwal->unit->nama ?? null, 
+            'barcodePath' => $barcodePath,
+            'approvalInfo' => $approvalInfo,
 
         ];
 
         $dataIsi = [
             'rtmJadwal' => $rtmJadwal,
             'lampiran' => $lampiran,
-            'prodiList' => $prodiList,
             'temuanFakultas' => $temuanFakultas,
             'temuanProdi' => $temuanProdi,
             'jawabanTindakLanjut' => $jawabanTindakLanjut,
             'fakultas' => $rtmJadwal->fakultas->nama ?? null,
             'unit' => $rtmJadwal->unit->nama ?? null, 
+            
         ];
 
         // MPDF
@@ -1770,6 +1876,13 @@ class DownloadController extends Controller
         $mpdf->SetFooter('');
 
         // Tambahkan halaman baru untuk isi laporan
+        $mpdf->AddPage('P'); // Portrait untuk isi
+        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
+
+        // Halaman catatan 
+        $catatan = view('pdf.rtm_fakultas.catatan', $dataCatatan)->render();
+        $mpdf->WriteHTML($catatan);
+
         $mpdf->AddPage('P'); // Portrait untuk isi
         $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
 
@@ -1832,11 +1945,249 @@ class DownloadController extends Controller
         ]);
     }
     
-    //RTM FAKULTAS 
+    //RTM UNIV 
+    public function download_rtm_univ(RtmJadwal $rtmJadwal)
+    {
+        // Data Cover
+        $dataCover = [
+            'tahun' => \Carbon\Carbon::parse($rtmJadwal->tanggal)->translatedFormat('Y'),
+            'fakultas' => $rtmJadwal->fakultas->nama ?? null,
+            'unit' => $rtmJadwal->unit->nama ?? null, 
+            'audit' => $rtmJadwal->jadwal_audit->jadwal ?? null,
+        ];
+
+        //Data rtmjadwal
+        $rtmJadwal = RtmJadwal::with([
+            'rtm_rtl_univ.rtm_rtl_form.form.instrumen.kategori.standar',
+            'rtm_rtl_univ.fakultas',
+            'rtm_rtl_univ.unit',
+            'rtm_rtl_univ.jadwal_audit',
+            'rtm_rtl_univ.rtm_rtl_form.user',
+        ])->findOrFail($rtmJadwal->id);
+
+        // $rtmJadwal = RtmJadwal::with(['rtm_rtl_univ.rtm_rtl_form', 'fakultas', 'unit', 'rtm_lampiran', 'rtm_catatan'])
+        //     ->findOrFail($rtmJadwal->id);
+
+        //Narasi 
+        $rtmCatatan = RtmCatatan::where('rtm_jadwal_id', $rtmJadwal->id)->get();
+
+        // Lampiran
+        $lampiran = RtmLampiran::where('rtm_jadwal_id', $rtmJadwal->id)->first();
+
+        $rtmUnivIds = RtmRtlUniv::where('rtm_jadwal_id', $rtmJadwal->id)->pluck('id');
+
+        $jawabanRencana = RtmRtlForm::with('form.instrumen.standar')
+            ->whereIn('rtm_rtl_univ_id', $rtmUnivIds)
+            ->get();
+
+        $approvalRektor = RtmUnivApprove::with(['user.jabatan' => function ($query) {
+            $query->where('slug', 'rektor');
+        }])
+        ->where('rtm_jadwal_id', $rtmJadwal->id)
+        ->where('approve', true)
+        ->whereHas('user.jabatan', function ($query) {
+            $query->where('slug', 'rektor');
+        })
+        ->first();
+
+        //Rektor
+        $barcodeRektorPath = null;
+        $approvalRektorInfo = null;
+
+        if ($approvalRektor && $approvalRektor->user) {
+            $approvalRektorInfo = "Disetujui oleh: " . $approvalRektor->user->nama .
+                " | " . \Carbon\Carbon::parse($approvalRektor->updated_at)->format('H:i:s') .
+                " | " . \Carbon\Carbon::parse($approvalRektor->updated_at)->isoFormat('D MMMM YYYY');
+
+            $writer = new PngWriter();
+            $qrCode = \Endroid\QrCode\QrCode::create($approvalRektorInfo)
+                ->setEncoding(new Encoding('UTF-8'))
+                ->setErrorCorrectionLevel(ErrorCorrectionLevel::Low);
+
+            $qrCodeBinary = $writer->write($qrCode)->getString();
+            $barcodeRektorPath = tempnam(sys_get_temp_dir(), 'qr_') . '.png';
+            file_put_contents($barcodeRektorPath, $qrCodeBinary);
+        }
+
+        //Ketua LPMPP
+        $approvalKetuaLp3m = RtmUnivApprove::with(['user.jabatan' => function ($query) {
+            $query->where('slug', 'ketua-lp3m');
+        }])
+        ->where('rtm_jadwal_id', $rtmJadwal->id)
+        ->where('approve', true)
+        ->whereHas('user.jabatan', function ($query) {
+            $query->where('slug', 'ketua-lp3m');
+        })
+        ->first();
+
+        $barcodeKetuaLp3mPath = null;
+        $approvalKetuaLp3mInfo = null;
+
+        if ($approvalKetuaLp3m && $approvalKetuaLp3m->user) {
+            $approvalKetuaLp3mInfo = "Disetujui oleh: " . $approvalKetuaLp3m->user->nama .
+                " | " . \Carbon\Carbon::parse($approvalKetuaLp3m->updated_at)->format('H:i:s') .
+                " | " . \Carbon\Carbon::parse($approvalKetuaLp3m->updated_at)->isoFormat('D MMMM YYYY');
+
+            $writer = new PngWriter();
+            $qrCode = \Endroid\QrCode\QrCode::create($approvalKetuaLp3mInfo)
+                ->setEncoding(new Encoding('UTF-8'))
+                ->setErrorCorrectionLevel(ErrorCorrectionLevel::Low);
+
+            $qrCodeBinary = $writer->write($qrCode)->getString();
+            $barcodeKetuaLp3mPath = tempnam(sys_get_temp_dir(), 'qr_') . '.png';
+            file_put_contents($barcodeKetuaLp3mPath, $qrCodeBinary);
+        }
+        
+        $approvalsUpps = RtmRtlUnivApprove::with([
+            'user', 
+            'rtm_rtl_univ' => function($query) {
+                $query->with(['fakultas', 'unit']);
+            }
+        ])
+        ->whereIn('rtm_rtl_univ_id', $rtmJadwal->rtm_rtl_univ->pluck('id'))
+        ->where('approve', true)
+        ->get()
+        ->groupBy('rtm_rtl_univ_id')
+        ->map(function ($items) {
+            return $items->sortByDesc('updated_at')->first();
+        });
+
+        $barcodeUppsPaths = [];
+
+        foreach ($approvalsUpps as $rtmRtlUnivId => $approval) {
+            if ($approval && $approval->user) {
+                $approvalInfo = "Disetujui oleh: " . $approval->user->nama .
+                    " | " . $approval->updated_at->format('H:i:s') .
+                    " | " . $approval->updated_at->isoFormat('D MMMM YYYY');
+
+                $writer = new PngWriter();
+                $qrCode = \Endroid\QrCode\QrCode::create($approvalInfo)
+                    ->setEncoding(new Encoding('UTF-8'))
+                    ->setErrorCorrectionLevel(ErrorCorrectionLevel::Low);
+
+                $qrCodeBinary = $writer->write($qrCode)->getString();
+                $barcodeUppsPaths[$rtmRtlUnivId] = tempnam(sys_get_temp_dir(), 'qr_upps_') . '.png';
+                file_put_contents($barcodeUppsPaths[$rtmRtlUnivId], $qrCodeBinary);
+            }
+        }
+
+        $dataCatatan = [
+            'rtmJadwal' => $rtmJadwal,
+            'rtmCatatan' => $rtmCatatan,
+        ];
+
+        $dataJadwal = [
+            'rtmJadwal' => $rtmJadwal,
+            'fakultas' => $rtmJadwal->fakultas->nama ?? null,
+            'unit' => $rtmJadwal->unit->nama ?? null, 
+            'barcodeRektorPath' => $barcodeRektorPath,
+            'approvalRektor' => $approvalRektor,
+            'barcodeKetuaLp3mPath' => $barcodeKetuaLp3mPath,
+            'approvalKetuaLp3m' => $approvalKetuaLp3m,
+        ];
+
+        $dataIsi = [
+            'rtmJadwal' => $rtmJadwal,
+            'lampiran' => $lampiran,
+            'jawabanRencana' => $jawabanRencana,
+            'fakultas' => $rtmJadwal->fakultas->nama ?? null,
+            'unit' => $rtmJadwal->unit->nama ?? null, 
+            'barcodeRektorPath' => $barcodeRektorPath,
+            'approvalRektor' => $approvalRektor,
+            'approvalsUpps' => $approvalsUpps,  
+            'barcodeUppsPaths' => $barcodeUppsPaths,  
+        ];
+
+        // MPDF
+        $mpdf = new \Mpdf\Mpdf([
+            'tempDir' => storage_path('app/tmp'),
+        ]);
+
+        // Halaman Cover (Portrait)
+        $cover = view('pdf.rtm_univ.cover', $dataCover)->render();
+        $mpdf->AddPage('P');
+        $mpdf->WriteHTML($cover);
+
+         // Page Number
+        $mpdf->PageNumSubstitutions[] = [
+            'from' => 2,
+            'reset' => 1,
+            'type' => '1',
+            'suppress' => 'off',
+        ];
+
+        // Tambahkan halaman baru untuk isi laporan
+        $mpdf->AddPage('P'); // Portrait untuk isi
+        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
+
+        // Halaman catatan 
+        $catatan = view('pdf.rtm_univ.catatan', $dataCatatan)->render();
+        $mpdf->WriteHTML($catatan);
+
+        $mpdf->AddPage('P'); // Portrait untuk isi
+        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
+
+        // Halaman Isi 
+        $jadwal = view('pdf.rtm_univ.jadwal', $dataJadwal)->render();
+        $mpdf->WriteHTML($jadwal);
+
+        // Tambahkan halaman baru untuk isi laporan
+        $mpdf->AddPage('P'); // Landscape untuk isi
+        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
+
+        // Halaman Isi 
+        $isi = view('pdf.rtm_univ.isi', $dataIsi)->render();
+        $mpdf->WriteHTML($isi);
+
+        // Tambahkan Lampiran Jika Ada
+        if ($lampiran) {
+            $lampiranFiles = [
+                'undangan' => $lampiran->undangan,
+                'presensi' => $lampiran->presensi,
+                'dokumentasi' => $lampiran->dokumentasi,
+            ];
+
+            foreach ($lampiranFiles as $fileKey => $filePath) {
+                if ($filePath) {
+                    $pdfPath = storage_path("app/$filePath");
+
+                    // Pastikan file ada sebelum diproses
+                    if (file_exists($pdfPath) && is_readable($pdfPath)) {
+                        try {
+                            $pageCount = $mpdf->SetSourceFile($pdfPath);
+
+                            for ($i = 1; $i <= $pageCount; $i++) {
+                                $tplId = $mpdf->ImportPage($i);
+                                $mpdf->AddPage();
+                                $mpdf->UseTemplate($tplId);
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Gagal menambahkan lampiran $fileKey: " . $e->getMessage());
+                        }
+                    } else {
+                        Log::warning("Lampiran $fileKey tidak ditemukan atau tidak dapat dibaca di path: $pdfPath");
+                    }
+                }
+            }
+        }
+
+        // Penamaan file 
+        $namaFile = "Laporan RTM Universitas " . " Tahun " . $dataCover['tahun'] . ".pdf";
+      
+        // Download
+        return response($mpdf->Output($namaFile, \Mpdf\Output\Destination::STRING_RETURN), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"$namaFile\"",
+            'X-Filename' => $namaFile,
+        ]);
+    }
+    
+
+
+    //RTM FAKULTAS WORD
     private function rtmRtl($id)
     {
         $title = "Laporan RTM Fakultas";
-            // 1. Ambil data utama
             $rtmRtl = RtmRtl::with(['rtm_jadwal', 'rtm_tindak_lanjut'])->find($id);
             if (!$rtmRtl) {
                 throw new \Exception('Data RTM tidak ditemukan');
@@ -1847,13 +2198,13 @@ class DownloadController extends Controller
                 throw new \Exception('Data jadwal RTM tidak ditemukan');
             }
 
-            // 2. Ambil data unit/fakultas
+            // Data unit/fakultas
             $unitData = $this->get_unit($rtmJadwal);
             if (!$unitData) {
                 throw new \Exception('Data unit tidak ditemukan');
             }
 
-            // 3. Query data temuan dan tindakan
+            // Data Rencana Tindak Lanjut
             $tindakLanjutItems = DB::table('rtm_tindak_lanjut')
                 ->where('rtm_rtl_id', $id)
                 ->join('kriteria', 'rtm_tindak_lanjut.kriteria_id', '=', 'kriteria.id')
@@ -1890,7 +2241,7 @@ class DownloadController extends Controller
                 ->orderBy('kriteria.id')
                 ->get();
 
-            // 4. Group data by standar dan pernyataan
+            // Group data berdsarkan standar dan pernyataan
             $groupedData = [];
             
             foreach ($tindakLanjutItems as $item) {
@@ -1934,25 +2285,32 @@ class DownloadController extends Controller
                 }
             }
 
-            // Auditan
-            $auditan = DB::table('rtm_rtl_approve as rtm_rtl_auditan')
-                ->where('rtm_rtl_auditan.rtm_rtl_id', $id)
-                ->leftJoin('auditee', 'rtm_rtl_auditan.auditee_id', '=', 'auditee.id')
-                ->leftJoin('users', 'auditee.user_id', '=', 'users.id')
-                ->select(
-                    'auditee.id as id',
-                    'users.name as nama',
-                    'rtm_rtl_auditan.approve as approve',
-                    'rtm_rtl_auditan.updated_at as updated_at'
-                )
-                ->first();
+            //Data User
+            $user = RtmRtlApproved::with(['user.jabatan'])
+            ->where('rtm_rtl_id', $id)
+            ->whereNotNull('user_id')
+            ->get()
+            ->pluck('user')
+            ->filter()
+            ->values();
 
-            // 5. Generate Word Document
+            //Generate Word Document
             $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(
                 storage_path('app/public/template/template_rtm_fakultas.docx')
             );
 
-            // Set header dokumen
+            //Data Catatan Narasi
+            $catatanList = RtmCatatan::where('rtm_jadwal_id', $rtmJadwal->id)->get();
+
+            $templateProcessor->cloneBlock('catatan_loop', count($catatanList), true, true);
+
+            foreach ($catatanList as $index => $catatan) {
+                $i = $index + 1; 
+                $templateProcessor->setValue("judul#$i", $catatan->judul);
+                $templateProcessor->setValue("isi#$i", $catatan->isi);
+            }
+
+            //Data berita acara
             \Carbon\Carbon::setLocale('id');
             $date = \Carbon\Carbon::parse($rtmRtl->tgl);
             
@@ -1967,33 +2325,35 @@ class DownloadController extends Controller
                 'peserta' => $rtmJadwal->peserta,
             ]);
 
-            // 6. Isi data standar ke template
+            // Data Standar
             $standarKategori = null;
             $no = 1;
+            $rows = [];
 
             foreach ($groupedData as $group) {
                 $templateProcessor->setValue('standar_kategori', 
                     "STANDAR: {$group['nama_standar']} | {$group['nama_kategori']}");
             
-            $rows = [];
-            foreach ($group['items'] as $item) {
-                $firstKriteria = true;
+                foreach ($group['items'] as $item) {
+                    $firstKriteria = true;
 
-                foreach ($item['kriteria_items'] as $kriteria) {
-                    $mergedRencana = implode("\n\n", $kriteria['tindak_lanjut']);
+                    foreach ($item['kriteria_items'] as $kriteria) {
+                        $mergedRencana = implode("\n\n", $kriteria['tindak_lanjut']);
 
-                    $rows[] = [
-                        'no' => $firstKriteria ? $no : '',
-                        'kode_instrumen' => $firstKriteria ? $item['kode_instrumen'] : '',
-                        'pernyataan' => $firstKriteria ? $item['pernyataan'] : '',
-                        'kriteria' => $kriteria['kriteria_nama'],
-                        'temuan' => $kriteria['temuan'],
-                        'rencana' => $mergedRencana
-                    ];
-                    $firstKriteria = false;
+                        $rows[] = [
+                            'no' => $firstKriteria ? $no : '',
+                            'kode_instrumen' => $firstKriteria ? $item['kode_instrumen'] : '',
+                            'pernyataan' => $firstKriteria ? $item['pernyataan'] : '',
+                            'kriteria' => $kriteria['kriteria_nama'],
+                            'temuan' => $kriteria['temuan'],
+                            'rencana' => $mergedRencana
+                        ];
+                        $firstKriteria = false;
+                    }
+                    $no++;
                 }
-                $no++;
             }
+
             $templateProcessor->cloneRow('row_no', count($rows));
                 
             foreach ($rows as $i => $row) {
@@ -2006,9 +2366,9 @@ class DownloadController extends Controller
                 $templateProcessor->setValue("row_temuan#{$j}", $row['temuan']);
                 $templateProcessor->setValue("row_rencana#{$j}", $row['rencana']);
             }
-        }
+        
                 
-        $this->auditan($templateProcessor, $auditan, $unitData, $title);
+        $this->users($templateProcessor, $user, $unitData, $title);
             
         return [
             'templateProcessor' => $templateProcessor,
@@ -2127,12 +2487,164 @@ class DownloadController extends Controller
     {
         try {
             $tp = $this->rtmRtl($rtmRtl);
+            
+            // Validasi tambahan sebelum generate word
+            if (!$tp['templateProcessor'] || !$tp['unitData']) {
+                throw new \Exception('Data template tidak valid');
+            }
+            
             return $this->word($tp['templateProcessor'], $tp['unitData'], $tp['date'], $tp['title']);
+            
         } catch (\Exception $e) {
             Log::error('Error generating RTM RTL Word: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return back()->with('error', 'Gagal membuat dokumen: ' . $e->getMessage());
+        }
+    }
+
+    //RTM UNIVERSITAS
+    private function rtmRtlUniv($id)
+    {
+        $title = "Laporan RTM Universitas";
+        $rtmJadwal = RtmJadwal::find($id);
+
+        if (!$rtmJadwal) {
+            throw new \Exception('Data jadwal RTM tidak ditemukan');
+        }
+
+        $rtmRtlUniv = RtmRtlUniv::where('rtm_jadwal_id', $rtmJadwal->id)->first();
+
+        if (!$rtmRtlUniv) {
+            throw new \Exception('Data RTM RTL Universitas tidak ditemukan');
+        }
+
+        $forms = RtmRtlForm::with(['form.instrumen.standar'])
+            ->where('rtm_rtl_univ_id', $rtmRtlUniv->id)
+            ->get();
+
+
+            // Data unit/fakultas
+            $unitData = $this->get_unit($rtmJadwal);
+            if (!$unitData) {
+                throw new \Exception('Data unit tidak ditemukan');
+            }
+            //Data User
+            $user = DB::table('rtm_rtl_univ_approve')
+            ->join('users', 'users.id', '=', 'rtm_rtl_univ_approve.user_id')
+            ->join('jabatan_user', 'jabatan_user.user_id', '=', 'users.id')
+            ->join('jabatan', 'jabatan.id', '=', 'jabatan_user.jabatan_id')
+            ->where('rtm_rtl_univ_approve.rtm_rtl_univ_id', $rtmRtlUniv->id)
+            ->select('users.name', 'jabatan.nama')
+            ->distinct()
+            ->get();
+
+            //Generate Word Document
+            $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(
+                storage_path('app/public/template/template_rtm_univ.docx')
+            );
+
+            //Data Catatan Narasi
+            $catatanList = RtmCatatan::where('rtm_jadwal_id', $rtmJadwal->id)->get();
+
+            foreach ($catatanList as $i => $catatan) {
+                $templateProcessor->setValue("judul_" . ($i+1), $catatan->judul);
+                $templateProcessor->setValue("catatan_" . ($i+1), $catatan->catatan);
+            }
+
+            //Data berita acara
+            \Carbon\Carbon::setLocale('id');
+            $date = \Carbon\Carbon::parse($rtmJadwal->tgl);
+            
+            $templateProcessor->setValues([
+                //'unit' => $rtmJadwal->fakultas->nama,
+                'tahun' => $date->isoFormat('YYYY'),
+                'date' => $date->isoFormat('dddd, D MMMM YYYY'),
+                'tempat' => $rtmJadwal->tempat,
+                'waktu' => $rtmJadwal->jam_mulai . ' - ' . $rtmJadwal->jam_selesai,
+                'jadwal' => $rtmJadwal->jadwal_audit->jadwal,
+                'pimpinan' => $rtmJadwal->pimpinan,
+                'peserta' => $rtmJadwal->peserta,
+            ]);
+
+            $uniqueStandars = collect();
+            $temuanPerForm = [];
+            foreach ($forms as $form) {
+                //Kriteria Standar
+                $standarName = $form->form->instrumen->standar->nama ?? null;
+                if ($standarName) {
+                    $uniqueStandars->push($standarName);
+                }
+
+                //Temuan
+                $jawaban = JawabanAuditor::where('form_id', $form->form_id)->first();
+                $kriteriaId = $jawaban->kriteria_id ?? null;
+                $temuanText = $this->formatTemuanRtmUniv($form->form_id, $kriteriaId);
+
+                $temuanPerForm[] = [
+                    'instrumen' => $form->form->instrumen->nama ?? '-',
+                    'temuan' => $temuanText ?? '-',
+                    'rekomendasi' => $form->rekomendasi ?? '-',
+                    'koreksi' => $form->koreksi ?? '-',
+                ];
+            }
+
+            $bulletList = $uniqueStandars->unique()->map(fn($s) => "- " . $s)->implode("\n");
+            $templateProcessor->setValue('list_standar', $bulletList);
+
+            $this->users($templateProcessor, $user, $unitData, $title);
+            
+            return [
+                'templateProcessor' => $templateProcessor,
+                'unitData' => $unitData,
+                'date' => $date,
+                'title' => $title,
+                'temuanPerForm' => $temuanPerForm
+            ];
+
+    }
+
+    private function formatTemuanRtmUniv($formId, $kriteriaId)
+    {
+        // Temuan yang akan dikembalikan
+        $temuan = '';
+
+        if ($kriteriaId == 1) {
+            $ptkForm = PtkForm::where('form_id', $formId)->first();
+            if ($ptkForm) {
+                return "{$ptkForm->analisis} (Kategori {$ptkForm->kategori_temuan})";
+            }
+        }
+
+        if ($kriteriaId == 3) {
+            $laporanForm = LaporanForm::where('form_id', $formId)->first();
+            if ($laporanForm) {
+                return "{$laporanForm->ruang_peningkatan}";
+            }
+        }
+
+        // Fallback: jawaban auditor
+        $jawabanAuditor = JawabanAuditor::where('form_id', $formId)
+            ->where('kriteria_id', $kriteriaId)
+            ->first();
+
+        if ($jawabanAuditor) {
+            return $jawabanAuditor->catatan ?? 'Tidak ada temuan auditor';
+        }
+
+        return '';
+    }
+
+    public function rtm_rtl_univ_word(string $rtmJadwal)
+    {
+        try {
+            $tp = $this->rtmRtlUniv($rtmJadwal);
+            return $this->word($tp['templateProcessor'], $tp['unitData'], $tp['date'], $tp['title']);
+        } catch (\Exception $e) {
+            Log::error('Error generating RTM RTLUniv Word: ' . $e->getMessage());
             return back()->with('error', 'Terjadi kesalahan saat mengunduh RTL!');
         }
     }
+
 
     //Form 6 tindak lanjut koreksi (RTL)
     private function rtl($id)
@@ -2149,13 +2661,30 @@ class DownloadController extends Controller
             ->join('kriteria', 'rtl_form.kriteria_id', '=', 'kriteria.id')
             ->join('form', 'rtl_form.form_id', '=', 'form.id')
             ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id')
-            ->leftjoin('rtm_tindak_lanjut', function($join) {
+            ->leftJoin('rtm_tindak_lanjut', function($join) {
                 $join->on('rtl_form.form_id', '=', 'rtm_tindak_lanjut.form_id')
-                     ->on('rtl_form.kriteria_id', '=', 'rtm_tindak_lanjut.kriteria_id');     
+                    ->on('rtl_form.kriteria_id', '=', 'rtm_tindak_lanjut.kriteria_id');
             })
-            ->leftJoin('ptk_form_deskripsi', 'rtl_form.form_id', '=', 'ptk_form_deskripsi.form_id')
-            ->leftJoin('jawaban_auditor', 'rtl_form.form_id', '=', 'jawaban_auditor.form_id')
-            ->leftJoin('laporan_form', 'rtl_form.form_id', '=', 'laporan_form.form_id')
+            ->leftJoin('jabatan', 'rtm_tindak_lanjut.jabatan_id', '=', 'jabatan.id')
+            ->leftJoin('jabatan_user', function($join) {
+                $join->on('rtm_tindak_lanjut.user_id', '=', 'jabatan_user.user_id')
+                    ->on('rtm_tindak_lanjut.jabatan_id', '=', 'jabatan_user.jabatan_id');
+            })
+            ->leftJoin('fakultas', 'jabatan_user.fakultas_id', '=', 'fakultas.id')
+            ->leftJoin('unit', 'jabatan_user.unit_id', '=', 'unit.id')
+            ->leftJoin('prodi', 'jabatan_user.prodi_id', '=', 'prodi.id')
+            ->leftJoin('ptk_form_deskripsi', function($join) {
+                $join->on('rtl_form.form_id', '=', 'ptk_form_deskripsi.form_id')
+                    ->where('rtl_form.kriteria_id', '=', 1);
+            })
+            ->leftJoin('jawaban_auditor', function($join) {
+                $join->on('rtl_form.form_id', '=', 'jawaban_auditor.form_id')
+                    ->on('rtl_form.kriteria_id', '=', 'jawaban_auditor.kriteria_id');
+            })
+            ->leftJoin('laporan_form', function($join) {
+                $join->on('rtl_form.form_id', '=', 'laporan_form.form_id')
+                    ->where('rtl_form.kriteria_id', '=', 3); 
+            })
             ->select([
                 'kriteria.id as kriteria_id',
                 'kriteria.nama as nama_kriteria',
@@ -2164,7 +2693,10 @@ class DownloadController extends Controller
                 'rtl_form.tindakan as tindakan_pelaksanaan',
                 'rtl_form.bukti as bukti_pelaksanaan',
                 'rtm_tindak_lanjut.tindakan as rencana_tindakan',
-                'rtm_tindak_lanjut.pic',
+                'jabatan.nama as jabatan_nama',
+                'fakultas.nama as fakultas_nama',
+                'unit.nama as unit_nama',
+                'prodi.nama as prodi_nama',
                 'rtm_tindak_lanjut.waktu',
                 'ptk_form_deskripsi.deskripsi as deskripsi',
                 'jawaban_auditor.catatan as catatan',
@@ -2180,24 +2712,25 @@ class DownloadController extends Controller
         }
 
         $groupedForms = [];
-
         foreach ($forms as $form) {
             // kode
             $key = $form->kode_instrumen . '|' . $form->pernyataan;
-
             if (!isset($groupedForms[$key])) {
                 $groupedForms[$key] = [
                     'kode_instrumen' => $form->kode_instrumen,
                     'pernyataan' => $form->pernyataan,
                     'kriteria_id' => $form->kriteria_id,
-                    'deskripsi' => [],
-                    'catatan' => [],
-                    'kelebihan' => [],
-                    'rencana_tindakan' => [],
-                    'pic' => [],
-                    'waktu' => [],
-                    'tindakan_pelaksanaan' => [],
-                    'bukti_pelaksanaan' => [],
+                    'deskripsi' => $form->deskripsi ? [$form->deskripsi] : [],
+                    'catatan' => $form->catatan ? [$form->catatan] : [],
+                    'kelebihan' => $form->kelebihan ? [$form->kelebihan] : [],
+                    'rencana_tindakan' => explode(';', $form->rencana_tindakan ?? ''),
+                    'jabatan_nama' => explode(';', $form->jabatan_nama ?? ''),
+                    'fakultas_nama' => explode(';', $form->fakultas_nama ?? ''),
+                    'unit_nama' => explode(';', $form->unit_nama ?? ''),
+                    'prodi_nama' => explode(';', $form->prodi_nama ?? ''),
+                    'waktu' => explode(';', $form->waktu ?? ''),
+                    'tindakan_pelaksanaan' => explode(';', $form->tindakan_pelaksanaan ?? ''),
+                    'bukti_pelaksanaan' => explode(';', $form->bukti_pelaksanaan ?? '')
                 ];
             }
 
@@ -2208,12 +2741,26 @@ class DownloadController extends Controller
 
             // Gabungkan rencana
             $groupedForms[$key]['rencana_tindakan'] = array_merge($groupedForms[$key]['rencana_tindakan'], explode(';', $form->rencana_tindakan ?? ''));
-            $groupedForms[$key]['pic'] = array_merge($groupedForms[$key]['pic'], explode(';', $form->pic ?? ''));
+            $groupedForms[$key]['jabatan_nama'][] = $form->jabatan_nama;
+            $groupedForms[$key]['fakultas_nama'][] = $form->fakultas_nama;
+            $groupedForms[$key]['unit_nama'][] = $form->unit_nama;
+            $groupedForms[$key]['prodi_nama'][] = $form->prodi_nama;
             $groupedForms[$key]['waktu'] = array_merge($groupedForms[$key]['waktu'], explode(';', $form->waktu ?? ''));
 
             // Gabungkan tindakan pelaksanaan
-            $groupedForms[$key]['tindakan_pelaksanaan'] = array_merge($groupedForms[$key]['tindakan_pelaksanaan'], explode(';', $form->tindakan_pelaksanaan ?? ''));
-            $groupedForms[$key]['bukti_pelaksanaan'] = array_merge($groupedForms[$key]['bukti_pelaksanaan'], explode(';', $form->bukti_pelaksanaan ?? ''));
+            $groupedForms[$key]['tindakan_pelaksanaan'] = array_unique(
+                array_merge(
+                    $groupedForms[$key]['tindakan_pelaksanaan'],
+                    explode(';', $form->tindakan_pelaksanaan ?? '')
+                )
+            );
+            
+            $groupedForms[$key]['bukti_pelaksanaan'] = array_unique(
+                array_merge(
+                    $groupedForms[$key]['bukti_pelaksanaan'],
+                    explode(';', $form->bukti_pelaksanaan ?? '')
+                )
+            );
         }
 
         $kategoriData = [
@@ -2231,7 +2778,16 @@ class DownloadController extends Controller
             foreach ($data['rencana_tindakan'] as $i => $item) {
                 $parts = [];
                 if ($item) $parts[] = trim($item);
-                if (!empty($data['pic'][$i])) $parts[] = 'PIC: ' . trim($data['pic'][$i]);
+
+                $picInfo = $this->formatPIC(
+                    $data['jabatan_nama'],
+                    $data['fakultas_nama'],
+                    $data['unit_nama'],
+                    $data['prodi_nama'],
+                    $i
+                );
+
+                if ($picInfo) $parts[] = 'PIC: ' . $picInfo;
                 if (!empty($data['waktu'][$i])) $parts[] = 'Waktu: ' . trim($data['waktu'][$i]);
                 if (!empty($parts)) {
                     $rencanaList[] = ($i + 1) . '. ' . implode(' | ', $parts);
@@ -2274,7 +2830,7 @@ class DownloadController extends Controller
                 default: $kategoriData['bm'][] = $item;
             }
         }
-
+        
         // Ambil data auditan
         $auditan = DB::table('rtl_auditee as rtl_auditan')
             ->where('rtl_auditan.rtl_id', $id)
@@ -2297,27 +2853,32 @@ class DownloadController extends Controller
                 ];
             }
 
-        // Dekan
-        // $dekan = DB::table('rtl_dekan as rtl_dekan')
-        //     ->where('rtl_dekan.rtl_id', $id)
-        //     ->leftJoin('auditee', 'rtl_dekan.auditee_id', '=', 'auditee.id')
-        //     ->leftJoin('users', 'auditee.user_id', '=', 'users.id')
-        //     ->select(
-        //         'auditee.id as id',
-        //         'users.name as nama',
-        //         'rtl_dekan.approve as approve',
-        //         'rtl_dekan.created_at as created_at',
-        //         'rtl_dekan.updated_at as updated_at'
-        //     )
-        //     ->orderBy('rtl_dekan.created_at', 'asc')
-        //     ->get();
+        // Ambil data Ketua LP3M
+        $users = DB::table('rtl_approve')
+            ->where('rtl_approve.rtl_id', $id)
+            ->join('users', 'rtl_approve.user_id', '=', 'users.id') 
+            ->select(
+                'users.id as id',
+                'users.name as nama',
+                'rtl_approve.approve as approve',
+                'rtl_approve.updated_at as updated_at'
+            )
+            ->first();
+
+            if (!$users) {
+                $users = (object) [
+                    'id' => null,
+                    'nama' => 'users',
+                    'approve' => null,
+                    'updated_at' => null,
+                ];
+            }
 
         // Unit Data
         $unitData = $this->get_unit($rtl);
         if (!$unitData) {
             throw new \Exception('Data Unit tidak ditemukan.');
         }
-
 
         // Template
         $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(storage_path('app/public/template/template_form6.docx'));
@@ -2330,13 +2891,6 @@ class DownloadController extends Controller
             'unit' => $unitData['unitName'] ?? 'Unit tidak ditemukan'
         ]);
 
-        // if (in_array('bm_no', $templateProcessor->getVariables())) {
-        //     $templateProcessor->cloneRow('bm_no', count($kategoriData['bm']));
-        // } else {
-        //     Log::warning('Tag bm_no tidak ditemukan di template Word!');
-        // }
-        
-        // Prepare values for the template
         foreach ($kategoriData as $prefix => $data) {
             if (empty($data)) {
                 $templateProcessor->setValue($prefix.'_no', 'Tidak ada data');
@@ -2359,14 +2913,34 @@ class DownloadController extends Controller
                 $templateProcessor->setValue($prefix.'_bukti_pelaksanaan#'.$rowNumber, $item['bukti_pelaksanaan']);
             }
         }
-        
-       
+
         $this->auditan($templateProcessor, $auditan, $unitData, $title);
+        $this->users($templateProcessor, $users, $unitData, $title);
 
         // Return template and other data
         return compact('templateProcessor', 'unitData', 'date', 'title');
     }
 
+    //Format PIC
+    private function formatPIC($jabatanArr, $fakultasArr, $unitArr, $prodiArr, $index)
+    {
+        $jabatan = $jabatanArr[$index] ?? null;
+        $fakultas = $fakultasArr[$index] ?? null;
+        $unit = $unitArr[$index] ?? null;
+        $prodi = $prodiArr[$index] ?? null;
+        
+        $picInfo = $jabatan;
+        if ($jabatan) {
+            if ($fakultas) {
+                $picInfo .= ' - ' . $fakultas;
+            } elseif ($unit) {
+                $picInfo .= ' - ' . $unit;
+            } elseif ($prodi) {
+                $picInfo .= ' - ' . $prodi;
+            }
+        }
+        return $picInfo;
+    }
     //RTL word
     public function rtl_word(string $rtl)
     {
@@ -2399,6 +2973,14 @@ class DownloadController extends Controller
                 $join->on('monitoring_form.form_id', '=', 'rtm_tindak_lanjut.form_id')
                      ->on('monitoring_form.kriteria_id', '=', 'rtm_tindak_lanjut.kriteria_id');     
             })
+            ->leftJoin('jabatan', 'rtm_tindak_lanjut.jabatan_id', '=', 'jabatan.id')
+            ->leftJoin('jabatan_user', function($join) {
+                $join->on('rtm_tindak_lanjut.user_id', '=', 'jabatan_user.user_id')
+                    ->on('rtm_tindak_lanjut.jabatan_id', '=', 'jabatan_user.jabatan_id');
+            })
+            ->leftJoin('fakultas', 'jabatan_user.fakultas_id', '=', 'fakultas.id')
+            ->leftJoin('unit', 'jabatan_user.unit_id', '=', 'unit.id')
+            ->leftJoin('prodi', 'jabatan_user.prodi_id', '=', 'prodi.id')
             ->leftjoin('rtl_form', function($join) {
                 $join->on('monitoring_form.form_id', '=', 'rtl_form.form_id')
                      ->on('monitoring_form.kriteria_id', '=', 'rtl_form.kriteria_id');     
@@ -2408,10 +2990,13 @@ class DownloadController extends Controller
                 'kriteria.nama as nama_kriteria',
                 'instrumen.kode as kode_instrumen',
                 'instrumen.pernyataan as pernyataan',
+                'jabatan.nama as jabatan_nama',
+                'fakultas.nama as fakultas_nama',
+                'unit.nama as unit_nama',
+                'prodi.nama as prodi_nama',
                 'rtl_form.tindakan as tindakan',
                 'rtl_form.bukti as bukti',
                 'rtm_tindak_lanjut.tindakan as rencana_tindakan',
-                'rtm_tindak_lanjut.pic',
                 'rtm_tindak_lanjut.waktu',
                 'monitoring_form_status.status as status',
                 'monitoring_form.catatan as catatan',
@@ -2434,8 +3019,11 @@ class DownloadController extends Controller
                     'kode_instrumen' => $form->kode_instrumen,
                     'pernyataan' => $form->pernyataan,
                     'kriteria_id' => $form->kriteria_id,
-                    'rencana_tindakan' => [],
-                    'pic' => [],
+                    'rencana_tindakan' => explode(';', $form->rencana_tindakan ?? ''),
+                    'jabatan_nama' => explode(';', $form->jabatan_nama ?? ''),
+                    'fakultas_nama' => explode(';', $form->fakultas_nama ?? ''),
+                    'unit_nama' => explode(';', $form->unit_nama ?? ''),
+                    'prodi_nama' => explode(';', $form->prodi_nama ?? ''),
                     'waktu' => [],
                     'tindakan' => [],
                     'bukti' => [],
@@ -2446,7 +3034,10 @@ class DownloadController extends Controller
 
             // Gabungkan rencana RTM
             $groupedForms[$key]['rencana_tindakan'] = array_merge($groupedForms[$key]['rencana_tindakan'], explode(';', $form->rencana_tindakan ?? ''));
-            $groupedForms[$key]['pic'] = array_merge($groupedForms[$key]['pic'], explode(';', $form->pic ?? ''));
+            $groupedForms[$key]['jabatan_nama'][] = $form->jabatan_nama;
+            $groupedForms[$key]['fakultas_nama'][] = $form->fakultas_nama;
+            $groupedForms[$key]['unit_nama'][] = $form->unit_nama;
+            $groupedForms[$key]['prodi_nama'][] = $form->prodi_nama;
             $groupedForms[$key]['waktu'] = array_merge($groupedForms[$key]['waktu'], explode(';', $form->waktu ?? ''));
 
             // Gabungkan tindakan pelaksanaan
@@ -2476,10 +3067,20 @@ class DownloadController extends Controller
             foreach ($data['rencana_tindakan'] as $i => $item) {
                 $parts = [];
                 if ($item) $parts[] = trim($item);
-                if (!empty($data['pic'][$i])) $parts[] = 'PIC: ' . trim($data['pic'][$i]);
+                
+                $picInfo = $this->formatPIC(
+                    $data['jabatan_nama'],
+                    $data['fakultas_nama'],
+                    $data['unit_nama'],
+                    $data['prodi_nama'],
+                    $i
+                );
+
+                if ($picInfo) $parts[] = 'PIC: ' . $picInfo;
                 if (!empty($data['waktu'][$i])) $parts[] = 'Waktu: ' . trim($data['waktu'][$i]);
+                
                 if (!empty($parts)) {
-                    $rencanaList[] = ($i + 1) . '. ' . implode(' | ', $parts);
+                    $rencanaList[] = ($i + 1) . '. ' . implode("\n", $parts); 
                 }
             }
 
@@ -2490,7 +3091,7 @@ class DownloadController extends Controller
                 if ($item) $parts[] = trim($item);
                 if (!empty($data['bukti'][$i])) $parts[] = 'bukti: ' . trim($data['bukti'][$i]);
                 if (!empty($parts)) {
-                    $tindakanList[] = ($i + 1) . '. ' . implode(' | ', $parts);
+                    $tindakanList[] = ($i + 1) . '. ' . implode("\n", $parts);
                 }
             }
 
@@ -2577,6 +3178,28 @@ class DownloadController extends Controller
                 ];
             }
 
+        // Ambil data Ketua LP3M
+        $users = DB::table('monitoring_approve')
+            ->where('monitoring_approve.monitoring_id', $id)
+            ->join('users', 'monitoring_approve.user_id', '=', 'users.id') 
+            ->select(
+                'users.id as id',
+                'users.name as nama',
+                'monitoring_approve.approve as approve',
+                'monitoring_approve.updated_at as updated_at'
+            )
+            ->first();
+
+            if (!$users) {
+                $users = (object) [
+                    'id' => null,
+                    'nama' => 'users',
+                    'approve' => null,
+                    'updated_at' => null,
+                ];
+            }
+
+
         // Unit Data
         $unitData = $this->get_unit($monitoring);
         if (!$unitData) {
@@ -2595,8 +3218,8 @@ class DownloadController extends Controller
         ]);
         
         // Prepare values for the template
-        foreach ($kategoriData as $prefix => $data) {
-            if (empty($data)) {
+        foreach ($kategoriData as $prefix => $dataItems) {
+            if (empty($dataItems)) {
                 $templateProcessor->setValue($prefix.'_no', '');
                 $templateProcessor->setValue($prefix.'_kode_pernyataan', 'Tidak ada data');
                 $templateProcessor->setValue($prefix.'_rencana_tindakan', 'Tidak ada data');
@@ -2609,10 +3232,12 @@ class DownloadController extends Controller
                 continue;
             }
 
-            $templateProcessor->cloneRow($prefix.'_no', count($data));
-            foreach ($data as $index => $item) {
-                $rowNumber = $index + 1;
-                $templateProcessor->setValue($prefix.'_no#'.$rowNumber, $item['no']);
+            $templateProcessor->cloneRow($prefix.'_no', count($dataItems));
+
+            $rowNumber = 0;
+            foreach ($dataItems as $item) {
+                $rowNumber++;
+                $templateProcessor->setValue($prefix.'_no#'.$rowNumber, $rowNumber);
                 $templateProcessor->setValue($prefix.'_kode_pernyataan#'.$rowNumber, $item['kode_pernyataan']);
                 $templateProcessor->setValue($prefix.'_rencana_tindakan#'.$rowNumber, $item['rencana_tindakan']);
                 $templateProcessor->setValue($prefix.'_tindakan#'.$rowNumber, $item['tindakan']);
@@ -2626,6 +3251,7 @@ class DownloadController extends Controller
 
         $this->auditan($templateProcessor, $auditan, $unitData, $title);
         $this->auditors($templateProcessor, $auditors, $unitData, $title);
+        $this->users($templateProcessor, $users, $unitData, $title);
 
         // Return template and other data
         return compact('templateProcessor', 'unitData', 'date', 'title');
@@ -2642,148 +3268,4 @@ class DownloadController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat mengunduh Form Monitoring Tindak Lanjut!');
         }
     }
-
-    //RTM Univ
-    public function download_rtm_univ(RtmJadwal $rtmJadwal)
-    {
-        // Data Cover
-        $dataCover = [
-            'tahun' => \Carbon\Carbon::parse($rtmJadwal->tanggal)->translatedFormat('Y'),
-        ];
-
-        $rtmJadwal = RtmJadwal::with([
-            'rtm_rtl.rtm_tindak_lanjut',
-            'rtm_rtl.fakultas', 
-            'rtm_rtl.unit',     
-            'fakultas',
-            'unit',
-            'rtm_lampiran'
-        ])->findOrFail($rtmJadwal->id);
-        
-        
-        // Ambil lampiran jika ada
-        $lampiran = RtmLampiran::where('rtm_jadwal_id', $rtmJadwal->id)->first();
-
-        $rtmUniv = collect($rtmJadwal->rtm_rtl)
-        ->groupBy(function ($rtl_rtm) {
-            return $rtl_rtm->fakultas_id ? 'fakultas_' . $rtl_rtm->fakultas_id : 'unit_' . $rtl_rtm->unit_id;
-        });
-
-        $temuanAudit = [];
-
-        foreach ($rtmUniv as $key => $rtmRtlGroup) {
-            foreach ($rtmRtlGroup as $hasilRtmRtl) {
-        
-        
-                $temuan = JawabanAuditor::where('jadwal_audit_id', $rtmJadwal->jadwal_audit_id)
-                    ->whereHas('form.instrumen.jabatan', function ($q) use ($hasilRtmRtl) {
-                        if ($hasilRtmRtl->fakultas_id) {
-                            $q->where('fakultas_id', $hasilRtmRtl->fakultas_id);
-                        } elseif ($hasilRtmRtl->unit_id) {
-                            $q->where('unit_id', $hasilRtmRtl->unit_id);
-                        }
-                    })
-                    ->with([
-                        'form.instrumen.jabatan',
-                        'form.jawaban_auditee',
-                        'kriteria',
-                        'form.ptk_form_deskripsi',
-                        'form.laporan_form',
-                    ])
-                    ->get();
-        
-                $temuanAudit[] = [
-                    'nama' => $hasilRtmRtl->fakultas->nama ?? $hasilRtmRtl->unit->nama ?? 'Tidak diketahui',
-                    'temuan' => $temuan,
-                    'rtm_rtl' => $hasilRtmRtl,
-                ];
-            }
-        }
-        
-        
-        $jawabanTindakLanjut = RtmTindakLanjut::whereIn('rtm_rtl_id', $rtmJadwal->rtm_rtl->pluck('id'))->get();
-
-        $dataJadwal = [
-            'rtmJadwal' => $rtmJadwal,
-        ];
-
-        $dataIsi = [
-            'rtmJadwal' => $rtmJadwal,
-            'lampiran' => $lampiran,
-            'temuanAudit' => $temuanAudit,
-            'jawabanTindakLanjut' => $jawabanTindakLanjut,
-        ];
-
-        // MPDF
-        $mpdf = new \Mpdf\Mpdf([
-            'tempDir' => storage_path('app/tmp'),
-        ]);
-
-        // Halaman Cover (Portrait)
-        $cover = view('pdf.rtm_univ.cover', $dataCover)->render();
-        $mpdf->AddPage('P');
-        $mpdf->WriteHTML($cover);
-
-        // Hilangkan footer pada cover
-        $mpdf->SetFooter('');
-
-        // Tambahkan halaman baru untuk isi laporan
-        $mpdf->AddPage('P'); // Portrait untuk isi
-        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
-
-        // Halaman Isi 
-        $jadwal = view('pdf.rtm_univ.jadwal', $dataJadwal)->render();
-        $mpdf->WriteHTML($jadwal);
-
-        // Tambahkan halaman baru untuk isi laporan
-        $mpdf->AddPage('L'); // Landscape untuk isi
-        $mpdf->SetFooter('Halaman {PAGENO} dari {nbpg}');
-
-        // Halaman Isi 
-        $isi = view('pdf.rtm_univ.isi', $dataIsi)->render();
-        $mpdf->WriteHTML($isi);
-
-        // Tambahkan Lampiran Jika Ada
-        if ($lampiran) {
-            $lampiranFiles = [
-                'undangan' => $lampiran->undangan,
-                'presensi' => $lampiran->presensi,
-                'dokumentasi' => $lampiran->dokumentasi,
-            ];
-
-            foreach ($lampiranFiles as $fileKey => $filePath) {
-                if ($filePath) {
-                    $pdfPath = storage_path("app/$filePath");
-
-                    // Pastikan file ada sebelum diproses
-                    if (file_exists($pdfPath) && is_readable($pdfPath)) {
-                        try {
-                            $pageCount = $mpdf->SetSourceFile($pdfPath);
-
-                            for ($i = 1; $i <= $pageCount; $i++) {
-                                $tplId = $mpdf->ImportPage($i);
-                                $mpdf->AddPage();
-                                $mpdf->UseTemplate($tplId);
-                            }
-                        } catch (\Exception $e) {
-                            Log::error("Gagal menambahkan lampiran $fileKey: " . $e->getMessage());
-                        }
-                    } else {
-                        Log::warning("Lampiran $fileKey tidak ditemukan atau tidak dapat dibaca di path: $pdfPath");
-                    }
-                }
-            }
-        }
-
-        // Penamaan file berdasarkan fakultas atau unit
-        $namaFile = "Laporan RTM Unsoed " . " Tahun " . $dataCover['tahun'] . ".pdf";
-        
-        // Download
-        return response($mpdf->Output($namaFile, \Mpdf\Output\Destination::STRING_RETURN), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => "attachment; filename=\"$namaFile\"",
-            'X-Filename' => $namaFile,
-        ]);
-    }
-    
 }

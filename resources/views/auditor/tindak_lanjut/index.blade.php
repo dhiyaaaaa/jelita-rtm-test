@@ -10,6 +10,11 @@
         </div>
         <!-- /.card-header -->
         <div class="card-body">
+            <div class="">
+                <a href="{{ asset('user_manual/Auditor_PTK.pdf') }}" target="_blank" class="btn btn-outline-info mr-2 mb-3">
+                    <i class="fa fa-book mr-2"></i> User Manual
+                </a>
+            </div>
             <table id="auditor" class="table table-bordered table-striped">
                 <thead>
                     <tr>

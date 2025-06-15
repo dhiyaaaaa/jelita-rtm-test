@@ -11,13 +11,13 @@
         </div>
 
         <div class="card-body">
-            <a href="{{ route('dekan.rtl.index') }}" class="btn btn-outline-light mb-3">
+            <a href="{{ route('admin.rtm-univ.index') }}" class="btn btn-outline-light mb-3">
                 <i class="fas fa-arrow-left"></i> Kembali
             </a>
 
             <table class="table table-borderless text-white">
                 <tr>
-                    <td class="fw-bold" width="30%">Agenda</td>
+                    <td class="fw-bold" width="15%">Agenda</td>
                     <td width="5%">:</td>
                     <td>{{ $rtmJadwal->agenda }}</td>
                 </tr>
@@ -68,11 +68,16 @@
     </div>
     
     <div class="card shadow border-0 mt-3">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-dark"><i class="fas fa-file-alt me-2"></i> Narasi Laporan RTM</h5>
+        </div>
+        
         <div class="card-body">
-             <div class="d-flex justify-content mb-3">
-                <a href="/"
-                    class="btn btn-primary"> <i class="fas fa-pencil-alt"></i>Sudah Isi </a>
-             </div>
+            <p class="text-muted">Silakan tambahkan kata pengantar laporan RTM untuk menjelaskan konteks dan tujuan laporan ini, jika diperlukan.</p>
+            <div class="d-flex justify-content">
+                <a href="{{ route('admin.rtm-catatan.form', [$rtmJadwal->id]) }}"
+                    class="btn btn-primary"><i class="fas fa-edit me-1"></i> Isi </a>
+            </div>
         </div>
     </div>
 
@@ -112,8 +117,9 @@
                     <tr>
                         <th>No</th>
                         <th>Fakultas/Unit</th>
-                        <th>Tindak Lanjut</th>
+                        <th>Rencana Tindak Lanjut</th>
                         <th>Aksi</th>
+                        <th>Status Approval</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,7 +129,13 @@
                     @foreach ($units as $index => $item)
                         <tr class="text-center">
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $item->nama }}</td>
+                            <td>
+                                @if($item->jenis_unit === 'fakultas')
+                                    Fakultas {{ $item->nama }}
+                                @else
+                                    {{ $item->nama }}
+                                @endif
+                            </td>
                             <td>
                                 @if($item->rtm_rtl_id)
                                     <span class="badge bg-success">Ada</span>
@@ -131,17 +143,17 @@
                                     <span class="badge bg-secondary">Tidak Ada</span>
                                 @endif
                             <td>
-                                @if($item->rtm_rtl_id)
+                                @if($item->rtm_rtl_univ_id)
                                     @if(!empty($item->status))
                                         @if($item->status === 'completed')
-                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_id]) }}?{{ http_build_query(request()->query()) }}"
+                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_univ_id]) }}?{{ http_build_query(request()->query()) }}"
                                                 class="btn btn-primary btn-fixed-size">Sudah Isi</a>
                                         @else
-                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_id]) }}?{{ http_build_query(request()->query()) }}"
+                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_univ_id]) }}?{{ http_build_query(request()->query()) }}"
                                                 class="btn btn-outline-primary btn-fixed-size">Isi</a>
                                         @endif
                                     @else
-                                        <form action="{{ route('admin.rtm-rtl.isi', [$item->rtm_rtl_id]) }}?{{ http_build_query(request()->query()) }}"
+                                        <form action="{{ route('admin.rtm-rtl.isi', [$item->rtm_rtl_univ_id]) }}?{{ http_build_query(request()->query()) }}"
                                             method="post" class="d-inline">
                                             @csrf
                                             <button type="submit" class="btn btn-outline-primary btn-fixed-size">Isi</button>
@@ -154,6 +166,13 @@
                                         data-jadwal_audit_id="{{ $rtmJadwal->jadwal_audit_id }}">
                                         +Tindak Lanjut
                                     </button>
+                                @endif
+                            </td>
+                            <td>
+                                @if($item->approval_status !== null)
+                                    <span class="badge bg-success">Approved</span>
+                                @else
+                                    <span class="badge bg-secondary">User belum melakukan approval</span>
                                 @endif
                             </td>
                         </tr>
@@ -169,26 +188,52 @@
                 <div class="card-body">
                     <h5 class="card-title title-size text-dark">Download dan Approve Rencana Tindak Lanjut Hasil Audit</h5>
                     <p class="card-text">Silahkan download dan approve, setelah mengisi rencana Hasil Audit.</p>
+
                     <div class="mb-2">
-                            <form action="/" method="post">
+                        @if ($isRektor && $user == $rektorId && (!$approvalRektor || !$approvalRektor->approve))
+                            <form action="{{ route('approve.rtm.univ', ['rtmJadwal' => $rtmJadwal->id, 'user' => $user]) }}" method="post">
                                 @csrf
-                            <button type="submit" class="btn btn-outline-success w-100">
-                                    <i class="fas fa-thumbs-up"></i> Approval Rektor
+                                <button type="submit" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-thumbs-up"></i> Approve sebagai Rektor
                                 </button>
                             </form>
+                        @elseif($isKetuaLP3M && $user == $ketuaLP3MId && (!$approvalKetuaLP3M || !$approvalKetuaLP3M->approve))
+                            <form action="{{ route('approve.rtm.univ', ['rtmJadwal' => $rtmJadwal->id, 'user' => $user]) }}" method="post">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-thumbs-up"></i> Approve sebagai Ketua LP3M
+                                </button>
+                            </form>
+                        @elseif(($isRektor && $approvalRektor && $approvalRektor->approve) || 
+                                ($isKetuaLP3M && $approvalKetuaLP3M && $approvalKetuaLP3M->approve))
+                            <button disabled class="btn btn-secondary w-100">
+                                <i class="fas fa-check-circle"></i> Anda sudah memberikan approval
+                            </button>
+                        @endif
                     </div>
-                    <div class="mb-2">
-                            <form action="/" method="post">
-                                @csrf
-                            <button type="submit" class="btn btn-outline-success w-100">
-                                    <i class="fas fa-thumbs-up"></i> Approval Ketua LPMPP
-                                </button>
-                            </form>
+
+                    <div class="alert alert-primary mt-3">
+                        Status Approval:
+                        <ul class="mt-2">
+                            <li>Rektor: 
+                                @if($approvalRektor && $approvalRektor->approve)
+                                    <span class="badge bg-warning">Sudah Approve</span>
+                                @else
+                                    <span class="badge bg-danger">Belum Approve</span>
+                                @endif
+                            </li>
+                            <li>Ketua LP3M: 
+                                @if($approvalKetuaLP3M && $approvalKetuaLP3M->approve)
+                                    <span class="badge bg-warning">Sudah Approve</span>
+                                @else
+                                    <span class="badge bg-danger">Belum Approve</span>
+                                @endif
+                            </li>
+                        </ul>
                     </div>
                     <div>
-                        <form action="/" 
-                            method="post"class="d-inline">
-                            @csrf
+                        <form action="{{ route('download.rtm.univ', $rtmJadwal->id) }}" 
+                            class="d-inline">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="fas fa-download"></i> Download Laporan RTM
                             </button>
@@ -256,16 +301,20 @@ $(function() {
                 "targets": [0]
             },
             {
-                "width": "30%",
+                "width": "20%",
                 "targets": [1]
             },
             {
-                "width": "30%",
+                "width": "20%",
                 "targets": [2]
             },
             {
                 "width": "30%",
                 "targets": [3]
+            },
+            {
+                "width": "20%",
+                "targets": [4]
             },
         ]
     });
