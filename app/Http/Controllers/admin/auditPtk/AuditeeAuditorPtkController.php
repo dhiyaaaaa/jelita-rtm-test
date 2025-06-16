@@ -21,7 +21,7 @@ class AuditeeAuditorPtkController extends Controller
         $jadwal = JadwalAudit::orderBy('created_at', 'DESC')->get();
 
         $data = [
-            'title' => 'Auditor',
+            'title' => 'Auditan Auditor PTK',
             'jadwal' => $jadwal
         ];
 

@@ -35,13 +35,7 @@
                                 <td class="text-center">
                                     <a href="{{ route('auditee_auditor_ptk.show', ['jadwalAudit' => $item->id, 'type' => 'upps']) }}"
                                         class="btn btn-outline-primary">Lihat
-                                        Auditan UPPS</a>
-                                    <form action="{{ route('download.auditee_auditor', $item->id) }}" method="post"
-                                        class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-outline-secondary">Daftar Auditan
-                                            Auditor</button>
-                                    </form>
+                                        Auditan Auditor PTK</a>
                                 </td>
                             </tr>
                         @endforeach

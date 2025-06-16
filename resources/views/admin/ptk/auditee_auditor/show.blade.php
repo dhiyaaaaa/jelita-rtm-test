@@ -11,7 +11,6 @@
                 <div>
                     <h5>Unit Pengelola Program Studi</h5>
                     <a href="{{ route('auditee_auditor_ptk.index') }}" class="btn btn-outline-secondary mb-3">Kembali</a>
-                    <a href="{{ route('user.create') }}" class="btn btn-outline-primary mb-3">+ Tambah User</a>
                     <table id="upps" class="table table-bordered table-striped">
                         <thead>
                             <tr>

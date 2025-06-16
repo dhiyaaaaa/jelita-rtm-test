@@ -22,7 +22,7 @@ class MainMenuController extends Controller
         confirmDelete($title, $text);
 
         $data = [
-            'title' => 'Menu',
+            'title' => 'Main Menu',
             'mainMenus' => MainMenu::with('menu')->orderBy('id', 'asc')->get()
         ];
 
