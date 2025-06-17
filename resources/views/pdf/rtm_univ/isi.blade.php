@@ -184,7 +184,8 @@
                             $form = $jawaban->form;
                             $instrumen = $form?->instrumen;
                             $deskripsiList = $form?->ptk_form_deskripsi->pluck('deskripsi')->filter()->all();
-                            $catatanAuditor = $form?->jawaban_auditor->pluck('catatn')->filter()->all();
+                            $catatanAuditor = $form?->jawaban_auditor->pluck('catatan')->filter()->all();
+                            $kelebihan = $form?->laporan_form->pluck('kelebihan')->filter()->all();
                         @endphp
                         @if ($instrumen)
                             <li>
@@ -195,6 +196,9 @@
                                             <li>{{ strip_tags($deskripsi) }}</li>
                                         @endforeach
                                     </ul>
+                                @elseif($kelebihan)
+                                    <div><em>Catatan Auditor:</em> {{ $kelebihan }}</div>
+                                @else
                                 @elseif($catatanAuditor)
                                     <div><em>Catatan Auditor:</em> {{ $catatanAuditor }}</div>
                                 @else

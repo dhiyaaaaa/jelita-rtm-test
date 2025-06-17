@@ -63,7 +63,6 @@
                                             </h4>
                                         </div>
                                         <div class="card-body">
-                                            {{-- Jawaban Auditee --}}
                                             {{-- Jawaban Auditor --}}
                                             <div class="form-group mb-4">
                                                 <label class="font-weight-bold">Catatan Auditor</label>
@@ -76,15 +75,7 @@
                                                         @else
                                                             <p class="text-muted">Tidak ada deskripsi temuan</p>
                                                         @endif
-                                                    @elseif ($item->kriteria->slug === 'memenuhi')
-                                                        @if (isset($item->catatan_auditor) && $item->catatan_auditor)
-                                                            @foreach(explode("\n", $item->catatan_auditor) as $catatan)
-                                                                <p class="text-muted">{{ $catatan }}</p>
-                                                            @endforeach
-                                                        @else
-                                                            <p class="text-muted">Tidak ada catatan</p>
-                                                        @endif
-                                                    @elseif ($item->kriteria->slug === 'melampaui')
+                                                    @else
                                                         @if (isset($item->kelebihan) && $item->kelebihan)
                                                             @foreach(explode("\n", $item->kelebihan) as $kebelihan)
                                                                 <p class="text-muted">{{ $kebelihan }}</p>
@@ -108,7 +99,9 @@
                                                 <span class="text-danger">&#42;</span>
                                                 <div id="tindakan-inputs-{{ $item->form->id }}" class="mb-3">
                                                     @php
-                                                        $existingTindakan = $jawabanTindakLanjut->where('form_id', $item->form->id) ?? [];
+                                                        $existingTindakan = $jawabanTindakLanjut->where('form_id', $item->form->id)
+                                                        ->where('kriteria_id', $kriteria->id) 
+                                                        ?? [];
                                                         $sessionTindakan = old('tindakan_'.$item->form->id, $sessionFormData['tindakan_'.$item->form->id] ?? []);
                                                         
                                                         $tindakanToDisplay = !empty($sessionTindakan) ? $sessionTindakan : ($existingTindakan->isNotEmpty() ? $existingTindakan : []);
@@ -465,12 +458,11 @@
             // Create FormData object
             const formData = new FormData();
             
-            // Add required fields
             formData.append('form_id', formId);
+            formData.append('kriteria_id', "{{ $kriteria->id }}");
             formData.append('currentPage', $('input[name^="page_"]').val());
             formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
 
-            // Collect all tindakan data
             let hasData = false;
             $(`#tindakan-inputs-${formId} .tindakan-row`).each(function(index) {
                 const row = $(this);
@@ -478,7 +470,6 @@
                 const pic = row.find('select[name*="pic"]').val();
                 const waktu = row.find('textarea[name*="waktu"]').val();
 
-                // Only include if all fields have values
                 if (tindakan && pic && waktu) {
                     formData.append(`tindakan_${formId}[${index}][tindakan]`, tindakan);
                     formData.append(`tindakan_${formId}[${index}][pic]`, pic);
@@ -546,6 +537,7 @@
             // Kumpulkan data dari semua input di halaman saat ini
             const formData = new FormData();
             const currentPage = $('input[name^="page_"]').val();
+            const kriteriaId = "{{ $kriteria->id }}";
             
             // Tambahkan semua tindakan
             $('.tindakan-row').each(function(index) {
@@ -559,10 +551,11 @@
             
             // Tambahkan data halaman
             formData.append('currentPage', currentPage);
+            formData.append('kriteria_id', kriteriaId);
             
             // Kirim ke server
             $.ajax({
-                url: '{{ route('dekan.rtm-rtl.session', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId]) }}',
+                url: '{{ route('dekan.rtm-rtl.session', ['rtmRtl' => $rtmRtl->id, 'auditee' => $auditeeId, 'kriteria' => $kriteria->id]) }}',
                 type: 'POST',
                 data: formData,
                 processData: false,

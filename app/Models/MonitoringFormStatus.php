@@ -12,7 +12,7 @@ class MonitoringFormStatus extends Model
 
     protected $table = 'monitoring_form_status';
 
-    protected $fillable = ['monitoring_id', 'status', 'form_id', 'auditor_id'];
+    protected $fillable = ['monitoring_id', 'status', 'form_id', 'auditor_id', 'kriteria_id'];
 
     public function monitoring(): BelongsTo
     {

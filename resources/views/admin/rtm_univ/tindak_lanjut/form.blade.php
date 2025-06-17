@@ -52,11 +52,11 @@
                                                         @endforelse
                                                     </div>
                                                     <div class="mb-2">
-                                                        @if ($item->kriteria->nama === 'Belum Memenuhi')
+                                                        @if ($item->kriteria->slug === 'belum-memenuhi')
                                                             <span class="badge badge-danger">{{ $item->kriteria->nama }}</span>
-                                                        @elseif ($item->kriteria->nama === 'Memenuhi')
+                                                        @elseif ($item->kriteria->slug === 'memenuhi')
                                                             <span class="badge badge-warning">{{ $item->kriteria->nama }}</span>
-                                                        @elseif ($item->kriteria->nama === 'Melampaui')
+                                                        @elseif ($item->kriteria->slug === 'melampaui')
                                                             <span class="badge badge-success">{{ $item->kriteria->nama }}</span>
                                                         @else
                                                             <span class="badge badge-secondary">{{ $item->kriteria->nama }}</span>
@@ -71,7 +71,7 @@
                                                 <div class="form-group mb-4">
                                                     <label class="font-weight-bold">Catatan Auditor</label>
                                                     <div class="mt-2">
-                                                        @if ($item->kriteria->nama === 'Belum Memenuhi')
+                                                        @if ($item->kriteria->slug === 'melum-memenuhi')
                                                             @if ($item->form->ptk_form_deskripsi->isNotEmpty())
                                                                 @foreach ($item->form->ptk_form_deskripsi as $deskripsi)
                                                                     <p class="text-muted">{{ $deskripsi->deskripsi }}</p>
@@ -85,17 +85,7 @@
                                                             @else
                                                                 <p class="text-muted">Tidak ada catatan</p>
                                                             @endif
-                                                        @elseif ($item->kriteria->nama === 'Memenuhi')
-                                                            @if ($item->form->jawaban_auditor->isNotEmpty())
-                                                                @foreach ($item->form->jawaban_auditor as $jawaban)
-                                                                    @if ($jawaban->catatan)
-                                                                        <p class="text-muted">{{ $jawaban->catatan }}</p>
-                                                                    @endif
-                                                                @endforeach
-                                                            @else
-                                                                <p class="text-muted">Tidak ada catatan</p>
-                                                            @endif
-                                                        @elseif ($item->kriteria->nama === 'Melampaui')
+                                                        @else
                                                             @if ($item->form->laporan_form->isNotEmpty())
                                                                 @foreach ($item->form->laporan_form as $kelebihan)
                                                                     <p class="text-muted">{{ $kelebihan->kelebihan }}</p>
@@ -118,28 +108,30 @@
                                                     <label class="font-weight-bold">Rencana Tindakan yang sudah dibuat</label>
                                                     <div class="mt-2">
                                                         @php
-                                                            $filteredTindakan = $item->form->rtm_tindak_lanjut;
+                                                            // Filter rencana tindakan berdasarkan kriteria item saat ini
+                                                            $filteredTindakan = $item->form->rtm_tindak_lanjut
+                                                                ->where('kriteria_id', $item->kriteria->id)
+                                                                ->sortBy('waktu');
                                                         @endphp
                                                         
-                                                        @if ($filteredTindakan && $filteredTindakan->isNotEmpty())
+                                                        @if ($filteredTindakan->isNotEmpty())
                                                             @foreach ($filteredTindakan as $index => $tindakan)
                                                                 <div class="mb-2">
                                                                     <p class="text-muted">
                                                                         {{ $index + 1 }}. Tindakan: {{ $tindakan->tindakan }}<br>
                                                                         PIC: {{ $tindakan->jabatan->nama }}-
-                                                                            @foreach ($tindakan->user->prodi as $prodi)
-                                                                                {{ $prodi->nama }}
-                                                                            @endforeach
-
-                                                                            @foreach ($tindakan->user->fakultas as $fakultas)
-                                                                                {{ $fakultas->nama }}
-                                                                            @endforeach <br>
+                                                                        @if ($tindakan->prodi_id)
+                                                                            {{ $tindakan->prodi->nama }}
+                                                                        @elseif ($tindakan->fakultas_id)
+                                                                            {{ $tindakan->fakultas->nama }}
+                                                                        @endif
+                                                                        <br>
                                                                         Target Waktu: {{ $tindakan->waktu }}
                                                                     </p>
                                                                 </div>
                                                             @endforeach
                                                         @else 
-                                                            <p class="text-muted">Belum ada rencana tindak lanjut.</p>
+                                                            <p class="text-muted">Belum ada rencana tindak lanjut untuk kriteria ini.</p>
                                                         @endif
                                                     </div>
                                                 </div>

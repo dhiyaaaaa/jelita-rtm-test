@@ -2714,7 +2714,7 @@ class DownloadController extends Controller
         $groupedForms = [];
         foreach ($forms as $form) {
             // kode
-            $key = $form->kode_instrumen . '|' . $form->pernyataan;
+            $key = $form->kode_instrumen . '|' . $form->pernyataan . '|' . $form->kriteria_id;
             if (!isset($groupedForms[$key])) {
                 $groupedForms[$key] = [
                     'kode_instrumen' => $form->kode_instrumen,
@@ -2740,7 +2740,12 @@ class DownloadController extends Controller
             if ($form->kelebihan) $groupedForms[$key]['kelebihan'][] = $form->kelebihan;
 
             // Gabungkan rencana
-            $groupedForms[$key]['rencana_tindakan'] = array_merge($groupedForms[$key]['rencana_tindakan'], explode(';', $form->rencana_tindakan ?? ''));
+            $groupedForms[$key]['rencana_tindakan'] = array_unique(
+                array_merge(
+                    $groupedForms[$key]['rencana_tindakan'],
+                    explode(';', $form->rencana_tindakan ?? '')
+                )
+            );
             $groupedForms[$key]['jabatan_nama'][] = $form->jabatan_nama;
             $groupedForms[$key]['fakultas_nama'][] = $form->fakultas_nama;
             $groupedForms[$key]['unit_nama'][] = $form->unit_nama;
@@ -2790,7 +2795,7 @@ class DownloadController extends Controller
                 if ($picInfo) $parts[] = 'PIC: ' . $picInfo;
                 if (!empty($data['waktu'][$i])) $parts[] = 'Waktu: ' . trim($data['waktu'][$i]);
                 if (!empty($parts)) {
-                    $rencanaList[] = ($i + 1) . '. ' . implode(' | ', $parts);
+                    $rencanaList[] = ($i + 1) . '. ' . implode("\n- ", $parts);
                 }
             }
 
@@ -2807,9 +2812,9 @@ class DownloadController extends Controller
 
             // Format temuan
             $temuan = match($data['kriteria_id']) {
-                1 => implode("\n- ", array_unique($data['deskripsi'])) ?: 'Tidak ada deskripsi',
+                1 => implode("\n- ", array_unique($data['deskripsi'])) ?: 'Tidak ada catatan',
                 2 => implode("\n- ", array_unique($data['catatan'])) ?: 'Tidak ada catatan',
-                3 => implode("\n- ", array_unique($data['kelebihan'])) ?: 'Tidak ada kelebihan',
+                3 => implode("\n- ", array_unique($data['kelebihan'])) ?: 'Tidak ada catatan',
                 default => 'Tidak ada data temuan'
             };
 
@@ -3033,7 +3038,12 @@ class DownloadController extends Controller
             }
 
             // Gabungkan rencana RTM
-            $groupedForms[$key]['rencana_tindakan'] = array_merge($groupedForms[$key]['rencana_tindakan'], explode(';', $form->rencana_tindakan ?? ''));
+            $groupedForms[$key]['rencana_tindakan'] = array_unique(
+                array_merge(
+                    $groupedForms[$key]['rencana_tindakan'],
+                    explode(';', $form->rencana_tindakan ?? '')
+                )
+            );
             $groupedForms[$key]['jabatan_nama'][] = $form->jabatan_nama;
             $groupedForms[$key]['fakultas_nama'][] = $form->fakultas_nama;
             $groupedForms[$key]['unit_nama'][] = $form->unit_nama;

@@ -73,23 +73,15 @@
                                                                 <p class="text-muted">{{ $deskripsi }}</p>
                                                             @endforeach
                                                         @else
-                                                            <p class="text-muted">Tidak ada deskripsi temuan</p>
+                                                            <p class="text-muted">Tidak ada catatan auditor</p>
                                                         @endif
-                                                    @elseif ($item->kriteria->slug === 'memenuhi')
-                                                        @if (isset($item->catatan_auditor) && $item->catatan_auditor)
-                                                            @foreach(explode("\n", $item->catatan_auditor) as $catatan)
-                                                                <p class="text-muted">{{ $catatan }}</p>
-                                                            @endforeach
-                                                        @else
-                                                            <p class="text-muted">Tidak ada catatan</p>
-                                                        @endif
-                                                    @elseif ($item->kriteria->slug === 'melampaui')
+                                                    @else
                                                         @if (isset($item->kelebihan) && $item->kelebihan)
                                                             @foreach(explode("\n", $item->kelebihan) as $kebelihan)
                                                                 <p class="text-muted">{{ $kebelihan }}</p>
                                                             @endforeach
                                                         @else
-                                                            <p class="text-muted">Tidak ada catatan kelebihan</p>
+                                                            <p class="text-muted">Tidak ada catatan auditor</p>
                                                         @endif
                                                     @endif
                                                 </div>
@@ -97,34 +89,40 @@
                                             <div class="mb-4">
                                                 <label class="font-weight-bold">Rencana tindakan yang sudah dibuat</label>
                                                 <div class="mt-2">
-                                                    @if ($item->form->rtm_tindak_lanjut->isNotEmpty())
-                                                        @foreach ($item->form->rtm_tindak_lanjut as $index => $tindakan)
+                                                @if ($item->form->rtm_tindak_lanjut->isNotEmpty())
+                                                    @foreach ($item->form->rtm_tindak_lanjut as $index => $tindakan)
+                                                        @if ($tindakan->kriteria_id == $kriteria->id) 
                                                             <div class="mb-2">
                                                                 <p class="text-muted">
                                                                     {{ $index + 1 }}. Tindakan: {{ $tindakan->tindakan }}<br>
                                                                     PIC: {{ $tindakan->jabatan->nama }}
-                                                                        @foreach ($tindakan->user->prodi as $prodi)
-                                                                            {{ $prodi->nama }}
-                                                                        @endforeach
-
-                                                                        @foreach ($tindakan->user->fakultas as $fakultas)
-                                                                            {{ $fakultas->nama }}
-                                                                        @endforeach <br>
+                                                                    @if ($tindakan->prodi_id)
+                                                                        ({{ $tindakan->prodi->nama }})
+                                                                    @elseif ($tindakan->unit_id)
+                                                                        ({{ $tindakan->unit->nama }})
+                                                                    @endif
+                                                                    <br>
                                                                     Waktu: {{ $tindakan->waktu }}
                                                                 </p>
                                                             </div>
-                                                        @endforeach
-                                                    @else
-                                                        <p class="text-muted">Tidak ada rencana tindakan</p>
-                                                    @endif
-                                                </div>
+                                                        @endif
+                                                    @endforeach
+                                                @else
+                                                    <p class="text-muted">Tidak ada rencana tindakan untuk kriteria ini</p>
+                                                @endif
+                                            </div>
                                             </div>
                                             <div class="mb-4">
                                                 <label class="font-weight-bold">Rekomendasi RTM Universitas</label>
                                                 <div class="mt-2">
                                                     @if ($item->form->rtm_rtl_form->isNotEmpty())
-                                                        Rekomendasi: {{ $item->form->rtm_rtl_form->rekomendasi }}<br>
-                                                        Permintaan Tindakan Koreksi: {{ $item->form->rtm_rtl_form->koreksi }}
+                                                        @foreach ($item->form->rtm_rtl_form as $index => $rtmRtlForm)
+                                                            <div class="mb-2">
+                                                                <strong>{{ $index + 1 }} Rekomendasi:</strong> {!! $rtmRtlForm->rekomendasi !!}<br>
+                                                                <strong>Permintaan Tindakan Koreksi:</strong> {!! $rtmRtlForm->koreksi !!}
+                                                            </div>
+                                                            @if (!$loop->last)<hr>@endif
+                                                        @endforeach
                                                     @else
                                                         <p class="text-muted">Tidak ada rekomendasi dan PTK</p>
                                                     @endif
@@ -137,7 +135,9 @@
                                                 <label class="font-weight-bold">Tindakan yang sudah dilaksanakan</label>
                                                 <div id="tindakan-inputs-{{ $item->form->id }}" class="mb-3">
                                                     @php
-                                                        $existingTindakan = $jawabanRtl->where('form_id', $item->form->id) ?? [];
+                                                        $existingTindakan = $jawabanRtl->where('form_id', $item->form->id) 
+                                                        ->where('kriteria_id', $kriteria->id) 
+                                                        ?? [];
                                                         $sessionTindakan = old('tindakan_'.$item->form->id, $sessionFormData['tindakan_'.$item->form->id] ?? []);
                                                         
                                                         $tindakanToDisplay = !empty($sessionTindakan) ? $sessionTindakan : ($existingTindakan->isNotEmpty() ? $existingTindakan : []);
@@ -457,6 +457,7 @@
             
             // Add required fields
             formData.append('form_id', formId);
+            formData.append('kriteria_id', "{{ $kriteria->id }}");
             formData.append('currentPage', $('input[name^="page_"]').val());
             formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
 
@@ -534,6 +535,7 @@
             // Kumpulkan data dari semua input di halaman saat ini
             const formData = new FormData();
             const currentPage = $('input[name^="page_"]').val();
+            const kriteriaId = "{{ $kriteria->id }}";
             
             // Tambahkan semua tindakan
             $('.tindakan-row').each(function(index) {
@@ -546,10 +548,11 @@
             
             // Tambahkan data halaman
             formData.append('currentPage', currentPage);
+            formData.append('kriteria_id', kriteriaId);
             
             // Kirim ke server
             $.ajax({
-                url: '{{ route('dekan.rtl.session', ['rtl' => $rtl->id, 'auditee' => $auditeeId]) }}',
+                url: '{{ route('dekan.rtl.session', ['rtl' => $rtl->id, 'auditee' => $auditeeId, 'kriteria' => $kriteria->id]) }}',
                 type: 'POST',
                 data: formData,
                 processData: false,

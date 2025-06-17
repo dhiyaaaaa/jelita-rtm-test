@@ -972,7 +972,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('rtm-rtl/{rtmRtl}/save/{auditee}/{kriteria}', [DekanRtmRtlController::class, 'save_form'])->name('dekan.rtm-rtl.save_form');
 
             //Save Session
-            Route::post('rtm-rtl/{rtmRtl}/session/{auditee}', [SessionController::class, 'session_rtm_rtl_dekan'])->name('dekan.rtm-rtl.session');
+            Route::post('rtm-rtl/{rtmRtl}/session/{auditee}/{kriteria}', [SessionController::class, 'session_rtm_rtl_dekan'])->name('dekan.rtm-rtl.session');
 
             // Save Session RTMRTL per nomor
             Route::post('rtm-rtl/{rtmRtl}/session-nomor/{auditee}', [SessionController::class, 'session_rtm_rtl_dekan_per_nomor'])->name('dekan.rtm-rtl.session_per_nomor');
@@ -1057,7 +1057,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('rtm-rtl-univ/{rtmRtlUniv}/save', [RtmRtlController::class, 'save_form'])->name('admin.rtm-rtl.save_form');
 
             //Save Session
-            Route::post('rtm-rtl-univ/{rtmRtlUniv}/session', [SessionController::class, 'session_rtm_rtl_univ'])->name('admin.rtm-rtl.session');
+            Route::post('rtm-rtl-univ/{rtmRtlUniv}/session/', [SessionController::class, 'session_rtm_rtl_univ'])->name('admin.rtm-rtl.session');
 
             //Approve RTM Univ Lpmpp Rektor
             Route::post('rtm-univ/{rtmJadwal}/approve/{user}', [ApproveController::class, 'approve_rtm_univ'])->name('approve.rtm.univ');
@@ -1092,7 +1092,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('rtl/{rtl}/store/{auditee}/kriteria/{kriteria}', [DekanRtlController::class, 'store_form'])->name('dekan.rtl.store_form');  
             
             // Save Session Form RTL 
-            Route::post('{rtl}/auditee/{auditee}', [SessionController::class, 'session_rtl_auditee'])->name('dekan.rtl.session');
+            Route::post('{rtl}/auditee/{auditee}/{kriteria}', [SessionController::class, 'session_rtl_auditee'])->name('dekan.rtl.session');
 
             //Approve RTM Univ Lpmpp Rektor
             Route::post('rtm-rtl-univ/{rtmRtlUniv}/approve/{user}', [ApproveController::class, 'approve_rtm_rtl_univ'])->name('dekan.rtm-rtl-univ.approve');
@@ -1148,12 +1148,12 @@ Route::group(['middleware' => 'auth'], function () {
             // Save Form rtl
             Route::post('rtl/{monitoring}/save/{auditor}/{kriteria}', [AuditorRtlController::class, 'save_form'])->name('auditor.tindak-lanjut.save_form');
             // Save Form rtl per nomor
-            Route::post('rtl/{monitoring}/save/{auditor}/{formId}', [AuditorRtlController::class, 'save_form_per_nomor'])->name('auditor.tindak-lanjut.save_form_per_nomor');
+            //Route::post('rtl/{monitoring}/save/{auditor}/{formId}', [AuditorRtlController::class, 'save_form_per_nomor'])->name('auditor.tindak-lanjut.save_form_per_nomor');
 
             // Save Session Form rtl 
-            Route::post('{monitoring}/auditor/{auditor}', [SessionController::class, 'session_monitoring_auditor'])->name('auditor.tindak-lanjut.session');
+            Route::post('{monitoring}/auditor/{auditor}/{kriteria}', [SessionController::class, 'session_monitoring_auditor'])->name('auditor.tindak-lanjut.session');
             // Save Session monitoring per nomor
-            Route::post('{monitoring}/auditor/{auditor}/{formId}', [SessionController::class, 'session_monitoring_auditor_per_nomor'])->name('auditor.tindak-lanjut.session_per_nomor');
+            //Route::post('{monitoring}/auditor/{auditor}/{formId}', [SessionController::class, 'session_monitoring_auditor_per_nomor'])->name('auditor.tindak-lanjut.session_per_nomor');
         });
     });
 

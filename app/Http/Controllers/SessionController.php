@@ -199,7 +199,7 @@ class SessionController extends Controller
         ], 400);
     }
 
-    public function session_rtm_rtl_dekan(Request $request, string $rtmRtl, string $auditee): JsonResponse
+    public function session_rtm_rtl_dekan(Request $request, string $rtmRtl, string $auditee, string $kriteria): JsonResponse
     {
         if (!$request->ajax()) {
             return response()->json(['error' => 'Invalid Request.'], 400);
@@ -207,7 +207,7 @@ class SessionController extends Controller
 
         try {
             $currentPage = $request->input('currentPage', 1);
-            $sessionKey = 'form_rtm_rtl-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee;
+            $sessionKey = 'form_rtm_rtl-page_' . $currentPage . '-rtmRtlId_' . $rtmRtl . '-auditeeId_' . $auditee . '-kriteriaId_' . $kriteria;
 
             $formData = $request->all();
             session([$sessionKey => $formData]);
@@ -311,7 +311,7 @@ class SessionController extends Controller
         ], 400);
     }
 
-    public function session_rtl_auditee(Request $request, string $rtl, string $auditee): JsonResponse
+    public function session_rtl_auditee(Request $request, string $rtl, string $auditee, string $kriteria): JsonResponse
     {
         if (!$request->ajax()) {
             return response()->json(['error' => 'Invalid Request.'], 400);
@@ -319,7 +319,7 @@ class SessionController extends Controller
 
         try {
             $currentPage = $request->input('currentPage', 1);
-            $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl . '-auditeeId_' . $auditee;
+            $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl . '-auditeeId_' . $auditee . '-kriteriaId_' . $kriteria;
 
             $formData = $request->all();
             session([$sessionKey => $formData]);
@@ -372,7 +372,7 @@ class SessionController extends Controller
     //     }
     // }
 
-    public function session_monitoring_auditor(Request $request, string $monitoring, string $auditor): JsonResponse
+    public function session_monitoring_auditor(Request $request, string $monitoring, string $auditor, string $kriteria): JsonResponse
     {
         if ($request->ajax()) {
             try {
@@ -384,11 +384,11 @@ class SessionController extends Controller
                         continue;
                     }
 
-                    $sessionKey = 'form_monitoring-page_' . $i . '-monitoringId_' . $monitoring . '-auditorId_' . $auditor;
+                    $sessionKey = 'form_monitoring-page_' . $i . '-monitoringId_' . $monitoring . '-auditorId_' . $auditor . '-kriteriaId_' . $kriteria;
 
                     $formData = $request->all();
                     $formData[('page_' . $i)] = $page;
-                    Log::info('Menyimpan data ke session:', [$sessionKey => $formData]);
+                    //Log::info('Menyimpan data ke session:', [$sessionKey => $formData]);
                     session([$sessionKey => $formData]);
                 }
 

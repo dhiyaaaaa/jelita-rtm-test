@@ -10,6 +10,7 @@ use App\Models\Prodi;
 use App\Models\JawabanAuditor;
 use App\Models\AuditeeAuditor;
 use App\Models\AuditeeAuditorPtk;
+use App\Models\Fakultas;
 use App\Models\Monitoring;
 use App\Models\MonitoringAuditee;
 use App\Models\MonitoringForm;
@@ -17,6 +18,7 @@ use App\Models\StatusMonitoring;
 use App\Models\JadwalAudit;
 use App\Models\Kriteria;
 use App\Models\MonitoringFormStatus;
+use App\Models\Unit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -201,55 +203,139 @@ class RtlController extends Controller
         $jadwal = JadwalAudit::findOrFail($monitoring->jadwal_audit_id);
 
         $jawaban_auditor = JawabanAuditor::where(['jadwal_audit_id' => $monitoring->jadwal_audit_id])->first();
+        
+        $fakultas = $monitoring->fakultas_id ? Fakultas::find($monitoring->fakultas_id) : null;
+        $unit = $monitoring->unit_id ? Unit::find($monitoring->unit_id) : null;
 
         $kriteria = Kriteria::findOrFail($kriteria);
 
-        $perPage = 10;
-        $currentPage = $request->query('page', 1);
-        $temuan = JawabanAuditor::where('jadwal_audit_id', $monitoring->jadwal_audit_id)
-            ->where('kriteria_id', $kriteria->id)
-            ->where($unit['kolom'], $unit['value']);
-
-        if ($unit['type'] === 'fakultas') {
-            $prodiList = Prodi::where('fakultas_id', $unit['value'])->pluck('id')->toArray();
-
-            $temuanProdi = JawabanAuditor::where('jadwal_audit_id', $monitoring->jadwal_audit_id)
-                ->whereIn('prodi_id', $prodiList)
-                ->where('kriteria_id', $kriteria->id);
-                
-            $temuanNegatif = $temuan->union($temuanProdi)
-            ->with([
-                'form.instrumen',
-                'form.rtm_tindak_lanjut',
-                'form.ptk_form',
-                'form.rtl_form',
-                'form.rtm_rtl_form',
-            ])->paginate($perPage);
+        if ($unit) {
+            $temuan = JawabanAuditor::where('jadwal_audit_id', $monitoring->jadwal_audit_id)
+                ->where('kriteria_id', $kriteria->id)
+                ->when($monitoring->unit_id, function ($query) use ($monitoring) {
+                    return $query->where('unit_id', $monitoring->unit_id);
+                })
+                ->with([
+                    'form.instrumen',
+                    'form.rtm_tindak_lanjut',
+                    'form.ptk_form',
+                    'form.rtl_form',
+                    'form.rtm_rtl_form',
+                ])
+                ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
+                ->orderBy('form.instrumen_id', 'asc')
+                ->get();
         } else {
-            $temuanNegatif = $temuan
-            ->with([
-                'form.instrumen',
-                'form.rtm_tindak_lanjut',
-                'form.ptk_form',
-                'form.rtl_form',
-                'form.rtm_rtl_form',
-            ])
-            ->paginate($perPage);
+           $prodiList = $fakultas ? Prodi::where('fakultas_id', $fakultas->id)->pluck('id')->toArray() : [];
+
+            $temuan = JawabanAuditor::select('jawaban_auditor.*', 'form.instrumen_id')
+                ->where('jadwal_audit_id', $monitoring->jadwal_audit_id)
+                ->where('kriteria_id', $kriteria->id)
+                ->where('fakultas_id', $monitoring->fakultas_id)
+                ->with([
+                    'form.instrumen.jabatan',
+                    'form.jawaban_auditee',
+                    'form.ptk_form_deskripsi',
+                    'form.laporan_form',
+                    'form.rtm_tindak_lanjut',
+                    'form.rtm_rtl_form',
+                    'kriteria',
+                    'prodi',
+                    'fakultas'
+                ])
+                ->join('form', 'jawaban_auditor.form_id', '=', 'form.id');
+                
+            $temuanProdi = JawabanAuditor::select('jawaban_auditor.*', 'form.instrumen_id')
+                ->where('jadwal_audit_id', $monitoring->jadwal_audit_id)
+                ->where('kriteria_id', $kriteria->id)
+                ->whereIn('prodi_id', $prodiList)
+                ->with([
+                    'prodi', 
+                    'form.jawaban_auditor', 
+                    'form.instrumen', 
+                    'kriteria',
+                    'form.ptk_form_deskripsi',
+                    'form.laporan_form',
+                    'form.rtm_tindak_lanjut',
+                    'form.rtm_rtl_form',
+                    'fakultas'
+                ])
+                ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
+                ->join('instrumen', 'form.instrumen_id', '=', 'instrumen.id');
+
+            $allTemuan = $temuan->union($temuanProdi)
+            ->orderBy('instrumen_id', 'asc')
+            ->get();
+
+            $groupedTemuan = $allTemuan->groupBy('form_id');
+            $temuan = collect();
+
+            foreach ($groupedTemuan as $formId => $items) {
+                $firstItem = $items->first();
+                
+                // $catatanAuditor = $items->map(function($item) {
+                //     $catatan = '';
+                //     if ($item->prodi) {
+                //         $catatan .= "{$item->prodi->jenjang->nama} {$item->prodi->nama}: ";
+                //     }
+                //     $catatan .= $item->catatan ?? 'Tidak ada catatan';
+                //     return $catatan;
+                // })->implode("\n");
+
+                $PtkDeskripsi = $items->flatMap(function($item) {
+                    return $item->form->ptk_form_deskripsi->map(function($deskripsi) use ($item) {
+                        $deskripsiTemuan = '';
+                        if ($item->prodi) {
+                            $deskripsiTemuan .= "{$item->prodi->jenjang->nama} {$item->prodi->nama}: ";
+                        }
+                        $deskripsiTemuan .= $deskripsi->deskripsi;
+                        if ($deskripsi->form->ptk_form->first()) {
+                            $deskripsiTemuan .= " ({$deskripsi->form->ptk_form->first()->kategori_temuan})";
+                        }
+                        return $deskripsiTemuan;
+                    });
+                })->implode("\n");
+
+                $LaporanKelebihan = $items->flatMap(function($item) {
+                    return $item->form->laporan_form->map(function($kelebihan) use ($item) {
+                        $kelebihanTemuan = '';
+                        if ($item->prodi) {
+                            $kelebihanTemuan .= "{$item->prodi->jenjang->nama} {$item->prodi->nama}: ";
+                        }
+                        $kelebihanTemuan .= $kelebihan->kelebihan;
+                        return $kelebihanTemuan;
+                    });
+                })->implode("\n");
+
+                //$firstItem->catatan_auditor = $catatanAuditor;
+                $firstItem->deskripsi = $PtkDeskripsi;
+                $firstItem->kelebihan = $LaporanKelebihan;
+                
+                $temuan->push($firstItem);
+            }
         }
 
         // Paginasi
-        $temuanNegatif = new LengthAwarePaginator(
-            $temuanNegatif->forPage($currentPage, $perPage),
-            $temuanNegatif->count(),
+        $perPage = 10;
+        $currentPage = $request->query('page', 1);
+        $paginatedTemuan = new LengthAwarePaginator(
+            $temuan->forPage($currentPage, $perPage),
+            $temuan->count(),
             $perPage,
             $currentPage,
-            ['path' => $request->url()]
+            ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        $isianCatatan = MonitoringForm::where('monitoring_id', $monitoring->id)->get();
-        $isianStatus = MonitoringFormStatus::where('monitoring_id', $monitoring->id)->get();
+        if ($temuan->isEmpty()) {
+            return back()->with('error', 'Tidak ada temuan untuk ditindaklanjuti.');
+        }
 
-        $sessionFormData = session()->get('form_monitoring-page_' . $currentPage . '-monitoringId_' . $monitoring->id . '-auditorId_' . $auditor->id, []);
+        $isianCatatan = MonitoringForm::where('monitoring_id', $monitoring->id)
+        ->where('kriteria_id', $kriteria->id)->get();
+        $isianStatus = MonitoringFormStatus::where('monitoring_id', $monitoring->id)
+        ->where('kriteria_id', $kriteria->id)->get();
+
+        $sessionFormData = session()->get('form_monitoring-page_' . $currentPage . '-monitoringId_' . $monitoring->id . '-auditorId_' . $auditor->id . '-kriteriaId_' . $kriteria->id, []);
         
     
         $status = StatusMonitoring::where('monitoring_id', $monitoring->id)
@@ -258,7 +344,6 @@ class RtlController extends Controller
 
         $data = [
             'title' => 'Monitoring Tindak Lanjut Atas PTK',
-            'temuanNegatif' => $temuanNegatif,
             'monitoring' => $monitoring,
             'jadwal' => $jadwal,
             'auditor' => $auditor,
@@ -268,9 +353,10 @@ class RtlController extends Controller
             'isianCatatan' => $isianCatatan,
             'sessionFormData' => $sessionFormData,
             'currentPage'=> $currentPage,
-            'unitType' => $unit['type'], 
+            'temuan' => $paginatedTemuan,
             'kriteria' => $kriteria, 
-            'kriteriaId' => $kriteria,
+            'paginatedTemuan' => $paginatedTemuan,
+            'currentPage'=> $currentPage,
         ];
 
         return view('auditor.tindak_lanjut.form', $data);
@@ -278,94 +364,86 @@ class RtlController extends Controller
 
     public function save_form(Request $request, string $monitoring, string $auditor, string $kriteria): JsonResponse
     {
-        if ($request->ajax()) {
-            try {
-                $response = [];
+        Log::debug('Request Data:', $request->all());
+        Log::debug('Monitoring ID:', ['monitoring' => $monitoring]);
+        Log::debug('Auditor ID:', ['auditor' => $auditor]);
+        Log::debug('Kriteria ID:', ['kriteria' => $kriteria]);
 
-                foreach ($request->all() as $key => $value) {
-                    if (strpos($key, 'status_') === 0) {
-                        $id = substr($key, strlen('status_'));
-                        $statusKey = 'status_' . $id;
-                        $status = $request->input($statusKey);
+        if (!$request->ajax()) {
+            return response()->json(['error' => 'Invalid Request.'], 400);
+        }
 
+        try {
+            $response = [];
+            $kriteria = Kriteria::findOrFail($kriteria);
 
-                        if (!in_array($status, ['selesai', 'proses','belum_dilaksanakan', null], true)) {
-                            return response()->json(['message' => 'Harap periksa jawaban terlebih dahulu.'], 422);
-                        }
+            foreach ($request->all() as $key => $value) {
+                if (strpos($key, 'status_') === 0) {
+                    $id = substr($key, strlen('status_'));
+                    $status = $request->input($key);
 
-                        $data = [
-                            'auditor_id' => $auditor,
-                            'status' => $status,
-                        ];
-
-                        MonitoringFormStatus::updateOrCreate(
-                            [
-                                'monitoring_id' => $monitoring,
-                                'form_id' => $id,
-                            ],
-                            $data
-                        );
+                    if (!in_array($status, ['selesai', 'proses', 'belum_dilaksanakan', null], true)) {
+                        return response()->json(['message' => 'Harap periksa jawaban terlebih dahulu.'], 422);
                     }
-                    if (preg_match('/^catatan_([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)$/', $key, $matches)) {
-                        $formId = $matches[1];
-                        $existCatatan = MonitoringForm::where('monitoring_id', $monitoring)
-                            ->where('form_id', $formId)
-                            ->pluck('catatan', 'id')->toArray();
 
-                        $submittedCatatans = $value;
+                    MonitoringFormStatus::updateOrCreate(
+                        [
+                            'monitoring_id' => $monitoring,
+                            'form_id' => $id,
+                            'kriteria_id' => $kriteria->id, // Make sure this is included
+                            'auditor_id' => $auditor, // Also include auditor_id in the search criteria
+                        ],
+                        [
+                            'status' => $status,
+                        ]
+                    );
+                }
 
-                        if (!is_array($submittedCatatans)) {
-                            return response()->json(['message' => 'Invalid input data format'], 422);
+                if (preg_match('/^catatan_([^-]+-[^-]+-[^-]+-[^-]+-[^-]+)$/', $key, $matches)) {
+                    $formId = $matches[1];
+                    $existCatatan = MonitoringForm::where('monitoring_id', $monitoring)
+                        ->where('form_id', $formId)
+                        ->where('kriteria_id', $kriteria->id) // Add kriteria_id to the query
+                        ->pluck('catatan', 'id')->toArray();
+
+                    $submittedCatatans = is_array($value) ? array_filter($value) : [];
+
+                    foreach ($existCatatan as $id => $catatan) {
+                        if (!in_array($catatan, $submittedCatatans)) {
+                            MonitoringForm::where('id', $id)->delete();
                         }
+                    }
 
-                        $submittedCatatans = array_filter($submittedCatatans);
-
-                        $currentSubmittedCatatans = array_map(function ($catatan) {
-                            return $catatan;
-                        }, $submittedCatatans);
-
-                        foreach ($existCatatan as $id => $catatan) {
-                            if (!in_array($catatan, $currentSubmittedCatatans)) {
-                                MonitoringForm::where('id', $id)->delete();
-                            }
-                        }
-                        $kriteria = Kriteria::findOrFail($kriteria);
-
-                        foreach ($submittedCatatans as $catatan) {
-                            if (!in_array($catatan, $existCatatan)) {
-                                MonitoringForm::updateOrCreate(
-                                    [
-                                        'monitoring_id' => $monitoring,
-                                        'form_id' => $formId,
-                                        'catatan' => $catatan,
-                                    ],
-                                    [
-                                        'auditor_id' => $auditor,
-                                        'kriteria_id' => $kriteria->id,
-                                        'catatan' => $catatan,
-                                    ]
-                                );
-                            }
+                    foreach ($submittedCatatans as $catatan) {
+                        if (!in_array($catatan, $existCatatan)) {
+                            MonitoringForm::updateOrCreate(
+                                [
+                                    'monitoring_id' => $monitoring,
+                                    'form_id' => $formId,
+                                    'kriteria_id' => $kriteria->id, // Include here
+                                    'catatan' => $catatan,
+                                ],
+                                [
+                                    'auditor_id' => $auditor,
+                                    'catatan' => $catatan,
+                                ]
+                            );
                         }
                     }
                 }
-
-                $response['message'] = 'Monitoring tindak lanjut berhasil disimpan.';
-
-                return response()->json($response);
-            } catch (\Exception $e) {
-                Log::error('Error menyimpan form monitoring: ' . $e->getMessage());
-                Log::error($e->getTraceAsString());
-                return response()->json([
-                    'message' => 'Terjadi kesalahan saat menyimpan hasil monitoring tindak lanjut!',
-                ], 500);
             }
-        }
-        return response()->json([
-            'error' => 'Invalid Request.'
-        ], 400);
-    }
 
+            $response['message'] = 'Monitoring tindak lanjut berhasil disimpan.';
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            Log::error('Error menyimpan form monitoring: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat menyimpan hasil monitoring tindak lanjut!',
+            ], 500);
+        }
+    }
     // Save Form per Nomor (backup)
     public function save_form_per_nomor(Request $request, string $monitoring, string $auditor, string $formId) {}
 
@@ -378,7 +456,7 @@ class RtlController extends Controller
 
         // Ambil data dari semua halaman yang tersimpan di session
         for ($i = 1; $i <= $totalPages; $i++) {
-            $sessionKey = 'form_monitoring-page_' . $i . '-monitoringId_' . $monitoring->id . '-auditorId_' . $auditor;
+            $sessionKey = 'form_monitoring-page_' . $i . '-monitoringId_' . $monitoring->id . '-auditorId_' . $auditor . '-kriteriaId_' . $kriteria;
             $sessionFormData[$i] = session()->get($sessionKey, []);
         }
 

@@ -15,18 +15,18 @@
                     </div>
                     <div class="card-body">
                         @php
-                            $no = ($temuanNegatif->currentPage() - 1) * $temuanNegatif->perPage() + 1;
+                            $no = ($temuan->currentPage() - 1) * $temuan->perPage() + 1;
                         @endphp
 
-                        <input type="hidden" name="totalPage" value="{{ $temuanNegatif->lastPage() }}">
-                        <input type="hidden" name="currentPage_{{ $temuanNegatif->currentPage() }}"
-                            value="{{ $temuanNegatif->currentPage() }}">
+                        <input type="hidden" name="totalPage" value="{{ $temuan->lastPage() }}">
+                        <input type="hidden" name="currentPage_{{ $temuan->currentPage() }}"
+                            value="{{ $temuan->currentPage() }}">
 
-                        @foreach ($temuanNegatif as $item)
+                        @foreach ($temuan as $item)
                             @php
                                 //Monitoring RTL Auditor
-                                $jawaban = $isianStatus->where('form_id', $item->form->id)->first();
-                                $catatanCollection = $isianCatatan->where('form_id', $item->form->id);
+                                $jawaban = $isianStatus->where('form_id', $item->form->id)->where('kriteria_id', $kriteria->id)->first();
+                                $catatanCollection = $isianCatatan->where('form_id', $item->form->id)->where('kriteria_id', $kriteria->id);
 
                                 $sessionStatus =
                                     $jawaban && $jawaban->status
@@ -59,55 +59,70 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="mb-4">
-                                        <label class="font-weight-bold">Rencana Tindakan yang sudah dibuat</label>
+                                        <label class="font-weight-bold">Rencana tindakan yang sudah dibuat</label>
                                         <div class="mt-2">
                                             @if ($item->form->rtm_tindak_lanjut->isNotEmpty())
                                                 @foreach ($item->form->rtm_tindak_lanjut as $index => $tindakan)
-                                                    <div class="mb-2">
-                                                        <p class="text-muted">
-                                                            {{ $index + 1 }}. Tindakan: {{ $tindakan->tindakan }}<br>
-                                                            PIC: {{ $tindakan->pic }}<br>
-                                                            Waktu: {{ $tindakan->waktu }}
-                                                        </p>
-                                                    </div>
+                                                    @if ($tindakan->kriteria_id == $kriteria->id) 
+                                                        <div class="mb-2">
+                                                            <p class="text-muted">
+                                                                {{ $index + 1 }}. Tindakan: {{ $tindakan->tindakan }}<br>
+                                                                PIC: {{ $tindakan->jabatan->nama }}
+                                                                @if ($tindakan->prodi_id)
+                                                                    ({{ $tindakan->prodi->nama }})
+                                                                @elseif ($tindakan->unit_id)
+                                                                    ({{ $tindakan->unit->nama }})
+                                                                @endif
+                                                                <br>
+                                                                Waktu: {{ $tindakan->waktu }}
+                                                            </p>
+                                                        </div>
+                                                    @endif
                                                 @endforeach
                                             @else
-                                                <p class="text-muted">Tidak ada rencana</p>
-                                            @endif
-                                        </div>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="font-weight-bold">Rekomendasi RTM Universitas</label>
-                                        <div class="mt-2">
-                                            @if ($item->form->rtm_rtl_form->isNotEmpty())
-                                                <p class="text-muted">
-                                                    Rekomendasi: {{ $$item->form->rtm_rtl_form->rekomendasi }}<br>
-                                                    Permintaan Tindakan Koreksi: {{ $item->form->rtm_rtl_form->koreksi }}<br>
-                                                </p>
-                                            @else
-                                                <p class="text-muted">Tidak ada rekomendasi dan PTK dari RTM Fakultas</p>
+                                                <p class="text-muted">Tidak ada rencana tindakan untuk kriteria ini</p>
                                             @endif
                                         </div>
                                     </div>
 
                                     <div class="mb-4">
+                                        <label class="font-weight-bold">Rekomendasi RTM Universitas</label>
+                                        <div class="mt-2">
+                                            @if ($item->form->rtm_rtl_form->isNotEmpty())
+                                                @foreach ($item->form->rtm_rtl_form as $index => $rtmRtlForm)
+                                                    <div class="mb-2">
+                                                        <strong>{{ $index + 1 }} Rekomendasi:</strong> {!! $rtmRtlForm->rekomendasi !!}<br>
+                                                        <strong>Permintaan Tindakan Koreksi:</strong> {!! $rtmRtlForm->koreksi !!}
+                                                    </div>
+                                                    @if (!$loop->last)<hr>@endif
+                                                @endforeach
+                                            @else
+                                                <p class="text-muted">Tidak ada rekomendasi dan PTK</p>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    
+                                    <div class="mb-4">
                                         <label class="font-weight-bold">Bukti dan Tindakan yang sudah dilaksanakan</label>
                                         <div class="mt-2">
                                             @if ($item->form->rtl_form->isNotEmpty())
                                                 @foreach ($item->form->rtl_form as $index => $tindakan)
-                                                    <div class="mb-2">
-                                                        <p class="text-muted">
-                                                            {{ $index + 1 }}. Tindakan: {{ $tindakan->tindakan }}<br>
-                                                            Bukti: {{ $tindakan->bukti }}<br>
-                                                        </p>
-                                                    </div>
+                                                    @if ($tindakan->kriteria_id == $kriteria->id)
+                                                        <div class="mb-2">
+                                                            <p class="text-muted">
+                                                                {{ $index + 1 }}. Tindakan: {{ $tindakan->tindakan }}<br>
+                                                                Bukti: {{ $tindakan->bukti }}<br>
+                                                            </p>
+                                                        </div>
+                                                    @endif
                                                 @endforeach
                                             @else
                                                 <p class="text-muted">Tidak ada Tindakan</p>
                                             @endif
                                         </div>
                                     </div>
-
+                                    
                                     {{-- Status Tindak Lanjut --}}
                                     <div class="form-group">
                                         <label for="">Status Tindak Lanjut</label>
@@ -222,12 +237,12 @@
                         </div>
                         <div class="card-body">
                             <div class="pagination-wrapper">
-                                {{ $temuanNegatif->links('pagination::bootstrap-4') }}
+                                {{ $temuan->links('pagination::bootstrap-4') }}
                             </div>
-                            <input type="hidden" name="totalPage" value="{{ $temuanNegatif->lastPage() }}">
-                            <input type="hidden" name="page_{{ $temuanNegatif->currentPage() }}"
-                                value="{{ $temuanNegatif->currentPage() }}">
-                            @if (($temuanNegatif->currentPage() == $temuanNegatif->lastPage()) == 1)
+                            <input type="hidden" name="totalPage" value="{{ $temuan->lastPage() }}">
+                            <input type="hidden" name="page_{{ $temuan->currentPage() }}"
+                                value="{{ $temuan->currentPage() }}">
+                            @if (($temuan->currentPage() == $temuan->lastPage()) == 1)
                                 @if (isset($status) && $status->status !== 'completed')
                                     <div class="mb-3">
                                         <button type="submit" id="button-submit" class="btn btn-primary" {{ $isDisabled ? 'disabled' : '' }}>Submit</button>
@@ -239,20 +254,20 @@
                                         </button>
                                     </div>
                                 @else
-                                    @if ($temuanNegatif->lastPage() > 1)
+                                    @if ($temuan->lastPage() > 1)
                                         <div>
-                                            <a id="previous" href="{{ $temuanNegatif->previousPageUrl() }}"
+                                            <a id="previous" href="{{ $temuan->previousPageUrl() }}"
                                                 class="btn btn-primary mb-3">Previous</a>
                                         </div>
                                     @endif
                                 @endif
                             @else
                                 <div class="mb-3">
-                                    @if ($temuanNegatif->currentPage() > 1)
-                                        <a id="previous" href="{{ $temuanNegatif->previousPageUrl() }}"
+                                    @if ($temuan->currentPage() > 1)
+                                        <a id="previous" href="{{ $temuan->previousPageUrl() }}"
                                             class="btn btn-primary">Previous</a>
                                     @endif
-                                    <a id="next" href="{{ $temuanNegatif->nextPageUrl() }}"
+                                    <a id="next" href="{{ $temuan->nextPageUrl() }}"
                                         class="btn btn-primary">Next</a>
                                 </div>
                             @endif
@@ -409,7 +424,7 @@
                 save_session();
             });
 
-            @foreach ($temuanNegatif as $item)
+            @foreach ($temuan as $item)
                 toggleRemoveCatatanButton('{{ $item->form->id }}');
             @endforeach
 
@@ -492,7 +507,7 @@
             const formData = new FormData(document.getElementById('create-form'));
 
             $.ajax({
-                url: '{{ route('auditor.tindak-lanjut.session', ['monitoring' => $monitoring->id, 'auditor' => $auditor->id]) }}',
+                url: '{{ route('auditor.tindak-lanjut.session', ['monitoring' => $monitoring->id, 'auditor' => $auditor->id, 'kriteria' => $kriteria->id]) }}',
                 type: 'POST',
                 data: formData,
                 processData: false,

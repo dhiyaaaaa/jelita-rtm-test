@@ -17,7 +17,7 @@ class Monitoring extends Model
 
     protected $table = 'monitoring';
 
-    protected $fillable = ['jadwal_audit_id', 'fakultas_id', 'unit_id', 'tgl'];
+    protected $fillable = ['jadwal_audit_id', 'fakultas_id', 'unit_id', 'prodi_id', 'tgl'];
 
     public function jadwal_audit(): BelongsTo
     {
@@ -33,6 +33,12 @@ class Monitoring extends Model
     {
         return $this->belongsTo(Unit::class, 'unit_id', 'id');
     }
+
+     public function prodi(): BelongsTo
+    {
+        return $this->belongsTo(Prodi::class, 'prodi_id', 'id');
+    }
+
 
     public function auditee(): BelongsToMany
     {

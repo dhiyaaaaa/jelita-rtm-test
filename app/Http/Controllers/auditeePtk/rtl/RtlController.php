@@ -257,14 +257,14 @@ class RtlController extends Controller
             foreach ($groupedTemuan as $formId => $items) {
                 $firstItem = $items->first();
                 
-                $catatanAuditor = $items->map(function($item) {
-                    $catatan = '';
-                    if ($item->prodi) {
-                        $catatan .= "{$item->prodi->jenjang->nama} {$item->prodi->nama}: ";
-                    }
-                    $catatan .= $item->catatan ?? 'Tidak ada catatan';
-                    return $catatan;
-                })->implode("\n");
+                // $catatanAuditor = $items->map(function($item) {
+                //     $catatan = '';
+                //     if ($item->prodi) {
+                //         $catatan .= "{$item->prodi->jenjang->nama} {$item->prodi->nama}: ";
+                //     }
+                //     $catatan .= $item->catatan ?? 'Tidak ada catatan';
+                //     return $catatan;
+                // })->implode("\n");
 
                 $PtkDeskripsi = $items->flatMap(function($item) {
                     return $item->form->ptk_form_deskripsi->map(function($deskripsi) use ($item) {
@@ -291,7 +291,7 @@ class RtlController extends Controller
                     });
                 })->implode("\n");
 
-                $firstItem->catatan_auditor = $catatanAuditor;
+                //$firstItem->catatan_auditor = $catatanAuditor;
                 $firstItem->deskripsi = $PtkDeskripsi;
                 $firstItem->kelebihan = $LaporanKelebihan;
                 
@@ -313,9 +313,11 @@ class RtlController extends Controller
             return back()->with('error', 'Tidak ada temuan untuk ditindaklanjuti.');
         }
 
-        $jawabanRtl = RtlForm::where('rtl_id', $rtl->id)->get();
+        $jawabanRtl = RtlForm::where('rtl_id', $rtl->id)
+        ->where('kriteria_id', $kriteria->id)
+        ->get();
 
-        $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditeeId;
+        $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditeeId . '-kriteriaId_' . $kriteria->id;
         $sessionFormData = session()->get($sessionKey, []);
 
         // $formData = [];
@@ -367,22 +369,23 @@ class RtlController extends Controller
             return response()->json(['message' => 'Invalid request'], 400);
         }
 
-        try {
-            $currentPage = $request->input('currentPage', 1);
-            $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl . '-auditeeId_' . $auditee;
+        $currentPage = $request->input('currentPage', 1);
+        $sessionKey = 'form_rtl-page_' . $currentPage . '-rtlId_' . $rtl . '-auditeeId_' . $auditee . '-kriteriaId_' . $kriteria;;
 
-            $auditee = Auditee::where('user_id', Auth::id())->first();
-            $auditeeId = $auditee?->id;
+        $auditee = Auditee::where('user_id', Auth::id())->first();
+        $auditeeId = $auditee?->id;
 
-            $kriteria = Kriteria::findOrFail($kriteria);
+        $kriteria = Kriteria::findOrFail($kriteria);
 
-            $validationRules = [];
-            $validationMessages = [];
-            $hasData = false;
+        $validationRules = [];
+        $validationMessages = [];
+        $hasData = false;
+        $formIds = [];
 
             foreach ($request->all() as $key => $value) {
                 if (preg_match('/^tindakan_([a-zA-Z0-9-]+)$/', $key, $matches)) {
                     $formId = $matches[1];
+                    $formIds[] = $formId;
                     $hasData = true;
 
                     foreach ($value as $index => $item) {
@@ -411,41 +414,54 @@ class RtlController extends Controller
                 ], 422);
             }
 
-            foreach ($request->all() as $key => $value) {
-                if (preg_match('/^tindakan_([a-zA-Z0-9-]+)$/', $key, $matches)) {
-                    $formId = $matches[1];
+            DB::beginTransaction();
+            try {
+                // Hapus semua tindakan untuk kriteria ini dan form yang terkait
+                RtlForm::where('rtl_id', $rtl)
+                    ->where('kriteria_id', $kriteria->id)
+                    ->whereIn('form_id', array_unique($formIds))
+                    ->delete();
 
-                    foreach ($value as $item) {
-                        if (!empty($item['tindakan']) && !empty($item['bukti'])) {
+                // Simpan data baru
+                foreach ($request->all() as $key => $value) {
+                    if (preg_match('/^tindakan_([a-zA-Z0-9-]+)$/', $key, $matches)) {
+                        $formId = $matches[1];
 
-                            RtlForm::updateOrCreate(
-                                [
+                        foreach ($value as $item) {
+                            if (!empty($item['tindakan']) && !empty($item['bukti'])) {
+                                
+                                RtlForm::create([
                                     'rtl_id' => $rtl,
                                     'form_id' => $formId,
                                     'tindakan' => $item['tindakan'],
-                                ],
-                                [
-                                    'auditee_id' => $auditeeId,
-                                    'kriteria_id' => $kriteria->id,
                                     'bukti' => $item['bukti'],
-                                ]
-                            );
+                                    'kriteria_id' => $kriteria->id,
+                                    'auditee_id' => $auditeeId
+                                ]);
+                            }
                         }
                     }
                 }
+
+                DB::commit();
+
+                // Update session setelah penyimpanan berhasil
+                $request->session()->put($sessionKey, $request->all());
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data berhasil disimpan.'
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('RTM RTL Save Error: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat menyimpan data.',
+                    'error' => $e->getMessage()
+                ], 500);
             }
-            return response()->json([
-                'success' => true,
-                'message' => 'Data berhasil disimpan.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error saving RTL form: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan data.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
     }
 
     public function store_form(Request $request, Rtl $rtl, string $auditee, string $kriteria): RedirectResponse
@@ -456,7 +472,7 @@ class RtlController extends Controller
         //dd(session()->all());
 
         for ($page = 1; $page <= $totalPages; $page++) {
-            $sessionKey = 'form_rtl-page_' . $page . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditee;
+            $sessionKey = 'form_rtl-page_' . $page . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditee . '-kriteriaId_' . $kriteria;
             $pageData = session($sessionKey, []);
 
 
@@ -491,10 +507,14 @@ class RtlController extends Controller
         }
 
         // Simpan data
+        DB::beginTransaction();
         try {
+            RtlForm::where('rtl_id', $rtl->id)
+                ->where('kriteria_id', $kriteria)
+                ->delete();
 
             for ($page = 1; $page <= $totalPages; $page++) {
-                $sessionKey = 'form_rtl-page_' . $page . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditee;
+                $sessionKey = 'form_rtl-page_' . $page . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditee . '-kriteriaId_' . $kriteria;
                 $pageData = session($sessionKey, []);
 
                 // Log::debug('Page Data:', [$sessionKey => $pageData]); // Debugging
@@ -504,18 +524,17 @@ class RtlController extends Controller
                         $formId = $matches[1];
 
                         foreach ($value as $item) {
-                            RtlForm::updateOrCreate(
-                                [
+                            if (!empty($item['tindakan']) && !empty($item['bukti'])) {
+                                
+                                RtlForm::create([
                                     'rtl_id' => $rtl->id,
                                     'form_id' => $formId,
-                                    'tindakan' => $item['tindakan'],
-                                ],
-                                [
-                                    'auditee_id' => $auditee,
                                     'kriteria_id' => $kriteria,
+                                    'tindakan' => $item['tindakan'],
                                     'bukti' => $item['bukti'],
-                                ]
-                            );
+                                    'auditee_id' => $auditee
+                                ]);
+                            }
                         }
                     }
                 }
@@ -530,9 +549,11 @@ class RtlController extends Controller
                 ['status' => 'completed']
             );
 
+            DB::commit();
+
             // bersihkan session
             for ($page = 1; $page <= $totalPages; $page++) {
-                $sessionKey = 'form_rtl-page_' . $page . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditee;
+                $sessionKey = 'form_rtl-page_' . $page . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditee . '-kriteriaId_' . $kriteria;
                 session()->forget($sessionKey);
             }
 
@@ -540,6 +561,7 @@ class RtlController extends Controller
                 ->with('success', 'Data berhasil disimpan.');
 
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Error saving RTL data: ' . $e->getMessage());
 
             return back()

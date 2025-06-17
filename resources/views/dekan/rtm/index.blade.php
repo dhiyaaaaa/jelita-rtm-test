@@ -11,12 +11,14 @@
         </div>
         <!-- /.card-header -->
         <div class="card-body">
-            <a href="{{ route('dekan.jadwal-rtm.create')}}" class="btn btn-outline-primary mr-2 mb-3">Buat Agenda RTM</a>
             <div class="">
                 <a href="{{ asset('user_manual/RTM_Fakultas.pdf') }}" target="_blank" class="btn btn-outline-info mr-2 mb-3">
                     <i class="fa fa-book mr-2"></i> User Manual
                 </a>
             </div>
+            @role(['pj_fakultas'])
+                <a href="{{ route('dekan.jadwal-rtm.create')}}" class="btn btn-outline-primary mr-2 mb-3">Buat Agenda RTM</a>
+            @endrole
 
             <table id="rtm" class="table table-bordered table-striped">
                 <thead>
@@ -155,10 +157,10 @@
                     Apakah Anda ingin menindaklanjuti hasil audit ini?
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" id="konfirmasiTindakLanjut">
-                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                        <span class="btn-text">Ya, Lanjutkan</span>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" id="save-btn" class="btn btn-primary">
+                        <span class="spinner-border spinner-border-sm d-none" id="lampiran-spinner" role="status" aria-hidden="true"></span>
+                        <span id="lampiran-text">Simpan</span>
                     </button>
                 </div>
             </div>
@@ -254,15 +256,26 @@
             // Submit form lampiran
             $('#lampiranForm').submit(function(event) {
                 event.preventDefault();
+                
+                // Show loading state
+                $('#lampiran-spinner').removeClass('d-none');
+                $('#lampiran-text').text('Menyimpan...');
+                $('#save-btn').prop('disabled', true);
+                
                 let formData = new FormData($('#lampiranForm')[0]);
 
                 $.ajax({
-                    url: "{{  route('dekan.lampiran-rtm.store') }}", 
+                    url: "{{ route('dekan.lampiran-rtm.store') }}", 
                     method: "POST",
                     data: formData,
                     processData: false,
                     contentType: false,
                     success: function(response) {
+                        // Hide loading state
+                        $('#lampiran-spinner').addClass('d-none');
+                        $('#lampiran-text').text('Simpan');
+                        $('#save-btn').prop('disabled', false);
+                        
                         Swal.fire({
                             icon: 'success',
                             title: 'Lampiran berhasil disimpan!',
@@ -274,18 +287,27 @@
                         $('#undangan').val(response.undangan).prop('disabled', true);
                         $('#presensi').val(response.presensi).prop('disabled', true);
                         $('#dokumentasi').val(response.dokumentasi).prop('disabled', true);
+                        
+                        // Close modal after success
+                        setTimeout(() => {
+                            $('#lampiranModal').modal('hide');
+                        }, 1500);
                     },
                     error: function(xhr) {
+                        // Hide loading state on error
+                        $('#lampiran-spinner').addClass('d-none');
+                        $('#lampiran-text').text('Simpan');
+                        $('#save-btn').prop('disabled', false);
+                        
                         Swal.fire({
-                        icon: 'error',
-                        title: 'Terjadi Kesalahan!',
-                        text: 'Gagal menyimpan lampiran. Silakan coba lagi.',
-                        confirmButtonText: 'Tutup'
+                            icon: 'error',
+                            title: 'Terjadi Kesalahan!',
+                            text: 'Gagal menyimpan lampiran. Silakan coba lagi.',
+                            confirmButtonText: 'Tutup'
                         });
                     }
                 });
             });
-
             $('.form-control').on('input', function() {
                     let lampiranData = {
                         undangan: $('#undangan').val(),
