@@ -2,10 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h2>{{ $title }}</h2>
-    <div class="mb-3">
-        <a href="{{ route('hasil_rtm_fakultas.index') }}" class="btn btn-outline-secondary">Kembali</a>
-    </div>
+    
 
     <!-- Menampilkan detail jadwal RTM -->
     <div class="card">
@@ -53,6 +50,9 @@
                     <div class="col-md-6">
                         <p><strong>Jumlah Peserta Rapat:</strong> {{ $rtmJadwal->peserta }}</p>
                     </div>
+                </div>
+                <div class="mb-3 text-center">
+                    <a href="{{ route('hasil_rtm_fakultas.show', $rtmJadwal->jadwal_audit_id) }}" class="btn btn-outline-secondary">Kembali</a>
                 </div>
             </div>
         </div>

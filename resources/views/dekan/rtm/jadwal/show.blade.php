@@ -2,10 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h2>{{ $title}}</h2>
-    <div class="mb-3">
-        <a href="{{ route("dekan.jadwal-rtm.index") }}" class="btn btn-outline-secondary">Kembali</a>
-    </div>
+    
 
     <!-- Menampilkan detail jadwal RTM -->
     <div class="card">
@@ -135,11 +132,13 @@
                             </div>
                         </div>
                         <div class="card-footer text-center">
-                            <!-- Tombol untuk masuk ke mode edit -->
+                            <!-- Tombol Kembali -->
+                            <a href="{{ route('dekan.jadwal-rtm.index') }}" class="btn btn-outline-secondary me-2">Kembali</a>
+                            <!-- Tombol Edit -->
                             <a href="{{ route('dekan.jadwal-rtm.show', ['id' => $item->id, 'edit' => 'true']) }}" class="btn btn-warning">Edit Jadwal</a>
+                            
                         </div>
                     </div>
-              
             @endif
         </div>
     </div>

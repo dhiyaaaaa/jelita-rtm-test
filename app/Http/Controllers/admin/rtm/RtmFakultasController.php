@@ -80,7 +80,7 @@ class RtmFakultasController extends Controller
         $rtmJadwal = RtmJadwal::with(['jadwal_audit', 'fakultas', 'unit', 'rtm_rtl'])
             ->findOrFail($rtmJadwal);
 
-        return view('tindak_lanjut.rtm_fakultas.detail', [
+        return view('tindak_lanjut.rtm_fakultas.hasil_rtm.detail', [
             'title' => 'Detail Hasil RTM Fakultas',
             'rtmJadwal' => $rtmJadwal,
         ]);

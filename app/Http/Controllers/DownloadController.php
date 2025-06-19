@@ -3051,12 +3051,15 @@ class DownloadController extends Controller
             $groupedForms[$key]['waktu'] = array_merge($groupedForms[$key]['waktu'], explode(';', $form->waktu ?? ''));
 
             // Gabungkan tindakan pelaksanaan
-            $groupedForms[$key]['tindakan'] = array_merge($groupedForms[$key]['tindakan'], explode(';', $form->tindakan ?? ''));
-            $groupedForms[$key]['bukti'] = array_merge($groupedForms[$key]['bukti'], explode(';', $form->bukti ?? ''));
+            $groupedForms[$key]['tindakan'] = array_unique(array_merge($groupedForms[$key]['tindakan'], explode(';', $form->tindakan ?? '')));
+            $groupedForms[$key]['bukti'] = array_unique(array_merge($groupedForms[$key]['bukti'], explode(';', $form->bukti ?? '')));
            
             //Catatan Auditor
-            $groupedForms[$key]['catatan'][] = $form->catatan;
-
+            $groupedForms[$key]['catatan'] = array_unique(array_merge(
+                $groupedForms[$key]['catatan'], 
+                array_filter([$form->catatan], function($item) { return !empty($item); })
+            ));
+            
             //status
             $groupedForms[$key]['statuses'][] = $form->status;
 

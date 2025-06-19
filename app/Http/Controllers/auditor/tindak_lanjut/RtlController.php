@@ -547,6 +547,7 @@ class RtlController extends Controller
                     'monitoring_id' => $monitoring->id,
                     'form_id' => $id,
                     'auditor_id' => $auditor,
+                    'kriteria_id' => $kriteriaId,
                     'status' => $requestData[$statusKey] ?? null,
 
                 ];

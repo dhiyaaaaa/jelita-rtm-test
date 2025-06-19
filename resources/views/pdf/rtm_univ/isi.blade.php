@@ -196,12 +196,17 @@
                                             <li>{{ strip_tags($deskripsi) }}</li>
                                         @endforeach
                                     </ul>
-                                @elseif($kelebihan)
-                                    <div><em>Catatan Auditor:</em> {{ $kelebihan }}</div>
-                                @else
-                                @elseif($catatanAuditor)
-                                    <div><em>Catatan Auditor:</em> {{ $catatanAuditor }}</div>
-                                @else
+                                @endif
+                                
+                                @if (!empty($kelebihan) && is_array($kelebihan))
+                                    <div><em>Catatan Auditor:</em> {{ implode(', ', array_filter($kelebihan)) }}</div>
+                                @endif
+                                
+                                @if (!empty($catatanAuditor) && is_array($catatanAuditor))
+                                    <div><em>Catatan Auditor:</em> {{ implode(', ', array_filter($catatanAuditor)) }}</div>
+                                @endif
+                                
+                                @if (empty($deskripsiList) && empty($kelebihan) && empty($catatanAuditor))
                                     <div><em>Tidak ada deskripsi atau catatan auditor.</em></div>
                                 @endif
                             </li>
