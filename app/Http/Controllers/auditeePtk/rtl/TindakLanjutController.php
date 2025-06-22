@@ -21,6 +21,10 @@ class TindakLanjutController extends Controller
 
     public function index()
     {
+        $title = 'Hapus Tindak Lanjut!';
+        $text = "Apakah Anda yakin ingin menghapus tindak lanjut ini?";
+        confirmDelete($title, $text);
+
         $fakultas = $this->user->fakultas->first();
         $unit = $this->user->unit->first();
 

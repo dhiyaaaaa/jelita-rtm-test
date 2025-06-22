@@ -51,14 +51,9 @@
                                     @endphp
                                     <a href="{{ route('dekan.rtl.show', $rtl->id) }}"
                                         class="btn btn-outline-primary">Lihat</a>
-                                    <form action="{{ route('dekan.rtl.delete', $rtl->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger" 
-                                                data-confirm-delete="true">
-                                            <i class="fas fa-trash"></i> Hapus
-                                        </button>
-                                    </form>
+                                    <a href="{{ route('dekan.rtl.delete', ['rtl' => $rtl->id,]) }}"
+                                        class="btn btn-outline-danger"  data-confirm-delete="true">
+                                        <i class="fas fa-trash"></i>Hapus</a>
                                 @else
                                     <div class="d-flex justify-content-center">
                                         <button class="btn btn-outline-primary btn-fixed-size tindak-lanjut-btn"
@@ -114,19 +109,24 @@
     </div>
 
     <!-- Modal Konfirmasi Pembuatan RTL -->
-    <div class="modal fade" id="konfirmasiModal" tabindex="-1" aria-labelledby="konfirmasiModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="konfirmasiModal" tabindex="-1" role="dialog" aria-labelledby="konfirmasiModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="konfirmasiModalLabel">Konfirmasi Tindak Lanjut PTK</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <div class="modal-body">
                     Apakah Anda ingin menindaklanjuti permintaan tindakan koreksi?
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" id="konfirmasiTindakLanjut">Ya, Lanjutkan</button>
+                    <button type="button" id="konfirmasiTindakLanjut" class="btn btn-primary">
+                        <span class="spinner-border spinner-border-sm d-none" id="tindaklanjut-spinner" role="status" aria-hidden="true"></span>
+                        <span id="tindaklanjut-text">Simpan</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -137,7 +137,7 @@
     <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    {{-- <link rel="stylesheet" href="{{ asset('plugins/fontawesome-free/css/all.min.css') }}"> --}}
 
     <style>
         .btn-fixed-size {
@@ -158,6 +158,9 @@
 
 @section('script')
     <!-- DataTables & Plugins -->
+    {{-- <script src="{{ asset('plugins/jquery/jquery.min.js') }}"></script>
+    <script src="{{ asset('plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script> --}}
+    <script src="{{ asset('plugins/sweetalert2/sweetalert2.all.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
@@ -165,7 +168,7 @@
 
     <!-- Page specific script -->
     <script>
-        $(function() {
+         $(function() {
             $("#auditee").DataTable({
                 "responsive": true,
                 "autoWidth": false,
@@ -181,32 +184,62 @@
     </script>
 
     <script>
-        $(document).ready(function() {
-            $('.tindak-lanjut-btn').click(function() {
-                let auditId = $(this).data('jadwal_audit_id');
+        // Handle Tindak Lanjut
+        $(document).on('click', '.tindak-lanjut-btn', function() {
+            currentActionData = {
+                id: $(this).data('id'),
+                fakultas_id: $(this).data('fakultas_id'),
+                unit_id: $(this).data('unit_id'),
+                prodi_id: $(this).data('prodi_id'),
+                jadwal_audit_id: $(this).data('jadwal_audit_id')
+            };
+            $('#konfirmasiModal').modal('show');
+        });
+        // Konfirmasi Tindak Lanjut
+            $('#konfirmasiTindakLanjut').click(function() {
+                const $btn = $(this);
+                const $spinner = $('#tindaklanjut-spinner');
+                const $text = $('#tindaklanjut-text');
+                
+                $spinner.removeClass('d-none');
+                $text.addClass('d-none');
+                $btn.prop('disabled', true);
 
-                console.log("Audit ID:", auditId);
-
-                $('#konfirmasiModal').modal('show');
-
-                $('#konfirmasiTindakLanjut').off('click').on('click', function() {
-                    $.ajax({
-                        url: "{{ route('dekan.rtl.store') }}",
-                        method: "POST",
-                        data: {
-                            _token: "{{ csrf_token() }}",
-                            jadwal_audit_id: auditId
-                        },
-                        success: function(response) {
-                            location.reload();
-                        },
-                        error: function(xhr) {
-                            alert("Gagal menindaklanjuti: " + xhr.responseText);
-                        }
-                    });
+                $.ajax({
+                    url: "{{ route('dekan.rtl.store') }}",
+                    method: "POST",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        jadwal_id: currentActionData.id,
+                        fakultas_id: currentActionData.fakultas_id,
+                        unit_id: currentActionData.unit_id,
+                        jadwal_audit_id: currentActionData.jadwal_audit_id
+                    },
+                    success: function(response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: 'Tindak lanjut berhasil dibuat',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        setTimeout(() => location.reload(), 1500);
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: xhr.responseJSON.message || 'Gagal membuat tindak lanjut',
+                            confirmButtonText: 'Tutup'
+                        });
+                    },
+                    complete: function() {
+                        $spinner.addClass('d-none');
+                        $text.removeClass('d-none');
+                        $btn.prop('disabled', false);
+                        $('#konfirmasiModal').modal('hide');
+                    }
                 });
             });
-        });
-
     </script>
 @endsection

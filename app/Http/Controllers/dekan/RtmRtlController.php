@@ -477,7 +477,7 @@ class RtmRtlController extends Controller
                 ->where('kriteria_id', $kriteria)
                 ->delete();
 
-            // Kemudian simpan yang baru
+            
             for ($page = 1; $page <= $totalPages; $page++) {
                 $sessionKey = 'form_rtm_rtl-page_' . $page . '-rtmRtlId_' . $rtmRtl->id . '-auditeeId_' . $auditee . '-kriteriaId_' . $kriteria;
                 $pageData = session($sessionKey, []);

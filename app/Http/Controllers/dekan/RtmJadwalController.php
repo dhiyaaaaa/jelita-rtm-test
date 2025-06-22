@@ -54,6 +54,9 @@ class RtmJadwalController extends Controller
 
     public function index()
     {
+        $title = 'Hapus Rencana Tindak Lanjut!';
+        $text = "Apakah Anda yakin ingin menghapus rencana tindak lanjut ini?";
+        confirmDelete($title, $text);
         $jadwal = RtmJadwal::with(['jadwal_audit', 'fakultas', 'rtm_rtl'])
             ->when($this->isUnit, function ($query) {
                 return $query->where('unit_id', $this->unitOrFakultasId);

@@ -10,6 +10,7 @@
         "laravel/framework": "^11.9",
         "laravel/socialite": "^5.15",
         "laravel/tinker": "^2.9",
+        "livewire/livewire": "^3.6",
         "mpdf/mpdf": "^8.2",
         "nesbot/carbon": "^3.8",
         "phpoffice/phpspreadsheet": "^3.8",

@@ -46,7 +46,7 @@
                                 {{-- Lampiran --}}
                                 <td class="text-center">
                                     <button class="btn btn-outline-primary btn-sm btn-fixed-size lampiran-btn"
-                                            data-bs-toggle="modal" data-bs-target="#lampiranModal"
+                                            data-toggle="modal" data-target="#lampiranModal"
                                             data-id="{{ $item->id }}">
                                         +Lampiran
                                     </button>
@@ -61,10 +61,12 @@
                             {{-- Aksi --}}
                             <td class="text-center">
                                 <div class="dropdown">
-                                    <button class="btn btn-outline-primary btn-sm btn-fixed-size dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <button class="btn btn-outline-primary btn-sm btn-fixed-size dropdown-toggle" type="button"
+                                        id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
+                                        aria-expanded="false">
                                         Aksi
                                     </button>
-                                    <ul class="dropdown-menu">
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                         <li>
                                             <a class="dropdown-item" href="{{ route('admin.rtm-univ.show', $item->id) }}">
                                                 <i class="fas fa-file"></i> Lihat Agenda
@@ -101,7 +103,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="lampiranModalLabel">Lampiran RTM</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="lampiranForm" method="POST" action="{{ route('admin.lampiran-rtm-univ.store') }}" enctype="multipart/form-data">
                     @csrf
@@ -125,29 +127,13 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                        <button type="submit" id="save-btn" class="btn btn-primary">Simpan</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn btn-primary" id="btnSimpan">
+                            <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <span id="btnText"> Simpan</span>
+                        </button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Konfirmasi Pembuatan RTMRTL-->
-    <div class="modal fade" id="konfirmasiModal" tabindex="-1" aria-labelledby="konfirmasiModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="konfirmasiModalLabel">Konfirmasi Tindak Lanjut</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    Apakah Anda ingin menindaklanjuti hasil audit ini?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" id="konfirmasiTindakLanjut">Ya, Lanjutkan</button>
-                </div>
             </div>
         </div>
     </div>
@@ -158,7 +144,7 @@
     <!-- DataTables -->
     <link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('plugins/fontawesome-free/css/all.min.css') }}">
 
     <style>
         .dropdown-item i {
@@ -192,8 +178,7 @@
     <script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
     <script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
+    
     <!-- Page specific script -->
     <script>
         $(function() {
@@ -218,6 +203,10 @@
             // Submit form lampiran
             $('#lampiranForm').submit(function(event) {
                 event.preventDefault();
+
+                $('#btnSimpan').prop('disabled', true);
+                $('#spinner').removeClass('d-none');
+                $('#btnText').text(' Menyimpan...');
                 let formData = new FormData($('#lampiranForm')[0]);
 
                 $.ajax({
@@ -235,9 +224,17 @@
                             timer: 1500
                         });
 
+                        $('#btnSimpan').prop('disabled', false);
+                        $('#spinner').addClass('d-none');
+                        $('#btnText').text(' Simpan');
+
                         $('#undangan').val(response.undangan).prop('disabled', true);
                         $('#presensi').val(response.presensi).prop('disabled', true);
                         $('#dokumentasi').val(response.dokumentasi).prop('disabled', true);
+
+                        setTimeout(() => {
+                            $('#lampiranModal').modal('hide');
+                        }, 1500);
                     },
                     error: function(xhr) {
                         Swal.fire({
@@ -246,6 +243,10 @@
                         text: 'Gagal menyimpan lampiran. Silakan coba lagi.',
                         confirmButtonText: 'Tutup'
                         });
+
+                        $('#btnSimpan').prop('disabled', false);
+                        $('#spinner').addClass('d-none');
+                        $('#btnText').text(' Simpan');
                     }
                 });
             });

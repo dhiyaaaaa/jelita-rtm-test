@@ -390,8 +390,8 @@ class RtlController extends Controller
                         [
                             'monitoring_id' => $monitoring,
                             'form_id' => $id,
-                            'kriteria_id' => $kriteria->id, // Make sure this is included
-                            'auditor_id' => $auditor, // Also include auditor_id in the search criteria
+                            'kriteria_id' => $kriteria->id, 
+                            'auditor_id' => $auditor, 
                         ],
                         [
                             'status' => $status,
@@ -403,7 +403,7 @@ class RtlController extends Controller
                     $formId = $matches[1];
                     $existCatatan = MonitoringForm::where('monitoring_id', $monitoring)
                         ->where('form_id', $formId)
-                        ->where('kriteria_id', $kriteria->id) // Add kriteria_id to the query
+                        ->where('kriteria_id', $kriteria->id) 
                         ->pluck('catatan', 'id')->toArray();
 
                     $submittedCatatans = is_array($value) ? array_filter($value) : [];
@@ -420,7 +420,7 @@ class RtlController extends Controller
                                 [
                                     'monitoring_id' => $monitoring,
                                     'form_id' => $formId,
-                                    'kriteria_id' => $kriteria->id, // Include here
+                                    'kriteria_id' => $kriteria->id, 
                                     'catatan' => $catatan,
                                 ],
                                 [

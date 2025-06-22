@@ -67,7 +67,7 @@ class RtlController extends Controller
     {
         $rtl->delete();
 
-        return back()->with('success', 'Form Monitoring berhasil dihapus.');
+        return back()->with('success', 'Form tindak lanjut berhasil dihapus.');
     }
 
     public function show(Rtl $rtl)
@@ -551,7 +551,6 @@ class RtlController extends Controller
 
             DB::commit();
 
-            // bersihkan session
             for ($page = 1; $page <= $totalPages; $page++) {
                 $sessionKey = 'form_rtl-page_' . $page . '-rtlId_' . $rtl->id . '-auditeeId_' . $auditee . '-kriteriaId_' . $kriteria;
                 session()->forget($sessionKey);
