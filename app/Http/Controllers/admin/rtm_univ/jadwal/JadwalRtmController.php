@@ -13,6 +13,11 @@ class JadwalRtmController extends Controller
 {
     public function index()
     {
+        // Sweet Alert
+        $title = 'Hapus Jadwal RTM!';
+        $text = "Apakah Anda yakin ingin menghapus jadwal RTM ini?";
+        confirmDelete($title, $text);
+
         $jadwal = RtmJadwal::with(['jadwal_audit', 'rtm_rtl'])
         ->whereNull('fakultas_id')
         ->whereNull('unit_id')

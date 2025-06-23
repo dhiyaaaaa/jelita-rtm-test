@@ -79,13 +79,10 @@
                                         </li>
 
                                         <li>
-                                            <a class="dropdown-item text-danger delete-btn" href="javascript:void(0)" data-id="{{ $item->id }}">
+                                            <a class="dropdown-item text-danger delete-btn" href="{{ route('admin.rtm-univ.destroy', $item->id) }}"
+                                                data-confirm-delete="true">
                                                 <i class="fas fa-trash-alt"></i> Hapus
                                             </a>
-                                            <form id="delete-form-{{ $item->id }}" action="{{ route('admin.rtm-univ.destroy', $item->id) }}" method="POST" style="display: none;">
-                                                @csrf
-                                                @method('DELETE')
-                                            </form>
                                         </li>
                                     </ul>
                                 </div>
@@ -272,31 +269,6 @@
 
             $('#lampiranForm').submit(function() {
                 localStorage.removeItem('lampiranDraft');
-            });
-        });
-    </script>
-
-    <script>
-        // Meng-handle penghapusan item
-        document.querySelectorAll('.delete-btn').forEach(function (button) {
-            button.addEventListener('click', function (event) {
-                event.preventDefault(); 
-
-                var id = button.getAttribute('data-id');
-                var form = document.getElementById('delete-form-' + id); 
-
-                Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: "Data ini akan dihapus!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, hapus!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit(); // Submit the form to delete the item
-                    }
-                });
             });
         });
     </script>
