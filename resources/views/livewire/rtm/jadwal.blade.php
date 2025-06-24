@@ -1,12 +1,21 @@
+@php
+    use Carbon\Carbon;
+@endphp
+@extends('components.layout.main_layout')
+
+@section('content')
 <div class="card card-dark">
         <div class="card-header">
             <h3 class="card-title title-size">{{ $title }}</h3>
+            <div class="card-tools">
+                <input type="text" wire:model.live.debounce.500ms="search" class="form-control" placeholder="Cari agenda...">
+            </div>
         </div>
         <!-- /.card-header -->
         <div class="card-body">
             <a href="{{ route('admin.rtm-univ.create')}}" class="btn btn-outline-primary mr-2 mb-3">Buat Agenda RTM</a>
             <div class="">
-                <a href="{{ asset('user_manual/RTM_Univ.pdf') }}" target="_blank" class="btn btn-outline-info mr-2 mb-3">
+                <a href="{{ asset('user_manual/RTM_Universitas.pdf') }}" target="_blank" class="btn btn-outline-info mr-2 mb-3">
                     <i class="fa fa-book mr-2"></i> User Manual
                 </a>
             </div>
@@ -38,7 +47,7 @@
 
                                 {{-- Lampiran --}}
                                 <td class="text-center">
-                                    <button wire:click="openLampiranmodel({{ $item->id }})" class="btn btn-outline-primary btn-sm btn-fixed-size">
+                                    <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#lampiranModal">
                                         +Lampiran
                                     </button>
                                 </td>
@@ -52,24 +61,20 @@
                             {{-- Aksi --}}
                             <td class="text-center">
                                 <div class="dropdown">
-                                    <button class="btn btn-outline-primary btn-sm btn-fixed-size dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <button class="btn btn-outline-primary btn-sm btn-fixed-size dropdown-toggle" type="button"
+                                        id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
+                                        aria-expanded="false">
                                         Aksi
                                     </button>
-                                    <ul class="dropdown-menu">
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                         <li>
                                             <a class="dropdown-item" href="{{ route('admin.rtm-univ.show', $item->id) }}">
                                                 <i class="fas fa-file"></i> Lihat Agenda
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="{{ route('download.rtm.univ', $item->id) }}">
-                                                <i class="fas fa-download"></i> Download Laporan RTM
-                                            </a>
-                                        </li>
-
-                                        <li>
-                                            <a class="dropdown-item text-danger delete-btn" href="#" wire:click.prevent="deleteRtm({{ $item->id }})"
-                                                onclick="confirm('Apakah Anda yakin ingin menghapus?') || event.stopImmediatePropagation()">
+                                            <a class="dropdown-item text-danger" href="#" 
+                                            wire:click="confirmDelete({{ $item->id }})">
                                                 <i class="fas fa-trash-alt"></i> Hapus
                                             </a>
                                         </li>
@@ -80,63 +85,45 @@
                     @endforeach
                 </tbody>
             </table>
+            {{ $rtmJadwal->links() }}
         </div>
     </div>
 
     <!-- Modal Lampiran -->
-    @if($showLampiranModal)
-    <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Lampiran RTM</h5>
-                    <button type="button" wire:click="$set('showLampiranModal', false)" class="btn-close"></button>
-                </div>
-                <form wire:submit.prevent="saveLampiran">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="undangan" class="form-label">Upload File Undangan</label>
-                            <small class="form-text text-muted" style="margin: -10px 0 8px 0">Upload file pdf dengan ukuran maks. 2mb</small>
-                            <input type="file" class="form-control" id="undangan" wire:model="undangan" required>
-                            @error('undangan') <span class="text-danger">{{ $message }}</span>@enderror
-                        </div>
-                        <div class="mb-3">
-                            <label for="presensi" class="form-label">Upload File Presensi</label>
-                            <small class="form-text text-muted" style="margin: -10px 0 8px 0">Upload file pdf dengan ukuran maks. 2mb</small>
-                            <input type="file" class="form-control" id="presensi" wire:model="presensi" required>
-                            @error('presensi') <span class="text-danger">{{ $message }}</span>@enderror
-                        </div>
-                        <div class="mb-3">
-                            <label for="dokumentasi" class="form-label">Upload File Dokumentasi</label>
-                            <small class="form-text text-muted" style="margin: -10px 0 8px 0">Upload file pdf dengan ukuran maks. 2mb</small>
-                            <input type="file" class="form-control" id="dokumentasi" wire:model="dokumentasi" required>
-                            @error('dokumentasi') <span class="text-danger">{{ $message }}</span>@enderror
-                        </div>
+        <div class="modal fade" id="lampiranModal" tabindex="-1" aria-labelledby="lampiranModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="lampiranModalLabel">Lampiran RTM</h5>
+                        <button type="button" class="close" wire:click="closeLampiranModal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="$set('showLampiranModal', false)">Tutup</button>
-                        <button type="submit" class="btn btn-primary">Simpan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Konfirmasi Pembuatan RTMRTL-->
-    <div class="modal fade" id="konfirmasiModal" tabindex="-1" aria-labelledby="konfirmasiModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="konfirmasiModalLabel">Konfirmasi Tindak Lanjut</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    Apakah Anda ingin menindaklanjuti hasil audit ini?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" id="konfirmasiTindakLanjut">Ya, Lanjutkan</button>
+                    <form wire:submit.prevent="saveLampiran">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="undangan">Undangan</label>
+                                <input type="file" class="form-control" id="undangan" wire:model="undangan">
+                                @error('undangan') <span class="text-danger">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <label for="presensi">Presensi</label>
+                                <input type="file" class="form-control" id="presensi" wire:model="presensi">
+                                @error('presensi') <span class="text-danger">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <label for="dokumentasi">Dokumentasi</label>
+                                <input type="file" class="form-control" id="dokumentasi" wire:model="dokumentasi">
+                                @error('dokumentasi') <span class="text-danger">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" wire:click="closeLampiranModal">Tutup</button>
+                            <button type="submit" class="btn btn-primary">Simpan Lampiran</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-    </div>
+        <div class="modal-backdrop fade show"></div>
+@endsection

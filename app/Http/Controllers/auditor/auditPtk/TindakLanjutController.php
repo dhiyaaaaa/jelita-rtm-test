@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Auditor\tindak_lanjut;
+namespace App\Http\Controllers\auditor\auditPtk;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditeeAuditor;
