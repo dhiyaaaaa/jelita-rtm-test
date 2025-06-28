@@ -65,6 +65,7 @@ use App\Http\Controllers\auditeePtk\rtl\TindakLanjutController as DekanTindakLan
 use App\Http\Controllers\HasilRtmController;
 use App\Livewire\Rtm\Jadwal;
 use App\Livewire\Rtmjadwal;
+use App\Livewire\RtmUniv\JadwalRtmCreate;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'guest'], function () {
@@ -1067,13 +1068,13 @@ Route::group(['middleware' => 'auth'], function () {
         });
 
         Route::prefix('rtm-livewire')->group(function () {
-            Route::get('', [JadwalRtmController::class, 'indexLivewire'])->name('index'); // Menggunakan metode indexLivewire() baru
+            Route::get('', [JadwalRtmController::class, 'indexLivewire'])->name('admin.rtm-univ.index-livewire'); // Menggunakan metode indexLivewire() baru
             // Route::get('', Rtmjadwal::class)->name('admin.rtm-univ.index');
              //Route::get('', [JadwalRtmController::class, 'indexLivewire'])->name('rtm-univ.livewire.index');
 
             //Route::get('', Jadwal::class)->name('admin.rtm-wire.index');
-            Route::get('/jadwal-rtm-univ/create', [JadwalRtmController::class, 'create'])->name('admin.rtm-univ.create');
-
+            Route::get('/jadwal-rtm-univ-livewire/create', JadwalRtmCreate::class)->name('admin.rtm-univ.create-livewire');
+           
             //Store Jadwal RTM
             Route::post('/jadwal-rtm-univ/store', [JadwalRtmController::class, 'store'])->name('admin.rtm-univ.store');
 

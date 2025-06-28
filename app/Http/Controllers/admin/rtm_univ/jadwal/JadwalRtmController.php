@@ -54,7 +54,7 @@ class JadwalRtmController extends Controller
 
         RtmJadwal::updateOrCreate($data);
 
-        return redirect()->route('admin.rtm-univ.index')->with('success', 'Data RTM berhasil disimpan!');
+        return redirect()->route('admin.rtm-univ.index')->with('success', 'Jadwal RTM berhasil disimpan!');
     }
 
     public function show(Request $request, $id)
