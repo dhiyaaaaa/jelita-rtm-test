@@ -1,17 +1,16 @@
 @php
     use Carbon\Carbon;
 @endphp
-@extends('components.layout.main_layout')
 
-@section('content')
-    {{-- INFO RTM --}}
+<div>
+    {{-- Info RTM --}}
     <div class="card shadow border-0" style="background: linear-gradient(135deg, #6694ea, #614ba2); color: white;">
         <div class="card-header border-0">
             <h3 class="card-title title-size text-white">Rapat Tinjauan Manajemen</h3>
         </div>
 
         <div class="card-body">
-            <a href="{{ route('admin.rtm-univ.index') }}" class="btn btn-outline-light mb-3">
+            <a href="{{ route('admin.rtm-univ.index-livewire') }}" class="btn btn-outline-light mb-3">
                 <i class="fas fa-arrow-left"></i> Kembali
             </a>
 
@@ -66,7 +65,8 @@
             </table>
         </div>
     </div>
-    
+
+    {{-- Catatan Narasi --}}
     <div class="card shadow border-0 mt-3">
         <div class="card-header bg-white border-bottom">
             <h5 class="mb-0 text-dark"><i class="fas fa-file-alt me-2"></i> Narasi Laporan RTM</h5>
@@ -75,7 +75,7 @@
         <div class="card-body">
             <p class="text-muted">Silakan tambahkan kata pengantar laporan RTM untuk menjelaskan konteks dan tujuan laporan ini, jika diperlukan.</p>
             <div class="d-flex justify-content">
-                <a href="{{ route('admin.rtm-catatan.form', [$rtmJadwal->id]) }}"
+                <a href="{{ route('admin.rtm-catatan.form-livewire', [$rtmJadwal->id]) }}"
                     class="btn btn-primary"><i class="fas fa-edit me-1"></i> Isi </a>
             </div>
         </div>
@@ -85,17 +85,16 @@
         <div class="card-body">
             <div class="mb-3 p-3 bg-light rounded">
                 <h5>Pilih Kriteria:</h5>
-                <form method="GET">
+                <form wire:submit.prevent="loadData"> {{-- Gunakan wire:submit.prevent untuk form --}}
                     <div class="row">
                         @foreach($kriteriaOptions as $kriteria)
                         <div class="col-md-3">
                             <div class="custom-control custom-checkbox">
-                                <input type="checkbox" 
-                                       class="custom-control-input" 
-                                       id="kriteria_{{ $kriteria->id }}" 
-                                       name="kriteria[]" 
-                                       value="{{ $kriteria->id }}"
-                                       @if(in_array($kriteria->id, request('kriteria', []))) checked @endif>
+                                <input type="checkbox"
+                                    class="custom-control-input"
+                                    id="kriteria_{{ $kriteria->id }}"
+                                    wire:model.live="selectedKriteria" {{-- Gunakan .live untuk update real-time --}}
+                                    value="{{ $kriteria->id }}">
                                 <label class="custom-control-label" for="kriteria_{{ $kriteria->id }}">
                                     {{ $kriteria->nama }}
                                 </label>
@@ -103,11 +102,14 @@
                         </div>
                         @endforeach
                     </div>
-                    
+
                     <div class="mt-3">
-                        <button type="submit" class="btn btn-primary mr-2">Terapkan Filter</button>
-                        @if(request()->has('kriteria'))
-                            <a href="{{ url()->current() }}" class="btn btn-outline-secondary">Reset</a>
+                        <input type="text" wire:model.live="search" class="form-control" placeholder="Cari Fakultas/Unit...">
+                    </div>
+
+                    <div class="mt-3">
+                        @if(!empty($selectedKriteria) || !empty($search))
+                            <button wire:click="resetFilter" type="button" class="btn btn-outline-secondary">Reset Filter</button>
                         @endif
                     </div>
                 </form>
@@ -124,12 +126,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @php 
-                        $no = 1; 
-                    @endphp
-                    @foreach ($units as $index => $item)
+                    {{-- Hapus @php $no = 1; @endphp --}}
+                    @foreach ($units as $item)
                         <tr class="text-center">
-                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $loop->iteration + ($units->currentPage() - 1) * $units->perPage() }}</td> {{-- Hitung nomor urut dengan paginasi --}}
                             <td>
                                 @if($item->jenis_unit === 'fakultas')
                                     Fakultas {{ $item->nama }}
@@ -149,32 +149,25 @@
                             </td>
                             <td>
                                 @if($item->rtm_rtl_univ_id)
-                                    @if(!empty($item->status))
-                                        @if($item->status === 'completed')
-                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_univ_id]) }}?{{ http_build_query(request()->query()) }}"
-                                                class="btn btn-primary btn-fixed-size">Sudah Isi</a>
-                                        @else
-                                            <a href="{{ route('admin.rtm-rtl.form', [$item->rtm_rtl_univ_id]) }}?{{ http_build_query(request()->query()) }}"
-                                                class="btn btn-outline-primary btn-fixed-size">Isi</a>
-                                        @endif
+                                    @if(!empty($item->rtm_rtl_univ_status) && $item->rtm_rtl_univ_status === 'completed')
+                                        <a href="{{ route('admin.rtm-rtl.form-livewire', ['rtmRtlUniv' => $item->rtm_rtl_univ_id, 'selectedKriteria' => $selectedKriteria]) }}"
+                                            class="btn btn-primary btn-fixed-size">Sudah Isi</a>
                                     @else
-                                        <form action="{{ route('admin.rtm-rtl.isi', [$item->rtm_rtl_univ_id]) }}?{{ http_build_query(request()->query()) }}"
-                                            method="post" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-primary btn-fixed-size">Isi</button>
-                                        </form>
+                                        <a href="{{ route('admin.rtm-rtl.form-livewire', ['rtmRtlUniv' => $item->rtm_rtl_univ_id, 'selectedKriteria' => $selectedKriteria]) }}"
+                                            class="btn btn-outline-primary btn-fixed-size">Isi</a>
+                                        
                                     @endif
                                 @else
-                                    <button class="btn btn-outline-primary btn-fixed-size tindak-lanjut-btn" 
-                                        data-fakultas_id="{{ $item->jenis_unit === 'fakultas' ? $item->id : '' }}"
-                                        data-unit_id="{{ $item->jenis_unit === 'unit' ? $item->id : '' }}"
-                                        data-jadwal_audit_id="{{ $rtmJadwal->jadwal_audit_id }}">
+                                    <button type="button"
+                                            class="btn btn-outline-primary btn-fixed-size"
+                                            wire:click="confirmRtmRtlUniv('{{ $item->jenis_unit === 'fakultas' ? $item->id : '' }}', '{{ $item->jenis_unit === 'unit' ? $item->id : '' }}')"
+                                            @if(($item->jumlah_temuan ?? 0) == 0) disabled @endif>
                                         +Tindak Lanjut
                                     </button>
                                 @endif
                             </td>
                             <td>
-                                @if($item->approval_status !== null)
+                                @if($item->approval_status !== null && $item->approval_status == 1) {{-- Perhatikan kolom approval_status dari join --}}
                                     <span class="badge bg-success">Approved</span>
                                 @else
                                     <span class="badge bg-secondary">User belum melakukan approval</span>
@@ -184,9 +177,17 @@
                     @endforeach
                 </tbody>
             </table>
+
+            {{-- Tambahkan link paginasi Livewire di bawah tabel --}}
+            <div class="mt-4">
+                {{ $units->links() }}
+            </div>
         </div>
     </div>
 
+    
+
+    {{-- Download dan Approve --}}
     <div class="row align-items-stretch mb-4">
         <div class="col-sm-6 mb-3 mb-sm-0 d-flex">
             <div class="card w-100 h-100">
@@ -196,19 +197,21 @@
 
                     <div class="mb-2">
                         @if ($isRektor && $user == $rektorId && (!$approvalRektor || !$approvalRektor->approve))
-                            <form action="{{ route('approve.rtm.univ', ['rtmJadwal' => $rtmJadwal->id, 'user' => $user]) }}" method="post">
-                                @csrf
-                                <button type="submit" class="btn btn-outline-success w-100">
-                                    <i class="fas fa-thumbs-up"></i> Approve sebagai Rektor
-                                </button>
-                            </form>
+                            <button wire:click="approveRtmUniv"
+                                    wire:loading.attr="disabled"
+                                    class="btn btn-outline-success w-100">
+                                <span wire:loading.remove><i class="fas fa-thumbs-up"></i> Approve sebagai Rektor</span>
+                                <span wire:loading class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span wire:loading>Memproses...</span>
+                            </button>
                         @elseif($isKetuaLP3M && $user == $ketuaLP3MId && (!$approvalKetuaLP3M || !$approvalKetuaLP3M->approve))
-                            <form action="{{ route('approve.rtm.univ', ['rtmJadwal' => $rtmJadwal->id, 'user' => $user]) }}" method="post">
-                                @csrf
-                                <button type="submit" class="btn btn-outline-success w-100">
-                                    <i class="fas fa-thumbs-up"></i> Approve sebagai Ketua LP3M
-                                </button>
-                            </form>
+                            <button wire:click="approveRtmUniv"
+                                    wire:loading.attr="disabled"
+                                    class="btn btn-outline-success w-100">
+                                <span wire:loading.remove><i class="fas fa-thumbs-up"></i> Approve sebagai Ketua LP3M</span>
+                                <span wire:loading class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span wire:loading>Memproses...</span>
+                            </button>
                         @elseif(($isRektor && $approvalRektor && $approvalRektor->approve) || 
                                 ($isKetuaLP3M && $approvalKetuaLP3M && $approvalKetuaLP3M->approve))
                             <button disabled class="btn btn-secondary w-100">
@@ -257,8 +260,7 @@
         </div>
     </div>
 
-    <!-- Modal Konfirmasi Pembuatan RTL -->
-    <div class="modal fade" id="konfirmasiModal" tabindex="-1" aria-labelledby="konfirmasiModalLabel" aria-hidden="true">
+    <div class="modal fade" id="konfirmasiModal" tabindex="-1" aria-labelledby="konfirmasiModalLabel" aria-hidden="true" wire:ignore.self>
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -269,137 +271,48 @@
                     Apakah Anda ingin membuat rekomendasi dan permintaan tindakan koreksi?
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" id="konfirmasiTindakLanjut">
-                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                        <span class="btn-text">Ya, Lanjutkan</span>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" wire:click="$set('showKonfirmasiModal', false)">Batal</button>
+                    <button type="button" class="btn btn-primary" wire:click="storeRtmRtl" wire:loading.attr="disabled">
+                        <span wire:loading wire:target="storeRtmRtl" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span wire:loading.remove wire:target="storeRtmRtl" class="btn-text">Ya, Lanjutkan</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
-@endsection
-
-
-@section('style')
-<!-- DataTables -->
-<link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
-<link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
-{{-- <link rel="stylesheet" href="{{ asset('plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}"> --}}
-@endsection
-
+</div>
 @section('script')
-<!-- DataTables & Plugins -->
-<script src="{{ asset('plugins/datatables/jquery.dataTables.min.js') }}"></script>
-<script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
-<script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
-<script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
+   
+    <script>
+        
 
-<!-- Page specific script -->
-<script>
-$(function() {
-    $("#rtm").DataTable({
-        "responsive": true,
-        "autoWidth": false,
-        "columnDefs": [{
-                "width": "10%",
-                "targets": [0]
-            },
-            {
-                "width": "20%",
-                "targets": [1]
-            },
-            {
-                "width": "20%",
-                "targets": [2]
-            },
-            {
-                "width": "10%",
-                "targets": [3]
-            },
-            {
-                "width": "20%",
-                "targets": [4]
-            },
-            {
-                "width": "20%",
-                "targets": [4]
-            },
-        ]
-    });
-})
-</script>
-
-<script>
-    $(document).ready(function() {
-        $(document).on('click', '.tindak-lanjut-btn', function() {
-            console.log("Tombol diklik");
-            let auditId = $(this).data('jadwal_audit_id');
-            let fakultasId = $(this).data('fakultas_id');
-            let unitId = $(this).data('unit_id');
-
-            console.log("Audit ID:", auditId);
-
-            $('#konfirmasiModal').modal('show');
-
-            $('#konfirmasiTindakLanjut').off('click').on('click', function() {
-                const $btn = $(this);
-                const $spinner = $btn.find('.spinner-border');
-                const $text = $btn.find('.btn-text');
-
-                $spinner.removeClass('d-none');
-                $text.addClass('d-none');
-                $btn.prop('disabled', true);
-
-                $.ajax({
-                    url: "{{ route('admin.rtm-rtl.store') }}",
-                    method: "POST",
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                        jadwal_audit_id: auditId,
-                        fakultas_id: fakultasId,
-                        unit_id: unitId,
-                        jadwal_id: "{{ $rtmJadwal->id }}"
-                    },
-                    
-                    success: function(response) {
-                        location.reload();
-                    },
-                    error: function(xhr) {
-                        alert("Gagal menindaklanjuti: " + xhr.responseText);
-                    },
-
-                    complete: function(){
-                        $spinner.addClass('d-none');
-                        $text.removeClass('d-none');
-                        $btn.prop('disabled', false);
-                    }
-                });
+        // Handle modal (tetap pertahankan ini)
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('show-konfirmasi-modal', () => {
+                var myModal = new bootstrap.Modal(document.getElementById('konfirmasiModal'));
+                myModal.show();
+            });
+            Livewire.on('hide-konfirmasi-modal', () => {
+                var myModal = bootstrap.Modal.getInstance(document.getElementById('konfirmasiModal'));
+                if (myModal) {
+                    myModal.hide();
+                }
             });
         });
-    });
+    </script>
 
-</script>
+    @if(session()->has('info_message'))
+        <div class="alert alert-info alert-dismissible fade show fixed-top mx-auto mt-3" role="alert" style="width: fit-content; z-index: 1060;">
+            {{ session('info_message') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
 
-@if(session('info_message'))
-<script>
-    Swal.fire({
-        icon: 'info',
-        title: 'Informasi',
-        text: '{{ session('info_message') }}',
-        timer: 3000,
-        showConfirmButton: false
-    });
-</script>
-@endif
-
-@if(session('warning'))
-<script>
-    Swal.fire({
-        icon: 'warning',
-        title: 'Peringatan',
-        text: '{{ session('warning') }}'
-    });
-</script>
-@endif
+    @if(session()->has('warning'))
+        <div class="alert alert-warning alert-dismissible fade show fixed-top mx-auto mt-3" role="alert" style="width: fit-content; z-index: 1060;">
+            {{ session('warning') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
 @endsection
+

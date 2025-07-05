@@ -6,8 +6,11 @@ use App\Models\JadwalAudit;
 use App\Models\RtmJadwal;
 use Livewire\Component;
 
-class JadwalRtmCreate extends Component
+class JadwalRtmShow extends Component
 {
+    public $item;
+    public $isEditMode = false;
+
     public $agenda;
     public $tanggal;
     public $tempat;
@@ -17,13 +20,20 @@ class JadwalRtmCreate extends Component
     public $jadwal_audit_id;
     public $peserta;
 
-    public $jadwalAuditOptions;
-
-    public $title = 'Tambah Jadwal RTM';
-
-    public function mount()
+    public function mount($id, $edit = false)
     {
-        $this->jadwalAuditOptions = JadwalAudit::all();
+        $this->item = RtmJadwal::with('jadwal_audit')->findOrFail($id);
+
+        if ($this->isEditMode) {
+            $this->agenda = $this->item->agenda;
+            $this->tanggal = $this->item->tanggal;
+            $this->tempat = $this->item->tempat;
+            $this->jam_mulai = $this->item->jam_mulai;
+            $this->jam_selesai = $this->item->jam_selesai;
+            $this->pimpinan = $this->item->pimpinan;
+            $this->jadwal_audit_id = $this->item->jadwal_audit_id;
+            $this->peserta = $this->item->peserta;
+        }
     }
 
     protected function rules()
@@ -61,12 +71,27 @@ class JadwalRtmCreate extends Component
         ];
     }
 
-    public function store()
+    public function toggleEditMode()
+    {
+        $this->isEditMode = !$this->isEditMode;
+        if ($this->isEditMode) {
+            $this->agenda = $this->item->agenda;
+            $this->tanggal = $this->item->tanggal;
+            $this->tempat = $this->item->tempat;
+            $this->jam_mulai = $this->item->jam_mulai;
+            $this->jam_selesai = $this->item->jam_selesai;
+            $this->pimpinan = $this->item->pimpinan;
+            $this->jadwal_audit_id = $this->item->jadwal_audit_id;
+            $this->peserta = $this->item->peserta;
+        }
+    }
+
+    public function updateJadwalRtm()
     {
         $this->validate();
 
         try {
-            RtmJadwal::create([
+            $this->item->update([
                 'agenda' => $this->agenda,
                 'tanggal' => $this->tanggal,
                 'tempat' => $this->tempat,
@@ -76,25 +101,21 @@ class JadwalRtmCreate extends Component
                 'jadwal_audit_id' => $this->jadwal_audit_id,
                 'peserta' => $this->peserta,
             ]);
-            session()->flash('success', 'Jadwal RTM behasil disimpan!');
-
-            $this->reset([
-                'agenda', 'tanggal', 'tempat', 'jam_mulai', 'jam_selesai',
-                'pimpinan', 'jadwal_audit_id', 'peserta'
-            ]);
-
-
-            return redirect()->route('admin.rtm-univ.index-livewire');
+            
+            session()->flash('success', 'Jadwal RTM behasil diperbarui!');
+            $this->isEditMode = false;
         } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage());
 
         }
     }
     
-
     public function render()
     {
-        return view('livewire.rtm-univ.jadwal-rtm-create')
-            ->layout('components.layout.main_layout', ['title' => $this->title]);
+        $jadwalAuditOptions = JadwalAudit::all();
+        return view('livewire.rtm-univ.jadwal-rtm-show', [
+            'jadwalAuditOptions' => $jadwalAuditOptions,
+            'title' => 'Detail Rapat Tinjauan Manajemen (Livewire Ver)',
+        ])->layout('components.layout.main_layout', ['title' => 'Detail Rapat Tinjauan Manajemen (Livewire Version)']);
     }
 }

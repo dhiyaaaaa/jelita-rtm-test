@@ -18,19 +18,6 @@ class RtmCatatanController extends Controller
         $this->user = Auth::user();
     }
 
-    // public function isi_rtm_catatan(RtmJadwal $rtmJadwal){
-
-    //     StatusRtmCatatan::updateOrCreate(
-    //         [
-    //             'rtm_jadwal_id' => $rtmJadwal->id,
-    //         ],
-    //         ['status' => 'in_progress']
-    //     );
-
-    //     return redirect()->route('dekan.rtm-catatan.form', [
-    //         'rtmJadwal' => $rtmJadwal, 
-    //     ]);
-    // }
 
     public function form(RtmJadwal $rtmJadwal)
     {

@@ -19,8 +19,6 @@ class TindakLanjutController extends Controller
 {
     protected $user;
     protected $jabatanUser;
-    protected $isDisabled;
-
     public function __construct()
     {
         $this->user = Auth::user();
@@ -38,6 +36,34 @@ class TindakLanjutController extends Controller
         $kriteriaOptions = Kriteria::all();
         $selectedKriteria = request('kriteria', []);
 
+        $countTemuanFakultas = DB::table('rtm_tindak_lanjut')
+            ->join('rtm_rtl', 'rtm_tindak_lanjut.rtm_rtl_id', '=', 'rtm_rtl.id')
+            ->join('jabatan', 'rtm_tindak_lanjut.jabatan_id', '=', 'jabatan.id')
+            ->selectRaw('
+                rtm_rtl.fakultas_id as fakultas_id,
+                COUNT(DISTINCT rtm_tindak_lanjut.form_id) as jumlah_temuan_fakultas
+            ')
+            ->where('rtm_rtl.jadwal_audit_id', $rtmJadwal->jadwal_audit_id)
+            ->whereNotNull('rtm_rtl.fakultas_id')
+            ->where('jabatan.type', 'universitas')
+            ->when(!empty($selectedKriteria), function($query) use ($selectedKriteria) {
+                return $query->whereIn('rtm_tindak_lanjut.kriteria_id', $selectedKriteria);
+            })
+            ->groupBy('rtm_rtl.fakultas_id');
+
+        $countTemuanUnit = DB::table('jawaban_auditor')
+            ->join('form', 'jawaban_auditor.form_id', '=', 'form.id')
+            ->selectRaw('
+                jawaban_auditor.unit_id as unit_id,
+                COUNT(DISTINCT jawaban_auditor.form_id) as jumlah_temuan_unit
+            ')
+            ->where('jawaban_auditor.jadwal_audit_id', $rtmJadwal->jadwal_audit_id)
+            ->whereNotNull('jawaban_auditor.unit_id')
+            ->when(!empty($selectedKriteria), function($query) use ($selectedKriteria) {
+                return $query->whereIn('jawaban_auditor.kriteria_id', $selectedKriteria);
+            })
+            ->groupBy('jawaban_auditor.unit_id');
+
         $fakultas = DB::table('fakultas')
             ->leftJoin('rtm_rtl_univ', function ($join) use ($rtmJadwal) {
                 $join->on('fakultas.id', '=', 'rtm_rtl_univ.fakultas_id')
@@ -50,6 +76,9 @@ class TindakLanjutController extends Controller
             ->leftJoin('status_rtm_rtl_univ', 'rtm_rtl_univ.id', '=', 'status_rtm_rtl_univ.rtm_rtl_univ_id')
             ->leftJoin('status_rtm_rtl', 'rtm_rtl.id', '=', 'status_rtm_rtl.rtm_rtl_id')
             ->leftJoin('rtm_rtl_univ_approve', 'rtm_rtl_univ.id', '=', 'rtm_rtl_univ_approve.rtm_rtl_univ_id')
+            ->leftJoinSub($countTemuanFakultas, 'temuan_fakultas', function ($join) {
+                $join->on('fakultas.id', '=', 'temuan_fakultas.fakultas_id');
+            })
             ->select([
                 'fakultas.id',
                 'fakultas.nama',
@@ -58,7 +87,8 @@ class TindakLanjutController extends Controller
                 'rtm_rtl_univ.id as rtm_rtl_univ_id',
                 'status_rtm_rtl_univ.status',
                 'rtm_rtl_univ_approve.approve as approval_status',
-                DB::raw("'fakultas' as jenis_unit")
+                DB::raw("'fakultas' as jenis_unit"),
+                DB::raw('COALESCE(temuan_fakultas.jumlah_temuan_fakultas, 0) as jumlah_temuan')
             ])
             ->orderBy('fakultas.nama', 'asc')
             ->get();
@@ -76,6 +106,9 @@ class TindakLanjutController extends Controller
             ->leftJoin('status_rtm_rtl_univ', 'rtm_rtl_univ.id', '=', 'status_rtm_rtl_univ.rtm_rtl_univ_id')
             ->leftJoin('status_rtm_rtl', 'rtm_rtl.id', '=', 'status_rtm_rtl.rtm_rtl_id')
             ->leftJoin('rtm_rtl_univ_approve', 'rtm_rtl_univ.id', '=', 'rtm_rtl_univ_approve.rtm_rtl_univ_id')
+            ->leftJoinSub($countTemuanUnit, 'temuan_unit', function ($join) {
+                $join->on('unit.id', '=', 'temuan_unit.unit_id');
+            })
             ->select([
                 'unit.id',
                 'unit.nama',
@@ -84,7 +117,8 @@ class TindakLanjutController extends Controller
                 'rtm_rtl_univ.id as rtm_rtl_univ_id',
                 'status_rtm_rtl_univ.status',
                 'rtm_rtl_univ_approve.approve as approval_status',
-                DB::raw("'unit' as jenis_unit")
+                DB::raw("'unit' as jenis_unit"),
+                DB::raw('COALESCE(temuan_unit.jumlah_temuan_unit, 0) as jumlah_temuan')
             ])
             ->orderBy('unit.nama', 'asc')
             ->get(); 

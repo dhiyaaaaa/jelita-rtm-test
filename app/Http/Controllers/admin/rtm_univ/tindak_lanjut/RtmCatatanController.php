@@ -46,6 +46,15 @@ class RtmCatatanController extends Controller
         return view('admin.rtm_univ.rtm_catatan.form', $data);
     }
 
+    public function edit(RtmCatatan $rtmCatatan)
+    {
+        return response()->json([
+            'judul' => $rtmCatatan->judul,
+            'isi' => $rtmCatatan->isi,
+            'id' => $rtmCatatan->id
+        ]);
+    }
+
     public function store(Request $request, RtmJadwal $rtmJadwal)
     {
         // Validasi

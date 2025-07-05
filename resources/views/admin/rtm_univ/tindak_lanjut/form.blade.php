@@ -110,8 +110,7 @@
                                                         @php
                                                             // Filter rencana tindakan berdasarkan kriteria item saat ini
                                                             $filteredTindakan = $item->form->rtm_tindak_lanjut
-                                                                ->where('kriteria_id', $item->kriteria->id)
-                                                                ->sortBy('waktu');
+                                                                ->where('kriteria_id', $item->kriteria->id);
                                                         @endphp
                                                         
                                                         @if ($filteredTindakan->isNotEmpty())

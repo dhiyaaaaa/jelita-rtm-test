@@ -8,12 +8,22 @@
             <h3 class="card-title title-size">{{ $title }}</h3>
         </div>
         <div class="card-body">
-            <div class="">
-                <a href="{{ asset('user_manual/RTM_Universitas.pdf') }}" target="_blank" class="btn btn-outline-info mr-2 mb-3">
-                    <i class="fa fa-book mr-2"></i> User Manual
-                </a>
+            <div class="d-flex justify-content-between align-items-center mb-3"> {{-- Tambahkan div ini untuk layout --}}
+                <div>
+                    <a href="{{ asset('user_manual/RTM_Universitas.pdf') }}" target="_blank" class="btn btn-outline-info mr-2 mb-3">
+                        <i class="fa fa-book mr-2"></i> User Manual
+                    </a>
+                    <a href="{{ route('admin.rtm-univ.create-livewire')}}" class="btn btn-outline-primary mr-2 mb-3">Buat Agenda RTM</a>
+                </div>
+                {{-- Input searching --}}
+                <div class="input-group" style="width: 300px;"> 
+                    <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Cari agenda, tanggal, atau periode audit...">
+                    <div class="input-group-append">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                </div>
             </div>
-            <a href="{{ route('admin.rtm-univ.create-livewire')}}" class="btn btn-outline-primary mr-2 mb-3">Buat Agenda RTM</a>
+
             <table id="rtm" class="table table-bordered table-striped">
                 <thead>
                     <tr>
@@ -28,12 +38,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @php
-                        $no = 1;
-                    @endphp
                     @forelse ($rtmJadwal as $item)
                         <tr>
-                            <td class="text-center">{{ $no++ }}</td>
+                            <td class="text-center">{{ ($rtmJadwal->currentPage() - 1) * $rtmJadwal->perPage() + $loop->index + 1 }}</td>
                             <td class="text-center">{{ $item->agenda }}</td>
                             <td class="text-center">{{ Carbon::parse($item->tanggal)->translatedFormat('l, j F Y') }}</td>
                             <td class="text-center">{{ Carbon::parse($item->jam_mulai)->translatedFormat('H:i') }} - {{ Carbon::parse($item->jam_selesai)->translatedFormat('H:i') }}</td>
@@ -41,7 +48,6 @@
 
                             {{-- Lampiran --}}
                             <td class="text-center">
-                                {{-- Gunakan wire:click untuk memanggil metode Livewire --}}
                                 <button class="btn btn-outline-primary btn-sm btn-fixed-size lampiran-btn"
                                         wire:click="openLampiranModal('{{ $item->id }}')">
                                     +Lampiran
@@ -50,7 +56,7 @@
 
                             {{-- Tindak Lanjut RTM --}}
                             <td class="text-center">
-                                <a href="{{ route('admin.rtm-rtl.show', $item->id) }}" class="btn btn-primary">Lihat RTL</a>
+                                <a href="{{ route('admin.rtm-rtl-univ.show-livewire', $item->id) }}" class="btn btn-primary">Lihat RTL</a>
                             </td>
                             
                             {{-- Aksi --}}
@@ -63,7 +69,7 @@
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $item->id }}">
                                         <li>
-                                            <a class="dropdown-item" href="{{ route('admin.rtm-univ.show', $item->id) }}">
+                                            <a class="dropdown-item" href="{{ route('admin.rtm-univ.show-livewire', $item->id) }}">
                                                 <i class="fas fa-file"></i> Lihat Agenda
                                             </a>
                                         </li>
@@ -74,8 +80,8 @@
                                         </li>
                                         <li>
                                             <a class="dropdown-item text-danger" href="#"
-                                                wire:click.prevent="deleteJadwal({{ $item->id }})"
-                                                wire:confirm="Apakah Anda yakin ingin menghapus jadwal RTM ini?">
+                                            wire:click.prevent="deleteJadwal('{{ $item->id }}')" 
+                                            wire:confirm="Apakah Anda yakin ingin menghapus jadwal RTM ini?">
                                                 <i class="fas fa-trash-alt"></i> Hapus
                                             </a>
                                         </li>
@@ -90,12 +96,15 @@
                     @endforelse
                 </tbody>
             </table>
+
+            <div class="mt-4">
+                {{ $rtmJadwal->links() }}
+            </div>
         </div>
     </div>
 
     <div class="modal fade" id="livewireLampiranModal" tabindex="-1" aria-labelledby="lampiranModalLabel" aria-hidden="true"
-        wire:ignore.self {{-- wire:ignore.self penting agar modal tidak di-reset saat re-render Livewire --}}
-        style="display: {{ $showLampiranModal ? 'block' : 'none' }};" {{-- Atur display manual karena modal Bootstrap --}}>
+        wire:ignore.self>
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -143,8 +152,7 @@
     </div>
 
     @push('scripts')
-        {{-- Inisialisasi DataTables di sini jika perlu, tapi Livewire mungkin lebih baik menangani rendering tabel --}}
-        {{-- Untuk Dusk, mungkin Anda tidak membutuhkan DataTables JS untuk pengujian Livewire --}}
+       
         <script>
             document.addEventListener('livewire:initialized', () => {
                 Livewire.on('swal:modal', (event) => {
@@ -177,14 +185,7 @@
                     }
                 });
 
-                // Pastikan modal ditampilkan/disembunyikan sesuai state Livewire
-                Livewire.on('showLampiranModal', (show) => { // Ini sudah ada, pastikan tidak ada typo di 'showLampiranModal' string
-                    if (show) {
-                        $('#livewireLampiranModal').modal('show');
-                    } else {
-                        $('#livewireLampiranModal').modal('hide');
-                    }
-                });
+                
             });
         </script>
     @endpush

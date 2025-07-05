@@ -63,9 +63,16 @@ use App\Http\Controllers\dekan\RtmRtlProdiController as DekanRtmRtlProdiControll
 use App\Http\Controllers\auditeePtk\rtl\RtlController as DekanRtlController;
 use App\Http\Controllers\auditeePtk\rtl\TindakLanjutController as DekanTindakLanjutController;
 use App\Http\Controllers\HasilRtmController;
+use App\Http\Livewire\RtmRtlForm as HttpLivewireRtmRtlForm;
 use App\Livewire\Rtm\Jadwal;
 use App\Livewire\Rtmjadwal;
+use App\Livewire\RtmRtlForm as LivewireRtmRtlForm;
 use App\Livewire\RtmUniv\JadwalRtmCreate;
+use App\Livewire\RtmUniv\JadwalRtmShow;
+use App\Livewire\RtmUniv\RtmCatatanForm;
+use App\Livewire\RtmUniv\RtmRtl;
+use App\Livewire\RtmUniv\RtmRtlForm;
+use App\Livewire\RtmUniv\RtmRtlUnivForm;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'guest'], function () {
@@ -1033,7 +1040,7 @@ Route::group(['middleware' => 'auth'], function () {
             Route::post('rtm-catatan/{rtmJadwal}/store', [RtmCatatanController::class, 'store'])->name('admin.rtm-catatan.store');
             
             //Update RTM Catatan
-            Route::put('rtm-catatan/{rtmCatatan}/update', [RtmCatatanController::class, 'update'])->name('admin.rtm-catatan.update');
+            Route::get('rtm-catatan/{rtmCatatan}/edit', [RtmCatatanController::class, 'edit'])->name('admin.rtm-catatan.edit');
             
             //Delete RTM Catatan
             Route::delete('rtm-catatan/{rtmCatatan}/destroy', [RtmCatatanController::class, 'destroy'])->name('admin.rtm-catatan.destroy');
@@ -1075,63 +1082,19 @@ Route::group(['middleware' => 'auth'], function () {
             //Route::get('', Jadwal::class)->name('admin.rtm-wire.index');
             Route::get('/jadwal-rtm-univ-livewire/create', JadwalRtmCreate::class)->name('admin.rtm-univ.create-livewire');
            
-            //Store Jadwal RTM
-            Route::post('/jadwal-rtm-univ/store', [JadwalRtmController::class, 'store'])->name('admin.rtm-univ.store');
-
+           
             //Show Jadwal
-            Route::get('/jadwal-rtm-univ/{id}/show', [JadwalRtmController::class, 'show'])->name('admin.rtm-univ.show');
+            Route::get('/jadwal-rtm-univ-livewire/{id}/show', JadwalRtmShow::class)->name('admin.rtm-univ.show-livewire');
 
-            //Update Jadwal
-            Route::put('/jadwal-rtm-univ/{id}/update', [JadwalRtmController::class, 'update'])->name('admin.rtm-univ.update');
+            //Show RTM RTL
+            Route::get('/rtm-rtl-univ-livewire/{rtmJadwalId}/show', RtmRtl::class)->name('admin.rtm-rtl-univ.show-livewire');
 
-            //Hapus Jadwal
-            Route::delete('/jadwal-rtm-univ/{id}/destroy', [JadwalRtmController::class, 'destroy'])->name('admin.rtm-univ.destroy');
+            //Form RTM catatan
+            Route::get('/rtm-catatan-livewire/{rtmJadwal}/form', RtmCatatanForm::class)->name('admin.rtm-catatan.form-livewire');
 
-            //Details Pratinjau
-            Route::get('/rtm/details-rtm-univ/{rtmJadwal}', [JadwalRtmController::class, 'details'])->name('admin.rtm-univ.details');
+            //RTM RTL FORM
+            Route::get('/rtm-rtl-form-livewire/{rtmRtlUniv}/form', RtmRtlForm::class)->name('admin.rtm-rtl.form-livewire');
             
-            // Lampiran RTM
-            Route::post('/lampiran-rtm-univ/store', [LampiranRtmController::class, 'store'])->name('admin.lampiran-rtm-univ.store');
-
-            //Form RTM Catatan
-            Route::get('/rtm-catatan/form/{rtmJadwal}', [RtmCatatanController::class, 'form'])->name('admin.rtm-catatan.form');
-            
-            //Store RTM Catatan
-            Route::post('rtm-catatan/{rtmJadwal}/store', [RtmCatatanController::class, 'store'])->name('admin.rtm-catatan.store');
-            
-            //Update RTM Catatan
-            Route::put('rtm-catatan/{rtmCatatan}/update', [RtmCatatanController::class, 'update'])->name('admin.rtm-catatan.update');
-            
-            //Delete RTM Catatan
-            Route::delete('rtm-catatan/{rtmCatatan}/destroy', [RtmCatatanController::class, 'destroy'])->name('admin.rtm-catatan.destroy');
-            
-            //Save Session
-            Route::post('rtm-catatan/{rtmJadwal}/session', [SessionController::class, 'session_rtm_catatan'])->name('rtm-catatan.session');
-
-            //LIST Tindak Lanjut Audit
-            Route::get('/rtm-rtl-univ/{rtmJadwal}', [TindakLanjutController::class, 'show'])->name('admin.rtm-rtl.show');
-            
-            //RTM RTL 
-            Route::post('/rtm-rtl-univ/store', [TindakLanjutController::class, 'store'])->name('admin.rtm-rtl.store');
-
-            //status pengisian
-            Route::post('/rtm-rtl-univ/isi/{rtmRtlUniv}', [TindakLanjutController::class, 'isi_rtm_rtl_univ'])->name('admin.rtm-rtl.isi');
-            
-            //Form RTM RTL
-            Route::get('/rtm-rtl-univ/form/{rtmRtlUniv}', [RtmRtlController::class, 'form'])->name('admin.rtm-rtl.form');
-
-            //Store Form
-            Route::post('rtm-rtl-univ/{rtmRtlUniv}/store-rtm', [RtmRtlController::class, 'store_form'])->name('admin.rtm-rtl.store_form');
-
-            // Save Form RTMRTL per nomor
-            Route::post('rtm-rtl-univ/{rtmRtlUniv}/save', [RtmRtlController::class, 'save_form'])->name('admin.rtm-rtl.save_form');
-
-            //Save Session
-            Route::post('rtm-rtl-univ/{rtmRtlUniv}/session/', [SessionController::class, 'session_rtm_rtl_univ'])->name('admin.rtm-rtl.session');
-
-            //Approve RTM Univ Lpmpp Rektor
-            Route::post('rtm-univ/{rtmJadwal}/approve/{user}', [ApproveController::class, 'approve_rtm_univ'])->name('approve.rtm.univ');
-
         });
     });
 

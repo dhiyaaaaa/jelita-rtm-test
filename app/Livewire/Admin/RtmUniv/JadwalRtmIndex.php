@@ -14,8 +14,8 @@ class JadwalRtmIndex extends Component
 
     public $search = '';
     public $perPage = 10;
+    protected $paginationTheme = 'bootstrap'; 
 
-    public $rtmJadwal;
     public $title = 'Agenda RTM';
 
     public $showLampiranModal = false;
@@ -28,17 +28,22 @@ class JadwalRtmIndex extends Component
     public $uploadSuccess = false;
     public $uploadError = false;
 
-    public function mount() 
-    {
-        $this->loadRtmJadwal();
-    }
+    // public function mount() 
+    // {
+    //     $this->loadRtmJadwal();
+    // }
 
-    public function loadRtmJadwal()
+    // public function loadRtmJadwal()
+    // {
+    //     $this->rtmJadwal = RtmJadwal::with(['jadwal_audit'])
+    //         ->whereNull('fakultas_id')
+    //         ->whereNull('unit_id')
+    //         ->get();
+    // }
+
+    public function updatedSearch()
     {
-        $this->rtmJadwal = RtmJadwal::with(['jadwal_audit'])
-            ->whereNull('fakultas_id')
-            ->whereNull('unit_id')
-            ->get();
+        $this->resetPage();
     }
 
     public function openLampiranModal($id)
@@ -57,6 +62,7 @@ class JadwalRtmIndex extends Component
         $this->showLampiranModal = false;
         $this->resetUploadFields();
         $this->resetValidation(); 
+        $this->dispatch('hide-modal'); 
     }
 
     protected function resetUploadFields()
@@ -119,7 +125,7 @@ class JadwalRtmIndex extends Component
             ]);
 
             $this->uploadSuccess = true;
-            $this->closeLampiranModal(); 
+            $this->dispatch('hide-modal'); 
             $this->loadRtmJadwal(); 
 
         } catch (\Exception $e) {
@@ -140,7 +146,6 @@ class JadwalRtmIndex extends Component
         try {
             $rtmJadwal = RtmJadwal::findOrFail($id);
             $rtmJadwal->delete();
-            $this->loadRtmJadwal(); 
             $this->dispatch('swal:modal', [
                 'icon' => 'success',
                 'title' => 'Jadwal RTM berhasil dihapus!',
@@ -160,8 +165,20 @@ class JadwalRtmIndex extends Component
 
     public function render()
     {
+        $rtmJadwal = RtmJadwal::with(['jadwal_audit'])
+            ->whereNull('fakultas_id')
+            ->whereNull('unit_id')
+            ->where(function ($query) {
+                $query->where('agenda', 'like', '%' . $this->search . '%')
+                      ->orWhere('tanggal', 'like', '%' . $this->search . '%')
+                      ->orWhereHas('jadwal_audit', function ($q) {
+                          $q->where('jadwal', 'like', '%' . $this->search . '%');
+                      });
+            })
+            ->paginate($this->perPage); 
+
         return view('livewire.admin.rtm-univ.jadwal-rtm-index', [
-            'rtmJadwal' => $this->rtmJadwal,
+            'rtmJadwal' => $rtmJadwal,
             'title' => $this->title,
         ]);
     }

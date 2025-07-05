@@ -6,7 +6,25 @@
     </div>
 
     <div class="container py-4">
-        <form wire:submit.prevent="saveJadwalRtm" class="mb-5">
+        @if (session()->has('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+
+        @if (session()->has('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+
+        <form wire:submit.prevent="store" class="mb-5">
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="agenda" class="form-label">Agenda:</label>
@@ -45,14 +63,16 @@
             </div>
 
             <div class="mb-3">
-                    <label for="jadwal_audit_id" class="form-label">Periode Audit</label>
-                    <select class="form-select @error('jadwal_audit_id') is-invalid @enderror" id="jadwal_audit_id" wire:model="jadwal_audit_id">
-                        <option value="">-- Pilih Periode Audit --</option>
-                        @foreach ($jadwalAuditOptions as $audit)
-                            <option value="{{ $audit->id }}">{{ $audit->tahun_periode }} - {{ $audit->jenis_audit }}</option>
-                        @endforeach
-                    </select>
-                    @error('jadwal_audit_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <label for="jadwal_audit_id" class="form-label">Pilih Periode Audit</label>
+                <small class="form-text text-muted">Pastikan memilih jadwal audit</small>
+                <select name="jadwal_audit_id" id="jadwal_audit_id" wire:model="jadwal_audit_id"
+                    class="form-control @error('jadwal_audit_id') is-invalid @enderror bg-white text-black">
+                    <option value="">-- Pilih Jadwal Audit --</option> 
+                    @foreach ($jadwalAuditOptions as $audit)
+                        <option value="{{ $audit->id }}">{{ $audit->jadwal }}</option>
+                    @endforeach
+                </select>
+                @error('jadwal_audit_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
             <div class="mb-3">
@@ -62,10 +82,11 @@
                 @error('peserta') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
-            <div class="d-flex justify-content-end gap-2">
+            <div class="d-flex justify-content-end">
                 <button type="submit" class="btn btn-primary me-2">Simpan</button>
-                <a href="{{ route('admin.rtm-univ.index') }}" class="btn btn-outline-secondary">Kembali</a>
+                <a href="{{ route('admin.rtm-univ.index-livewire') }}" class="btn btn-outline-secondary">Kembali</a>
             </div>
+            
         </form>
     </div>
 </div>

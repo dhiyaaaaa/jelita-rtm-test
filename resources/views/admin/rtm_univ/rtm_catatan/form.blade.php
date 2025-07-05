@@ -4,6 +4,8 @@
     <form id="catatan-form" action="{{ route('admin.rtm-catatan.store', ['rtmJadwal' => $rtmJadwal]) }}" method="POST">
         @csrf
         <input type="hidden" name="rtm_jadwal_id" value="{{ $rtmJadwal->id }}">
+        <input type="hidden" id="edit_id" name="edit_id" value="">
+    
         <div class="d-flex justify-content-start">
             <a href="{{ route('admin.rtm-rtl.show', ['rtmJadwal' => $rtmJadwal->id]) }}" class="btn btn-outline-dark mb-3">
                 <i class="fas fa-arrow-left"></i> Kembali
@@ -17,18 +19,19 @@
                 <div id="catatan-container">
                     <div class="form-group">
                         <label>Judul</label>
-                            <input type="text" class="form-control" name="judul" 
+                            <input type="text" class="form-control" id="judul" name="judul" 
                             placeholder="Tambahkan judul narasi" required 
                             value="{{ $sessionCatatan['judul'] ?? old('judul') }}">
                     </div>
                     <div class="form-group">
                         <label>Isi</label>
-                            <textarea class="form-control summernote" name="isi" 
+                            <textarea class="form-control summernote" id="isi" name="isi" 
                             placeholder="Tambahkan isian narasi" required>
                             {{ $sessionCatatan['isi'] ?? old('isi') }}</textarea>
                     </div>
                     <div class="mt-3">
                         <button type="submit" id="submit-button" class="btn btn-primary">Submit</button>
+                        <button type="button" id="cancel-edit" class="btn btn-secondary" style="display:none;">Batal</button>
                     </div>
                 </div>
             </div>
@@ -56,9 +59,10 @@
                                 <td class="text-center">
                                     <div class="btn-group">
                                         <button class="btn btn-sm btn-warning edit-btn" 
-                                        data-toggle="collapse" 
-                                        data-target="#editForm-{{ $item->id }}">
-                                        <i class="fas fa-pencil-alt me-1"></i></button>
+                                                data-route="{{ route('admin.rtm-catatan.edit', $item->id) }}"
+                                                data-id="{{ $item->id }}">
+                                            <i class="fas fa-pencil-alt me-1"></i>
+                                        </button>
 
                                         <form action="{{ route('admin.rtm-catatan.destroy', $item->id) }}" method="POST" class="form-delete d-inline">
                                             @csrf
@@ -71,33 +75,6 @@
                         @endforeach
                     </tbody>
                 </table>    
-                @foreach ($rtmCatatan as $item)
-                    <div class="collapse mt-3 mb-4 border p-3 rounded" id="editForm-{{ $item->id }}">
-                        <form action="{{ route('admin.rtm-catatan.update', $item->id) }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <div class="row">
-                                <div class="col-md-4 form-group">
-                                    <label>Judul</label>
-                                    <input type="text" name="judul" class="form-control" value="{{ $item->judul }}" required>
-                                </div>
-                                <div class="col-md-12 form-group mt-2">
-                                    <label>Isi</label>
-                                    <textarea name="isi" class="form-control summernote-edit" required>{{ $item->isi }}</textarea>
-                                </div>
-                                <div class="col-md-12 mt-2 text-end">
-                                    <button type="submit" class="btn btn-success btn-sm me-2">
-                                        Simpan Perubahan
-                                    </button>
-                                    <button type="button" class="btn btn-secondary btn-sm cancel-edit" 
-                                        data-target="#editForm-{{ $item->id }}">
-                                        Batal
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div> 
-                @endforeach
             </div>
         </div>
     </div>
@@ -256,7 +233,44 @@
             $('input, textarea').on('input', debounce(save_session, 1000));
             $('.summernote').on('summernote.change', debounce(save_session, 1000));
 
-           
+            $(document).on('click', '.edit-btn', function() {
+                var catatanId = $(this).closest('tr').data('id');
+                
+                $.get("{{ url('admin/rtm-catatan') }}/" + catatanId + "/edit", function(data) {
+                    $('#judul').val(data.judul);
+                    $('#isi').summernote('code', data.isi);
+                    $('#edit_id').val(data.id);
+                    
+                    // Ubah tombol submit untuk update
+                    $('#submit-button').text('Update');
+                    $('#cancel-edit').show();
+                    
+                    // Ubah action form
+                    $('#catatan-form').attr('action', "{{ url('admin/rtm-catatan') }}/" + data.id);
+                    $('#catatan-form').append('<input type="hidden" name="_method" value="PUT">');
+                });
+            });
+
+            $('#cancel-edit').click(function() {
+                resetForm();
+            });
+            
+            function resetForm() {
+                $('#judul').val('');
+                $('#isi').summernote('code', '');
+                $('#edit_id').val('');
+                $('#submit-button').text('Submit');
+                $('#cancel-edit').hide();
+                
+                // Reset action form ke create
+                $('#catatan-form').attr('action', "{{ route('admin.rtm-catatan.store', ['rtmJadwal' => $rtmJadwal]) }}");
+                $('input[name="_method"]').remove();
+            }
+            
+            // Reset form setelah submit berhasil
+            $('#catatan-form').on('submit', function() {
+                setTimeout(resetForm, 1000);
+            });
         });
     </script>
 @endsection
