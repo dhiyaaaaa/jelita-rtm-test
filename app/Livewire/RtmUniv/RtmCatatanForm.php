@@ -22,7 +22,8 @@ class RtmCatatanForm extends Component
 
     protected $listeners = [
         'summernoteUpdate', 
-        'deleteCatatan' 
+        'deleteCatatan',
+        'resetSummernoteFromLivewire' => 'resetFormFields', 
     ];
 
     public function mount(RtmJadwal $rtmJadwal)
@@ -75,14 +76,15 @@ class RtmCatatanForm extends Component
                 'isi' => $this->isi,
             ]);
 
-            $this->reset(['judul', 'isi']); // Reset input form
-            $this->loadRtmCatatan(); // Muat ulang data catatan
-            session()->forget('session_catatan_' . $this->rtmJadwal->id); // Hapus session
-            $this->dispatch('closeSummernote'); // Dispatch event untuk membersihkan summernote
+            $this->reset(['judul', 'isi']); 
+            $this->loadRtmCatatan(); 
+            session()->forget('session_catatan_' . $this->rtmJadwal->id); 
+
+            $this->dispatch('resetSummernote');
             $this->dispatch('show-alert', ['type' => 'success', 'message' => 'Data berhasil disimpan.']);
         } catch (ValidationException $e) {
             $this->dispatch('show-alert', ['type' => 'error', 'message' => 'Terdapat kesalahan validasi.']);
-            throw $e; // Lempar kembali exception agar pesan validasi tampil di form
+            throw $e; 
         }
     }
 
@@ -112,8 +114,8 @@ class RtmCatatanForm extends Component
                 'judul' => $this->editingJudul,
                 'isi' => $this->editingIsi,
             ]);
-            $this->cancelEdit(); // Tutup form edit
-            $this->loadRtmCatatan(); // Muat ulang data
+            $this->cancelEdit(); 
+            $this->loadRtmCatatan(); 
             $this->dispatch('show-alert', ['type' => 'success', 'message' => 'Catatan berhasil diperbarui.']);
         }
     }
@@ -123,7 +125,7 @@ class RtmCatatanForm extends Component
         $this->editingCatatanId = null;
         $this->editingJudul = '';
         $this->editingIsi = '';
-        $this->dispatch('resetSummernote'); // Dispatch event untuk membersihkan summernote edit
+        $this->dispatch('resetSummernote'); 
     }
 
     public function updated($propertyName)
@@ -155,6 +157,10 @@ class RtmCatatanForm extends Component
             $catatan->delete();
             $this->loadRtmCatatan();
             $this->dispatch('show-alert', ['type' => 'success', 'message' => 'Catatan berhasil dihapus.']);
+            
+            if ($this->editingCatatanId == $id) {
+                $this->cancelEdit(); 
+            }
         }
     }
 
@@ -164,6 +170,12 @@ class RtmCatatanForm extends Component
             'judul' => $this->judul,
             'isi' => $this->isi,
         ]);
+    }
+
+     public function resetFormFields()
+    {
+        $this->reset(['judul', 'isi', 'editingJudul', 'editingIsi', 'editingCatatanId']);
+        $this->dispatch('resetSummernote'); 
     }
 
     public function render()

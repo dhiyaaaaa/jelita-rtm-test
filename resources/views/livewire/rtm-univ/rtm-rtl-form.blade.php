@@ -14,27 +14,6 @@
                     }
                 @endphp
 
-                {{-- Notifikasi --}}
-                @if (session()->has('message'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('message') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
-                @if (session()->has('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                @endif
-
-                {{-- Baris yang menyebabkan error (line 36) adalah @forelse ($paginatedTemuan as $item) --}}
-                {{-- Dengan perbaikan di komponen Livewire, $paginatedTemuan seharusnya tidak akan pernah null --}}
                 @forelse ($paginatedTemuan as $item)
                     <div class="row mb-4">
                         @php
@@ -137,13 +116,13 @@
                                         <div class="form-group">
                                             <label for="rekomendasi_{{ $item->form->id }}">Rekomendasi</label>
                                             <span class="text-danger">&#42;</span>
-                                            <textarea
-                                                wire:model.debounce.500ms="rekomendasi.{{ $item->form->id }}"
-                                                id="rekomendasi_{{ $item->form->id }}"
-                                                cols="10" rows="5"
-                                                class="form-control summernote @error('rekomendasi.' . $item->form->id) is-invalid @enderror"
-                                                {{ $isCompleted ? 'disabled' : '' }}></textarea>
-
+                                            <div wire:ignore>
+                                                <textarea
+                                                    wire:model.debounce.500ms="rekomendasi.{{ $item->form->id }}"
+                                                    id="rekomendasi_{{ $item->form->id }}"
+                                                    class="form-control summernote @error('rekomendasi.' . $item->form->id) is-invalid @enderror"
+                                                    {{ $isCompleted ? 'disabled' : '' }}></textarea>
+                                            </div>
                                             @error('rekomendasi.' . $item->form->id)
                                                 <span class="text-danger d-block" style="font-size: 14px">{{ $message }}</span>
                                             @enderror
@@ -152,13 +131,14 @@
                                         <div class="form-group">
                                             <label for="koreksi_{{ $item->form->id }}">Permintaan Tindakan Koreksi</label>
                                             <span class="text-danger">&#42;</span>
-                                            <textarea
-                                                wire:model.debounce.500ms="koreksi.{{ $item->form->id }}"
-                                                id="koreksi_{{ $item->form->id }}"
-                                                cols="10" rows="5"
-                                                class="form-control summernote @error('koreksi.' . $item->form->id) is-invalid @enderror"
-                                                {{ $isCompleted ? 'disabled' : '' }}></textarea>
-
+                                            <div wire:ignore>
+                                                <textarea
+                                                    wire:model.debounce.500ms="koreksi.{{ $item->form->id }}"
+                                                    id="koreksi_{{ $item->form->id }}"
+                                                    cols="10" rows="5"
+                                                    class="form-control summernote @error('koreksi.' . $item->form->id) is-invalid @enderror"
+                                                    {{ $isCompleted ? 'disabled' : '' }}></textarea>
+                                            </div>
                                             @error('koreksi.' . $item->form->id)
                                                 <span class="text-danger d-block" style="font-size: 14px">{{ $message }}</span>
                                             @enderror
@@ -200,11 +180,12 @@
                         @if ($paginatedTemuan->currentPage() == $paginatedTemuan->lastPage())
                             @if (!$isCompleted)
                                 <div class="mb-3">
-                                    <button wire:click="submitForm" wire:loading.attr="disabled" wire:target="submitForm"
-                                        class="btn btn-primary" type="button">
-                                        <span wire:loading.remove wire:target="submitForm">Submit</span>
-                                        <span wire:loading wire:target="submitForm" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                        <span wire:loading wire:target="submitForm">Loading...</span>
+                                    <button wire:click="confirmSubmit" wire:loading.attr="disabled" 
+                                            wire:target="submitForm,confirmSubmit" class="btn btn-primary" type="button">
+                                        <span wire:loading.remove wire:target="submitForm,confirmSubmit">Submit</span>
+                                        <span wire:loading wire:target="submitForm,confirmSubmit" 
+                                            class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        <span wire:loading wire:target="submitForm,confirmSubmit">Loading...</span>
                                     </button>
                                 </div>
                             @endif
@@ -225,7 +206,7 @@
                     @endif
 
                     <div class="d-flex justify-content-start">
-                        <a href="{{ route('admin.rtm-rtl.show', $rtmJadwal->id) }}" class="btn btn-outline-secondary mr-2">Kembali</a>
+                        <a href="{{ route('admin.rtm-rtl-univ.show-livewire', $rtmJadwal->id) }}" class="btn btn-outline-secondary mr-2">Kembali</a>
                     </div>
                 </div>
             </div>
@@ -256,30 +237,48 @@
 @section('script')
     <script src="{{ asset('plugins/summernote/summernote-bs4.min.js') }}"></script>
     <script>
-        $(document).ready(function() {
-            window.addEventListener('livewire:load', function () {
-                $('.summernote').summernote({
-                    height: 150,
-                    callbacks: {
-                        onChange: function(contents, $editable) {
-                            @this.set($(this).attr('wire:model.debounce.500ms'), contents);
-                        }
+        document.addEventListener('livewire:initialized', () => {
+            // Inisialisasi Summernote
+            $('.summernote').summernote({
+                height: 150,
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['strikethrough', 'superscript', 'subscript']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['height', ['height']]
+                ],
+                callbacks: {
+                    onChange: function(contents, $editable) {
+                        @this.set($(this).attr('wire:model.debounce.500ms'), contents);
                     }
+                }
+            });
+
+            // SweetAlert
+            Livewire.on('showAlert', (data) => {
+                Swal.fire({
+                    icon: data.type,
+                    title: data.title,
+                    html: data.message,
+                    showConfirmButton: false,
+                    timer: 3000
                 });
             });
 
-            Livewire.hook('element.updated', (el, component) => {
-                if ($(el).is('.summernote')) {
-                    $(el).summernote('destroy');
-                    $(el).summernote({
-                        height: 150,
-                        callbacks: {
-                            onChange: function(contents, $editable) {
-                                @this.set($(this).attr('wire:model.debounce.500ms'), contents);
-                            }
-                        }
-                    });
-                }
+            Livewire.on('confirmSubmit', () => {
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: "Form akan disubmit dan tidak bisa diubah lagi kecuali diaktifkan ulang!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, submit sekarang!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        @this.call('submitForm');
+                    }
+                });
             });
         });
     </script>

@@ -1,88 +1,97 @@
 <div>
-    <div>
-        <form wire:submit="{{ $editingCatatanId ? 'update' : 'store' }}">
-            <input type="hidden" name="rtm_jadwal_id" value="{{ $rtmJadwal->id }}">
+    <div class="row mb-4">
+        <div class="col-12">
+            <form wire:submit="{{ $editingCatatanId ? 'update' : 'store' }}">
+                <input type="hidden" name="rtm_jadwal_id" value="{{ $rtmJadwal->id }}">
 
-            @if($editingCatatanId)
-                <input type="hidden" wire:model="editingCatatanId">
-            @endif
+                @if($editingCatatanId)
+                    <input type="hidden" wire:model="editingCatatanId">
+                @endif
 
-            <div class="d-flex justify-content-start">
-                <a href="{{ route('admin.rtm-rtl-univ.show-livewire', $rtmJadwal->id) }}" class="btn btn-outline-dark mb-3">
-                    <i class="fas fa-arrow-left"></i> Kembali
-                </a>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title text-bold">{{ $title }}</h3>
-                </div>
-                <div class="card-body">
-                    <div id="catatan-container">
-                        <div class="form-group">
-                            <label>Judul</label>
-                            <input type="text" class="form-control @error('judul') is-invalid @enderror" 
-                            wire:model.defer="{{ $editingCatatanId ? 'editingJudul' : 'judul' }}"
-                                placeholder="Tambahkan judul narasi" required>
-                            @error('judul') <span class="invalid-feedback">{{ $message }}</span> @enderror
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h3 class="card-title mb-0">{{ $title }}</h3>
+                            <a href="{{ route('admin.rtm-rtl-univ.show-livewire', $rtmJadwal->id) }}" class="btn btn-outline-light mb-3">
+                                <i class="fas fa-arrow-left mr-1"></i> Kembali
+                            </a>
                         </div>
-                        <div class="form-group">
-                            <label>Isi</label>
-                            <div wire:ignore> 
-                                <textarea class="form-control summernote" 
-                                wire:model.defer="{{ $editingCatatanId ? 'editingIsi' : 'isi' }}"
-                                    placeholder="Tambahkan isian narasi" required></textarea>
+                    </div>
+                    <div class="card-body">
+                        <div id="catatan-container">
+                            <div class="form-group">
+                                <label>Judul</label>
+                                <input type="text" class="form-control @error('judul') is-invalid @enderror" 
+                                wire:model.defer="{{ $editingCatatanId ? 'editingJudul' : 'judul' }}"
+                                    placeholder="Tambahkan judul narasi" required>
+                                @error('judul') <span class="invalid-feedback">{{ $message }}</span> @enderror
                             </div>
-                            @error('isi') <span class="invalid-feedback">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="mt-3">
-                            <button type="submit" id="submit-button" class="btn btn-primary">
-                                {{ $editingCatatanId ? 'Update' : 'Submit' }}
-                            </button>
-
-                            @if($editingCatatanId)
-                                <button type="button" class="btn btn-secondary ml-2" wire:click="cancelEdit">
-                                    Batal
+                            <div class="form-group">
+                                <label>Isi</label>
+                                <div wire:ignore> 
+                                    <textarea class="form-control summernote" 
+                                    wire:model.defer="{{ $editingCatatanId ? 'editingIsi' : 'isi' }}"
+                                        placeholder="Tambahkan isian narasi" required></textarea>
+                                </div>
+                                @error('isi') <span class="invalid-feedback">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" id="submit-button" class="btn btn-primary">
+                                    {{ $editingCatatanId ? 'Update' : 'Submit' }}
                                 </button>
-                            @endif
+
+                                @if($editingCatatanId)
+                                    <button type="button" class="btn btn-secondary ml-2" wire:click="cancelEdit">
+                                        Batal
+                                    </button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
+    </div>
 
-        <div class="card mt-4">
-            <div class="card-body">
-                <div>
-                    <table id="catatan" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th class="text-center">No</th>
-                                <th class="text-center">Judul</th>
-                                <th class="text-center">Isi</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($rtmCatatan as $index => $item)
-                                <tr data-id="{{ $item->id }}">
-                                    <td class="text-center">{{$index+1}}</td>
-                                    <td class="text-center">{{ $item->judul }}</td>
-                                    <td>{!! $item->isi !!}</td>
-                                    <td class="text-center">
-                                        <div class="btn-group">
-                                            <button class="btn btn-sm btn-warning" wire:click="edit({{ $item->id }})">
-                                                <i class="fas fa-pencil-alt me-1"></i>
-                                            </button>
-
-                                            <button type="button" class="btn btn-danger btn-sm" wire:click="confirmDelete({{ $item->id }})">
-                                                <i class="fas fa-trash-alt me-1"></i>
-                                            </button>
-                                        </div>
-                                    </td>
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h3 class="card-title mb-0">Daftar Narasi RTM</h3>
+                </div>
+                <div class="card-body">
+                    <div>
+                        <table id="catatan" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">No</th>
+                                    <th class="text-center">Judul</th>
+                                    <th class="text-center">Isi</th>
+                                    <th class="text-center">Aksi</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach ($rtmCatatan as $index => $item)
+                                    <tr data-id="{{ $item->id }}">
+                                        <td class="text-center">{{$index+1}}</td>
+                                        <td class="text-center">{{ $item->judul }}</td>
+                                        <td>{!! $item->isi !!}</td>
+                                        <td class="text-center">
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-warning" wire:click="edit({{ $item->id }})">
+                                                    <i class="fas fa-pencil-alt me-1"></i>
+                                                </button>
+
+                                                <button type="button" class="btn btn-danger btn-sm" wire:click="confirmDelete({{ $item->id }})">
+                                                    <i class="fas fa-trash-alt me-1"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

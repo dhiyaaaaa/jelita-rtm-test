@@ -261,26 +261,46 @@ class SessionController extends Controller
     //     }
     // }
     
-
     public function session_rtm_catatan(Request $request, RtmJadwal $rtmJadwal)
     {
+        // Pastikan ini adalah permintaan AJAX
         if (!$request->ajax()) {
             return response()->json(['error' => 'Invalid Request.'], 400);
         }
 
         try {
-
             $sessionKey = 'session_catatan_' . $rtmJadwal->id;
 
-             session([$sessionKey => $request->only(['judul', 'isi'])]);
-            
+            // Simpan data judul dan isi dari request ke sesi
+            session([$sessionKey => $request->only(['judul', 'isi'])]);
+
             return response()->json(['success' => true, 'message' => 'Data berhasil disimpan sementara']);
 
         } catch (\Exception $e) {
-            Log::error('Error saving RTM Catatan session:', ['error' => $e->getMessage()]);
+            // Log error untuk debugging lebih lanjut
+            Log::error('Error saving RTM Catatan session:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
         }
     }
+    // public function session_rtm_catatan(Request $request, RtmJadwal $rtmJadwal)
+    // {
+    //     if (!$request->ajax()) {
+    //         return response()->json(['error' => 'Invalid Request.'], 400);
+    //     }
+
+    //     try {
+
+    //         $sessionKey = 'session_catatan_' . $rtmJadwal->id;
+
+    //          session([$sessionKey => $request->only(['judul', 'isi'])]);
+            
+    //         return response()->json(['success' => true, 'message' => 'Data berhasil disimpan sementara']);
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Error saving RTM Catatan session:', ['error' => $e->getMessage()]);
+    //         return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menyimpan session.'], 500);
+    //     }
+    // }
     
     public function session_rtm_rtl_univ(Request $request, string $rtmRtlUniv): JsonResponse
     {

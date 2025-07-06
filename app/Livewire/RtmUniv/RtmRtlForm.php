@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Session; // Import Session Facade
+use Illuminate\Validation\ValidationException;
 
 class RtmRtlForm extends Component
 {
@@ -33,10 +35,14 @@ class RtmRtlForm extends Component
     public $isCompleted = false;
     public $isSubmitting = false;
 
-    // Inisialisasi properti untuk memastikan tidak pernah null
+    // Kunci unik untuk sesi berdasarkan ID RTM/RTL dan nomor halaman
+    protected function getSessionKey()
+    {
+        return 'rtm_rtl_form_' . $this->rtmRtlUnivId . '_page_' . $this->getPage();
+    }
+
     public function boot()
     {
-        // Pastikan $this->temuan selalu merupakan Collection sejak awal
         if (!($this->temuan instanceof Collection)) {
             $this->temuan = new Collection();
         }
@@ -47,12 +53,37 @@ class RtmRtlForm extends Component
         $this->rtmRtlUnivId = $rtmRtlUniv->id;
         $this->rtmJadwal = RtmJadwal::findOrFail($rtmRtlUniv->rtm_jadwal_id);
 
-        // Hanya load status dan isCompleted di mount
         $this->loadStatus();
         $this->isCompleted = $this->status && $this->status->status === 'completed';
 
-        // Inisialisasi temuan di mount, tapi akan di-load ulang di render
-        $this->temuan = new Collection();
+        $this->temuan = new Collection(); // Inisialisasi awal
+        $this->loadJawabanRtm(); // Load jawaban dari DB
+        $this->loadSessionData(); // Timpa dengan data sesi jika ada
+    }
+
+    // Metode baru untuk memuat data dari sesi
+    private function loadSessionData()
+    {
+        $sessionData = Session::get($this->getSessionKey(), []);
+        foreach ($sessionData as $formId => $data) {
+            $this->rekomendasi[$formId] = $data['rekomendasi'];
+            $this->koreksi[$formId] = $data['koreksi'];
+        }
+    }
+
+    // Metode baru untuk menyimpan semua data saat ini ke sesi
+    public function saveAllToSession()
+    {
+        $dataToSave = [];
+        foreach ($this->rekomendasi as $formId => $rekomendasiValue) {
+            $dataToSave[$formId] = [
+                'rekomendasi' => $rekomendasiValue,
+                'koreksi' => $this->koreksi[$formId] ?? null,
+            ];
+        }
+        Session::put($this->getSessionKey(), $dataToSave);
+        // Anda bisa menambahkan Log::info di sini jika ingin melihat data yang disimpan
+        // Log::info('Data saved to session for key: ' . $this->getSessionKey(), $dataToSave);
     }
 
     private function loadTemuan()
@@ -126,15 +157,14 @@ class RtmRtlForm extends Component
         }
 
         // Isi rekomendasi dan koreksi dari data yang sudah ada setiap kali temuan dimuat
-        // Ini penting agar nilai di textarea tetap ada setelah refresh
+        // Ini penting agar nilai di textarea tetap ada setelah refresh (dari DB atau session)
         foreach ($this->jawabanRtm as $jawaban) {
-            $this->rekomendasi[$jawaban->form_id] = $jawaban->rekomendasi;
-            $this->koreksi[$jawaban->form_id] = $jawaban->koreksi;
-        }
-
-        // Double check untuk memastikan $this->temuan adalah Collection
-        if (!($this->temuan instanceof Collection)) {
-            $this->temuan = new Collection($this->temuan);
+            if (!isset($this->rekomendasi[$jawaban->form_id])) { // Hanya isi jika belum ada dari sesi
+                $this->rekomendasi[$jawaban->form_id] = $jawaban->rekomendasi;
+            }
+            if (!isset($this->koreksi[$jawaban->form_id])) { // Hanya isi jika belum ada dari sesi
+                $this->koreksi[$jawaban->form_id] = $jawaban->koreksi;
+            }
         }
     }
 
@@ -175,10 +205,13 @@ class RtmRtlForm extends Component
 
             // Setelah menyimpan, load ulang jawaban untuk memastikan data terbaru tersedia
             $this->loadJawabanRtm();
-            
-            session()->flash('message', 'Jawaban berhasil disimpan.');
+
+            // Simpan perubahan ke sesi setelah sukses disimpan ke DB
+            $this->saveAllToSession();
+
+            $this->dispatch('showAlert', type: 'success', title: 'Berhasil!', message: 'Jawaban berhasil disimpan.');
         } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan saat menyimpan jawaban: ' . $e->getMessage());
+            $this->dispatch('showAlert', type: 'error', title: 'Gagal!', message: 'Terjadi kesalahan saat menyimpan jawaban: ' . $e->getMessage());
             Log::error("Error saving RTM RTL Form item: " . $e->getMessage());
         }
     }
@@ -190,8 +223,7 @@ class RtmRtlForm extends Component
         $rules = [];
         $messages = [];
 
-        // Panggil loadTemuan() sebelum iterasi untuk memastikan data terbaru
-        $this->loadTemuan();
+        $this->loadTemuan(); // Pastikan temuan terbaru dimuat
 
         if ($this->temuan instanceof Collection) {
             foreach ($this->temuan as $item) {
@@ -203,9 +235,9 @@ class RtmRtlForm extends Component
             }
         }
 
-        $this->validate($rules, $messages);
-
         try {
+            $this->validate($rules, $messages); // Validasi sebelum menyimpan
+
             $user = Auth::user()->id;
 
             if ($this->temuan instanceof Collection) {
@@ -236,10 +268,20 @@ class RtmRtlForm extends Component
             }
             $this->isCompleted = true;
 
-            session()->flash('success', 'Semua jawaban berhasil disimpan dan form telah disubmit.');
-            return redirect()->route('admin.rtm-rtl.show', ['rtmJadwal' => $this->rtmJadwal->id]);
-        } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan saat submit form: ' . $e->getMessage());
+            // Hapus data sesi setelah berhasil disubmit
+            Session::forget('rtm_rtl_form_' . $this->rtmRtlUnivId . '_page_*'); // Hapus semua sesi untuk RTM/RTL ini
+            // Atau hanya halaman saat ini: Session::forget($this->getSessionKey());
+
+
+            $this->dispatch('showAlert', type: 'success', title: 'Berhasil!', message: 'Semua jawaban berhasil disimpan dan form telah disubmit.');
+            return redirect()->route('admin.rtm-rtl-univ.show-livewire', ['rtmJadwal' => $this->rtmJadwal->id]);
+        } catch (ValidationException $e) {
+            $errors = $e->validator->errors()->all();
+            $errorMessage = implode('<br>', $errors); // Gabungkan pesan error
+            $this->dispatch('showAlert', type: 'error', title: 'Validasi Gagal!', message: $errorMessage);
+        }
+        catch (\Exception $e) {
+            $this->dispatch('showAlert', type: 'error', title: 'Gagal!', message: 'Terjadi kesalahan saat submit form: ' . $e->getMessage());
             Log::error("Error submitting RTM RTL Form: " . $e->getMessage());
         } finally {
             $this->isSubmitting = false;
@@ -253,8 +295,18 @@ class RtmRtlForm extends Component
             $this->status->status = 'in_progress';
             $this->status->save();
         }
-        session()->flash('message', 'Mode pengubahan diaktifkan.');
+        // Hapus data sesi saat masuk mode edit agar form kosong dari session
+        Session::forget('rtm_rtl_form_' . $this->rtmRtlUnivId . '_page_*');
+        $this->loadJawabanRtm(); // Load ulang dari DB setelah enable edit mode
+        $this->dispatch('showAlert', type: 'info', title: 'Mode Edit', message: 'Mode pengubahan diaktifkan.');
     }
+
+    
+    public function confirmSubmit()
+    {
+        $this->dispatch('confirmSubmit');
+    }
+
 
     public function render()
     {
@@ -280,5 +332,15 @@ class RtmRtlForm extends Component
             'paginatedTemuan' => $paginatedTemuan,
             'title' => 'Tindak Lanjut Hasil Audit',
         ])->layout('components.layout.main_layout', ['title' => 'Rencana Tindak Lanjut RTM Univ']);
+    }
+
+    public function updated($propertyName)
+    {
+        // Auto-save with 1-second delay for textarea changes
+        if (str_starts_with($propertyName, 'rekomendasi.') || str_starts_with($propertyName, 'koreksi.')) {
+            $this->saveAllToSession();
+            // Anda bisa menambahkan dispatch event ke front-end jika ingin feedback "Draft Saved"
+            // $this->dispatch('showAlert', type: 'info', title: 'Draft Tersimpan', message: 'Perubahan otomatis disimpan.');
+        }
     }
 }

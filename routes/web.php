@@ -1039,14 +1039,19 @@ Route::group(['middleware' => 'auth'], function () {
             //Store RTM Catatan
             Route::post('rtm-catatan/{rtmJadwal}/store', [RtmCatatanController::class, 'store'])->name('admin.rtm-catatan.store');
             
-            //Update RTM Catatan
+            //Edit RTM Catatan
             Route::get('rtm-catatan/{rtmCatatan}/edit', [RtmCatatanController::class, 'edit'])->name('admin.rtm-catatan.edit');
             
+            //Update RTM Catatan
+            Route::put('rtm-catatan/{rtmCatatan}/update', [RtmCatatanController::class, 'update'])->name('admin.rtm-catatan.update');
+
+            Route::get('/rtm-catatan/{rtmJadwal}/cancel-edit', [RtmCatatanController::class, 'cancelEdit'])->name('admin.rtm-catatan.cancel-edit');
+            
             //Delete RTM Catatan
-            Route::delete('rtm-catatan/{rtmCatatan}/destroy', [RtmCatatanController::class, 'destroy'])->name('admin.rtm-catatan.destroy');
+            Route::delete('/rtm-catatan/{rtmCatatan}', [RtmCatatanController::class, 'destroy'])->name('admin.rtm-catatan.destroy');
             
             //Save Session
-            Route::post('rtm-catatan/{rtmJadwal}/session', [SessionController::class, 'session_rtm_catatan'])->name('rtm-catatan.session');
+            Route::post('rtm-catatan/{rtmJadwal}/session', [SessionController::class, 'session_rtm_catatan'])->name('admin.rtm-catatan.session');
 
             //LIST Tindak Lanjut Audit
             Route::get('/rtm-rtl-univ/{rtmJadwal}', [TindakLanjutController::class, 'show'])->name('admin.rtm-rtl.show');
