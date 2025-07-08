@@ -1,9 +1,4 @@
 <div class="container">
-    <h2>{{ $title }}</h2>
-    <div class="mb-3">
-        <a href="{{ route('admin.rtm-univ.index-livewire') }}" class="btn btn-outline-secondary">Kembali</a>
-    </div>
-
     <div class="card">
         <div clss="card-body">
         @if (session()->has('success'))
@@ -131,6 +126,7 @@
                         </div>
                     </div>
                     <div class="card-footer text-center">
+                        <a href="{{ route('admin.rtm-univ.index-livewire') }}" class="btn btn-outline-secondary">Kembali</a>
                         <button type="button" wire:click="toggleEditMode" class="btn btn-warning">Edit Jadwal</button>
                     </div>
                 </div>

@@ -30,13 +30,6 @@ class JadwalRtmController extends Controller
         return view('admin.rtm_univ.index', $data);
     }
 
-    public function indexLivewire()
-    {
-        return view('admin.rtm_univ.index_livewire', [
-            'title' => 'Agenda RTM (Livewire Version)', // Title untuk versi Livewire
-        ]);
-    }
-
     public function create()
     {
         $jadwalAudit = JadwalAudit::all();

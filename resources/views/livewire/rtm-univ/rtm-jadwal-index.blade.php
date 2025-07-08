@@ -80,7 +80,7 @@
                                         </li>
                                         <li>
                                             <a class="dropdown-item text-danger" href="#"
-                                            wire:click.prevent="deleteJadwal('{{ $item->id }}')" 
+                                            wire:click.prevent="deleteJadwal('{{ $item->id }}')" dusk="delete-rtm-id-{{ $item->id }}"
                                             wire:confirm="Apakah Anda yakin ingin menghapus jadwal RTM ini?">
                                                 <i class="fas fa-trash-alt"></i> Hapus
                                             </a>

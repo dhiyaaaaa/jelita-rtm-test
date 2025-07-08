@@ -60,7 +60,7 @@
 
                             {{-- Aksi --}}
                             <td class="text-center">
-                                <div class="dropdown">
+                                <div class="dropdown" dusk="dropdown-actions-{{ $item->id }}">
                                     <button class="btn btn-outline-primary btn-sm btn-fixed-size dropdown-toggle" type="button"
                                         id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
                                         aria-expanded="false">
@@ -68,7 +68,8 @@
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                         <li>
-                                            <a class="dropdown-item" href="{{ route('admin.rtm-univ.show', $item->id) }}">
+                                            <a class="dropdown-item" href="{{ route('admin.rtm-univ.show', $item->id) }}"
+                                                dusk="view-agenda-{{ $item->id }}">
                                                 <i class="fas fa-file"></i> Lihat Agenda
                                             </a>
                                         </li>
@@ -80,7 +81,7 @@
 
                                         <li>
                                             <a class="dropdown-item text-danger delete-btn" href="{{ route('admin.rtm-univ.destroy', $item->id) }}"
-                                                data-confirm-delete="true">
+                                                data-confirm-delete="true" dusk="delete-rtm-id-{{ $item->id }}">
                                                 <i class="fas fa-trash-alt"></i> Hapus
                                             </a>
                                         </li>
@@ -200,50 +201,68 @@
             // Submit form lampiran
             $('#lampiranForm').submit(function(event) {
                 event.preventDefault();
-
-                $('#btnSimpan').prop('disabled', true);
-                $('#spinner').removeClass('d-none');
-                $('#btnText').text(' Menyimpan...');
-                let formData = new FormData($('#lampiranForm')[0]);
+                
+                let $form = $(this);
+                let formData = new FormData($form[0]);
+                
+                // Debug: Log form data
+                for (var pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]); 
+                }
+                
+                // Tampilkan loading state
+                $form.find('#btnSimpan').prop('disabled', true);
+                $form.find('#spinner').removeClass('d-none');
+                $form.find('#btnText').text(' Menyimpan...');
 
                 $.ajax({
-                    url: "{{  route('admin.lampiran-rtm-univ.store') }}", 
-                    method: "POST",
+                    url: $form.attr('action'),
+                    method: 'POST',
                     data: formData,
                     processData: false,
                     contentType: false,
                     success: function(response) {
+                        console.log('Success Response:', response);
+                        
+                        // Tutup modal terlebih dahulu
+                        $('#lampiranModal').modal('hide');
+                        
+                        // Tampilkan SweetAlert
                         Swal.fire({
                             icon: 'success',
-                            title: 'Lampiran berhasil disimpan!',
-                            text: 'Data lampiran telah disimpan dengan sukses.',
+                            title: response.message || 'Lampiran berhasil disimpan!',
                             showConfirmButton: false,
                             timer: 1500
+                        }).then(() => {
+                            // Refresh halaman setelah alert
+                            window.location.reload();
                         });
-
-                        $('#btnSimpan').prop('disabled', false);
-                        $('#spinner').addClass('d-none');
-                        $('#btnText').text(' Simpan');
-
-                        $('#undangan').val(response.undangan).prop('disabled', true);
-                        $('#presensi').val(response.presensi).prop('disabled', true);
-                        $('#dokumentasi').val(response.dokumentasi).prop('disabled', true);
-
-                        setTimeout(() => {
-                            $('#lampiranModal').modal('hide');
-                        }, 1500);
                     },
                     error: function(xhr) {
+                        console.log('Error Response:', xhr.responseJSON);
+                        
+                        // Tampilkan error sesuai response
+                        let errorMessage = 'Terjadi kesalahan saat menyimpan';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            errorMessage = Object.values(xhr.responseJSON.errors).join('<br>');
+                        }
+                        
                         Swal.fire({
-                        icon: 'error',
-                        title: 'Terjadi Kesalahan!',
-                        text: 'Gagal menyimpan lampiran. Silakan coba lagi.',
-                        confirmButtonText: 'Tutup'
+                            icon: 'error',
+                            title: 'Error',
+                            html: errorMessage,
+                            confirmButtonText: 'Tutup'
                         });
-
-                        $('#btnSimpan').prop('disabled', false);
-                        $('#spinner').addClass('d-none');
-                        $('#btnText').text(' Simpan');
+                        
+                        // Reset button state
+                        $form.find('#btnSimpan').prop('disabled', false);
+                        $form.find('#spinner').addClass('d-none');
+                        $form.find('#btnText').text('Simpan');
+                    },
+                    complete: function() {
+                        console.log('Request completed');
                     }
                 });
             });

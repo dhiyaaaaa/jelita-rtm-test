@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Livewire\Admin\RtmUniv;
+namespace App\Livewire\RtmUniv;
 
 use App\Models\RtmJadwal;
 use App\Models\RtmLampiran;
-use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
-class JadwalRtmIndex extends Component
+use Livewire\Component;
+
+class RtmJadwalIndex extends Component
 {
     use WithPagination, WithFileUploads;
 
@@ -27,19 +28,6 @@ class JadwalRtmIndex extends Component
     public $isUploading = false;
     public $uploadSuccess = false;
     public $uploadError = false;
-
-    // public function mount() 
-    // {
-    //     $this->loadRtmJadwal();
-    // }
-
-    // public function loadRtmJadwal()
-    // {
-    //     $this->rtmJadwal = RtmJadwal::with(['jadwal_audit'])
-    //         ->whereNull('fakultas_id')
-    //         ->whereNull('unit_id')
-    //         ->get();
-    // }
 
     public function updatedSearch()
     {
@@ -177,9 +165,9 @@ class JadwalRtmIndex extends Component
             })
             ->paginate($this->perPage); 
 
-        return view('livewire.admin.rtm-univ.jadwal-rtm-index', [
+        return view('livewire.rtm-univ.rtm-jadwal-index', [
             'rtmJadwal' => $rtmJadwal,
             'title' => $this->title,
-        ]);
+        ])->layout('components.layout.main_layout', ['title' => 'Agenda RTM (Livewire Version)']);
     }
 }

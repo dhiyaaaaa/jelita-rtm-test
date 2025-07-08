@@ -2,16 +2,10 @@
 
 @section('content')
 <div class="container">
-    <h2>{{ $title}}</h2>
-    <div class="mb-3">
-        <a href="{{ route("admin.rtm-univ.index") }}" class="btn btn-outline-secondary">Kembali</a>
-    </div>
 
-    <!-- Menampilkan detail jadwal RTM -->
     <div class="card">
         <div class="card-body">
             @if($isEditMode)
-                <!-- Form untuk mengedit data RTM jika mode edit aktif -->
                 <form action="{{ route('admin.rtm-univ.update', $item->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
@@ -43,7 +37,7 @@
                         <label for="pimpinan" class="form-label">Pimpinan Rapat:</label>
                         <input type="text" name="pimpinan" id="pimpinan" class="form-control" value="{{ old('pimpinan', $item->pimpinan) }}" required>
                     </div>
-    
+                    
                     <div class="form-group">
                         <label for="jadwal_audit_id">Pilih Periode Audit</label>
                         <select name="jadwal_audit_id" id="jadwal_audit_id" class="form-control" required>
@@ -61,59 +55,57 @@
                         <small class="form-text text-muted">Masukkan jumlah peserta rapat (dalam format angka)</small>
                         <input type="text" name="peserta" id="peserta" class="form-control" value="{{ old('peserta', $item->peserta) }}" required>
                     </div>
-                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                    <button type="submit" class="btn btn-primary me-2">Simpan Perubahan</button>
+                    <a href="{{ route("admin.rtm-univ.index") }}" class="btn btn-outline-secondary me-2">Kembali</a>
                 </form>
             @else
-                <!-- Tampilan detail jadwal RTM jika bukan mode edit -->
-
-                
-                    <div class="card mt-3">
-                        <div class="card-header bg-primary text-white">
-                            <h4>Detail Jadwal RTM</h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <p><strong>Agenda:</strong> {{ $item->agenda }}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') }}</p>
-                                </div>
-                            </div>
-                
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <p><strong>Jam Mulai:</strong> {{ \Carbon\Carbon::parse($item->jam_mulai)->format('H:i') }}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p><strong>Jam Selesai:</strong> {{ \Carbon\Carbon::parse($item->jam_selesai)->format('H:i') }}</p>
-                                </div>
-                            </div>
-                
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <p><strong>Tempat:</strong> {{ $item->tempat }}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p><strong>Pimpinan Rapat:</strong> {{ $item->pimpinan }}</p>
-                                </div>
-                            </div>
-                
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <p><strong>Jadwal Audit:</strong> {{ $item->jadwal_audit->jadwal }}</p>
-                                </div>
+                {{-- This is the display-only mode content --}}
+                <div class="card mt-3">
+                    <div class="card-header bg-primary text-white">
+                        <h4>Detail Jadwal RTM</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Agenda:</strong> {{ $item->agenda }}</p>
                             </div>
                             <div class="col-md-6">
-                                <p><strong>Jumlah Peserta Rapat:</strong> {{ $item->peserta }}</p>
+                                <p><strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') }}</p>
                             </div>
                         </div>
-                        <div class="card-footer text-center">
-                            <!-- Tombol untuk masuk ke mode edit -->
-                            <a href="{{ route('admin.rtm-univ.show', ['id' => $item->id, 'edit' => 'true']) }}" class="btn btn-warning">Edit Jadwal</a>
+            
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Jam Mulai:</strong> {{ \Carbon\Carbon::parse($item->jam_mulai)->format('H:i') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Jam Selesai:</strong> {{ \Carbon\Carbon::parse($item->jam_selesai)->format('H:i') }}</p>
+                            </div>
+                        </div>
+            
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Tempat:</strong> {{ $item->tempat }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Pimpinan Rapat:</strong> {{ $item->pimpinan }}</p>
+                            </div>
+                        </div>
+            
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Jadwal Audit:</strong> {{ $item->jadwal_audit->jadwal }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Jumlah Peserta Rapat:</strong> {{ $item->peserta }}</p>
                         </div>
                     </div>
-              
+                    <div class="card-footer text-center">
+                        <a href="{{ route("admin.rtm-univ.index") }}" class="btn btn-outline-secondary me-2">Kembali</a>
+                        <a href="{{ route('admin.rtm-univ.show', ['id' => $item->id, 'edit' => 'true']) }}" class="btn btn-warning" dusk="edit-jadwal-btn">Edit Jadwal</a>
+                    </div>
+                </div>
             @endif
         </div>
     </div>

@@ -70,6 +70,7 @@ use App\Livewire\RtmRtlForm as LivewireRtmRtlForm;
 use App\Livewire\RtmUniv\JadwalRtmCreate;
 use App\Livewire\RtmUniv\JadwalRtmShow;
 use App\Livewire\RtmUniv\RtmCatatanForm;
+use App\Livewire\RtmUniv\RtmJadwalIndex;
 use App\Livewire\RtmUniv\RtmRtl;
 use App\Livewire\RtmUniv\RtmRtlForm;
 use App\Livewire\RtmUniv\RtmRtlUnivForm;
@@ -1080,11 +1081,8 @@ Route::group(['middleware' => 'auth'], function () {
         });
 
         Route::prefix('rtm-livewire')->group(function () {
-            Route::get('', [JadwalRtmController::class, 'indexLivewire'])->name('admin.rtm-univ.index-livewire'); // Menggunakan metode indexLivewire() baru
-            // Route::get('', Rtmjadwal::class)->name('admin.rtm-univ.index');
-             //Route::get('', [JadwalRtmController::class, 'indexLivewire'])->name('rtm-univ.livewire.index');
-
-            //Route::get('', Jadwal::class)->name('admin.rtm-wire.index');
+            Route::get('', RtmJadwalIndex::class)->name('admin.rtm-univ.index-livewire'); 
+           
             Route::get('/jadwal-rtm-univ-livewire/create', JadwalRtmCreate::class)->name('admin.rtm-univ.create-livewire');
            
            
