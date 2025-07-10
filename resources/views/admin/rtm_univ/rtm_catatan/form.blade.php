@@ -84,14 +84,14 @@
                                     <td class="text-center align-middle">
                                         <div class="btn-group btn-group-sm">
                                             <a href="{{ route('admin.rtm-catatan.edit', $item->id) }}"
-                                               class="btn btn-warning" title="Edit">
+                                               class="btn btn-warning" title="Edit"  dusk="edit-catatan-{{ $item->id }}">
                                                 <i class="fas fa-pencil-alt"></i>
                                             </a>
                                             {{-- Delete Button --}}
                                             <form action="{{ route('admin.rtm-catatan.destroy', $item->id) }}" method="POST" style="display:inline;" class="delete-form">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-danger" title="Hapus" data-confirm-delete="true">
+                                                <button type="submit" class="btn btn-danger" title="Hapus" dusk="delete-catatan-{{ $item->id }}" data-confirm-delete="true">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -196,7 +196,7 @@ $(document).ready(function() {
         var form = $(this).closest('form');
 
         Swal.fire({
-            title: 'Hapus Narasi RTM?',
+            title: 'Hapus Catatan Narasi RTM?',
             text: "Anda tidak akan dapat mengembalikan data ini!",
             icon: 'warning',
             showCancelButton: true,

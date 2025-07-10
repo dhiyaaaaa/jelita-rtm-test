@@ -93,14 +93,14 @@ class RtmCatatanController extends Controller
         session()->forget($sessionKey); // Hapus sesi setelah data berhasil diperbarui
 
         return redirect()->route('admin.rtm-catatan.form', ['rtmJadwal' => $rtmCatatan->rtm_jadwal_id])
-           ->with('success', 'Catatan berhasil diperbarui.');
+           ->with('success', 'Catatan Narasi berhasil diperbarui.');
     }
 
     public function destroy(RtmCatatan $rtmCatatan)
     {
        $rtmCatatan->delete();
 
-        return redirect()->back()->with('success', 'Catatan berhasil dihapus.');
+        return redirect()->back()->with('success', 'Catatan Narasi berhasil dihapus.');
     }
 
     
