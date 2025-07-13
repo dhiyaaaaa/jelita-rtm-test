@@ -1034,6 +1034,8 @@ Route::group(['middleware' => 'auth'], function () {
             // Lampiran RTM
             Route::post('/lampiran-rtm-univ/store', [LampiranRtmController::class, 'store'])->name('admin.lampiran-rtm-univ.store');
 
+            Route::get('/rtm/{rtmJadwalId}/lampiran', [LampiranRtmController::class, 'show'])->name('admin.rtm-lampiran.show');
+
             //Form RTM Catatan
             Route::get('/rtm-catatan/form/{rtmJadwal}', [RtmCatatanController::class, 'form'])->name('admin.rtm-catatan.form');
             

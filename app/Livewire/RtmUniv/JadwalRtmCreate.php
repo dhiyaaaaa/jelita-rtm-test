@@ -84,7 +84,9 @@ class JadwalRtmCreate extends Component
             ]);
 
 
-            return redirect()->route('admin.rtm-univ.index-livewire');
+            return redirect()
+            ->route('admin.rtm-univ.index-livewire')
+            ->with('success', 'Jadwal RTM berhasil disimpan!');
         } catch (\Exception $e) {
             session()->flash('error', 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage());
 

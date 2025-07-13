@@ -15,7 +15,7 @@ class FormFactory extends Factory
     {
         return [
             'jadwal_id' => JadwalAudit::factory(),
-            'instrumen_id' => Instrumen::inRandomOrder()->first()->id,
+            'instrumen_id' => Instrumen::factory(),
         ];
     }
 }

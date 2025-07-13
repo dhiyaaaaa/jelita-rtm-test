@@ -1,20 +1,19 @@
 @php
     use Carbon\Carbon;
 @endphp
+
 @extends('components.layout.main_layout')
 
 @section('content')
     {{-- INFO RTM --}}
     <div class="card shadow border-0" style="background: linear-gradient(135deg, #6694ea, #614ba2); color: white;">
         <div class="card-header border-0">
-            <h3 class="card-title title-size text-white">Rapat Tinjauan Manajemen</h3>
+            <h3 class="card-title title-size text-white" dusk="rtm-title">Rapat Tinjauan Manajemen</h3>
         </div>
-
         <div class="card-body">
             <a href="{{ route('admin.rtm-univ.index') }}" class="btn btn-outline-light mb-3">
                 <i class="fas fa-arrow-left"></i> Kembali
             </a>
-
             <table class="table table-borderless text-white">
                 <tr>
                     <td class="fw-bold" width="15%">Agenda</td>
@@ -59,19 +58,73 @@
                     <td class="fw-bold">Periode AIMA</td>
                     <td>:</td>
                     <td>
-                        {{ Carbon::parse($rtmJadwal->jadwal_audit->tgl_mulai)->translatedFormat('j F Y') }} - 
+                        {{ Carbon::parse($rtmJadwal->jadwal_audit->tgl_mulai)->translatedFormat('j F Y') }} -
                         {{ Carbon::parse($rtmJadwal->jadwal_audit->tgl_selesai)->translatedFormat('j F Y') }}
                     </td>
                 </tr>
             </table>
         </div>
     </div>
-    
+
+    <div class="card shadow border-0 mt-3">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-dark"><i class="fas fa-paperclip me-2"></i> Upload Lampiran RTM</h5>
+        </div>
+        <div class="card-body">
+            @if($lampiran)
+                <p class="text-muted">Silakan tambahkan kata pengantar laporan RTM untuk menjelaskan konteks dan tujuan laporan ini, jika diperlukan.</p>
+                <form method="POST" action="{{ route('admin.lampiran-rtm-univ.store') }}" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="rtm_jadwal_id" value="{{ $rtmJadwal->id }}">
+                    <div class="mb-4">
+                        <label for="undangan" class="form-label fw-bold">
+                            <i class="fas fa-file-invoice me-1"></i> Upload File Undangan
+                        </label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="undangan" name="undangan" required dusk="input-undangan">
+                            <a href="{{ Storage::url($lampiran->undangan) }}"
+                                target="_blank"
+                                class="input-group-text text-decoration-none">
+                                <i class="fas fa-eye"></i> Lihat
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="presensi" class="form-label fw-bold">
+                            <i class="fas fa-clipboard me-1"></i> Upload File Presensi
+                        </label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="presensi" name="presensi" required dusk="input-presensi">
+                            <a href="{{ Storage::url($lampiran->presensi) }}"
+                                target="_blank"
+                                class="input-group-text text-decoration-none">
+                                <i class="fas fa-eye"></i> Lihat
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="dokumentasi" class="form-label fw-bold">
+                            <i class="fas fa-camera me-1"></i> Upload File Dokumentasi
+                        </label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="dokumentasi" name="dokumentasi" required dusk="input-dokumentasi">
+                            <a href="{{ Storage::url($lampiran->dokumentasi) }}"
+                                target="_blank"
+                                class="input-group-text text-decoration-none">
+                                <i class="fas fa-eye"></i> Lihat
+                            </a>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </form>
+            @endif
+        </div>
+    </div>
+
     <div class="card shadow border-0 mt-3">
         <div class="card-header bg-white border-bottom">
             <h5 class="mb-0 text-dark"><i class="fas fa-file-alt me-2"></i> Narasi Laporan RTM</h5>
         </div>
-        
         <div class="card-body">
             <p class="text-muted">Silakan tambahkan kata pengantar laporan RTM untuk menjelaskan konteks dan tujuan laporan ini, jika diperlukan.</p>
             <div class="d-flex justify-content">
@@ -90,12 +143,14 @@
                         @foreach($kriteriaOptions as $kriteria)
                         <div class="col-md-3">
                             <div class="custom-control custom-checkbox">
-                                <input type="checkbox" 
-                                       class="custom-control-input" 
-                                       id="kriteria_{{ $kriteria->id }}" 
-                                       name="kriteria[]" 
-                                       value="{{ $kriteria->id }}"
-                                       @if(in_array($kriteria->id, request('kriteria', []))) checked @endif>
+                                <input type="checkbox"
+                                    dusk="kriteria-{{ $kriteria->id }}"
+                                    class="custom-control-input"
+                                    id="kriteria_{{ $kriteria->id }}"
+                                    name="kriteria[]"
+                                    value="{{ $kriteria->id }}"
+                                    @if(in_array($kriteria->id, request('kriteria', []))) checked @endif>
+
                                 <label class="custom-control-label" for="kriteria_{{ $kriteria->id }}">
                                     {{ $kriteria->nama }}
                                 </label>
@@ -103,7 +158,7 @@
                         </div>
                         @endforeach
                     </div>
-                    
+
                     <div class="mt-3">
                         <button type="submit" class="btn btn-primary mr-2">Terapkan Filter</button>
                         @if(request()->has('kriteria'))
@@ -112,7 +167,28 @@
                     </div>
                 </form>
             </div>
-            <table id="rtm" class="table table-hover table-striped">
+
+             <div class="row mb-3">
+                <div class="col-md-6">
+                    <form method="GET" action="">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="Cari fakultas/unit..." 
+                                value="{{ request('search') }}" dusk="search-input">
+                            <button class="btn btn-primary" type="submit" dusk="search-button">
+                                <i class="fas fa-search"></i> Cari
+                            </button>
+                        </div>
+                        <!-- Sertakan parameter kriteria yang sudah dipilih -->
+                        @if(request('kriteria'))
+                            @foreach(request('kriteria') as $kriteria)
+                                <input type="hidden" name="kriteria[]" value="{{ $kriteria }}">
+                            @endforeach
+                        @endif
+                    </form>
+                </div>
+            </div>
+
+            <table class="table table-hover table-striped">
                 <thead class="bg-dark text-white text-center">
                     <tr>
                         <th>No</th>
@@ -124,18 +200,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @php 
-                        $no = 1; 
+                    @php
+                        $no = 1;
                     @endphp
+
                     @foreach ($units as $index => $item)
-                        <tr class="text-center">
+                        <tr class="text-center" dusk="unit-row-{{ $item->id }}">
                             <td>{{ $index + 1 }}</td>
                             <td>
-                                @if($item->jenis_unit === 'fakultas')
-                                    Fakultas {{ $item->nama }}
-                                @else
-                                    {{ $item->nama }}
-                                @endif
+                                {{ $item->nama }}
                             </td>
                             <td>
                                 @if($item->rtm_rtl_id)
@@ -165,7 +238,7 @@
                                         </form>
                                     @endif
                                 @else
-                                    <button class="btn btn-outline-primary btn-fixed-size tindak-lanjut-btn" 
+                                    <button class="btn btn-outline-primary btn-fixed-size tindak-lanjut-btn"
                                         data-fakultas_id="{{ $item->jenis_unit === 'fakultas' ? $item->id : '' }}"
                                         data-unit_id="{{ $item->jenis_unit === 'unit' ? $item->id : '' }}"
                                         data-jadwal_audit_id="{{ $rtmJadwal->jadwal_audit_id }}">
@@ -182,8 +255,23 @@
                             </td>
                         </tr>
                     @endforeach
+                    @if($units->count() == 0)
+                        <tr>
+                            <td colspan="6" class="text-center">Tidak ada data yang ditemukan</td>
+                        </tr>
+                    @endif
                 </tbody>
             </table>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    Menampilkan {{ $units->firstItem() }} - {{ $units->lastItem() }} dari {{ $units->total() }} entri
+                </div>
+                <nav>
+                    {{ $units->appends(request()->query())->links('pagination::bootstrap-4', [
+                        'dusk' => 'pagination'
+                    ]) }}
+                </nav>
+            </div>
         </div>
     </div>
 
@@ -193,7 +281,6 @@
                 <div class="card-body">
                     <h5 class="card-title title-size text-dark">Download dan Approve Rencana Tindak Lanjut Hasil Audit</h5>
                     <p class="card-text">Silahkan download dan approve, setelah mengisi rencana Hasil Audit.</p>
-
                     <div class="mb-2">
                         @if ($isRektor && $user == $rektorId && (!$approvalRektor || !$approvalRektor->approve))
                             <form action="{{ route('approve.rtm.univ', ['rtmJadwal' => $rtmJadwal->id, 'user' => $user]) }}" method="post">
@@ -209,7 +296,7 @@
                                     <i class="fas fa-thumbs-up"></i> Approve sebagai Ketua LP3M
                                 </button>
                             </form>
-                        @elseif(($isRektor && $approvalRektor && $approvalRektor->approve) || 
+                        @elseif(($isRektor && $approvalRektor && $approvalRektor->approve) ||
                                 ($isKetuaLP3M && $approvalKetuaLP3M && $approvalKetuaLP3M->approve))
                             <button disabled class="btn btn-secondary w-100">
                                 <i class="fas fa-check-circle"></i> Anda sudah memberikan approval
@@ -220,14 +307,14 @@
                     <div class="alert alert-primary mt-3">
                         Status Approval:
                         <ul class="mt-2">
-                            <li>Rektor: 
+                            <li>Rektor:
                                 @if($approvalRektor && $approvalRektor->approve)
                                     <span class="badge bg-warning">Sudah Approve</span>
                                 @else
                                     <span class="badge bg-danger">Belum Approve</span>
                                 @endif
                             </li>
-                            <li>Ketua LP3M: 
+                            <li>Ketua LP3M:
                                 @if($approvalKetuaLP3M && $approvalKetuaLP3M->approve)
                                     <span class="badge bg-warning">Sudah Approve</span>
                                 @else
@@ -236,8 +323,9 @@
                             </li>
                         </ul>
                     </div>
+
                     <div>
-                        <form action="{{ route('download.rtm.univ', $rtmJadwal->id) }}" 
+                        <form action="{{ route('download.rtm.univ', $rtmJadwal->id) }}"
                             class="d-inline">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="fas fa-download"></i> Download Laporan RTM
@@ -247,6 +335,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-sm-6 mb-3 mb-sm-0 d-flex">
             <div class="card shadow border-0 w-100 h-100" style="background: linear-gradient(135deg, #6694ea, #614ba2); color: white;">
                 <div class="card-body">
@@ -257,7 +346,6 @@
         </div>
     </div>
 
-    <!-- Modal Konfirmasi Pembuatan RTL -->
     <div class="modal fade" id="konfirmasiModal" tabindex="-1" aria-labelledby="konfirmasiModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -280,126 +368,89 @@
     </div>
 @endsection
 
-
 @section('style')
-<!-- DataTables -->
-<link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}">
-<link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}">
-{{-- <link rel="stylesheet" href="{{ asset('plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}"> --}}
+    {{-- DataTables --}}
+    {{-- <link rel="stylesheet" href="{{ asset('plugins/datatables-bs4/css/dataTables.bootstrap4.min.css') }}"> --}}
+    {{-- <link rel="stylesheet" href="{{ asset('plugins/datatables-responsive/css/responsive.bootstrap4.min.css') }}"> --}}
+    {{-- <link rel="stylesheet" href="{{ asset('plugins/datatables-buttons/css/buttons.bootstrap4.min.css') }}"> --}}
 @endsection
 
 @section('script')
-<!-- DataTables & Plugins -->
-<script src="{{ asset('plugins/datatables/jquery.dataTables.min.js') }}"></script>
-<script src="{{ asset('plugins/datatables-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
-<script src="{{ asset('plugins/datatables-responsive/js/dataTables.responsive.min.js') }}"></script>
-<script src="{{ asset('plugins/datatables-responsive/js/responsive.bootstrap4.min.js') }}"></script>
+    {{-- SweetAlert2 JS (ensure this is loaded BEFORE this script block in your main_layout) --}}
+    {{-- If you're using asset helper for SweetAlert2, it should be in main_layout --}}
+    <script>
+        $(document).ready(function() {
+            // Your existing jQuery document.ready function for .tindak-lanjut-btn
+            $(document).on('click', '.tindak-lanjut-btn', function() {
+                console.log("Tombol diklik");
+                let auditId = $(this).data('jadwal_audit_id');
+                let fakultasId = $(this).data('fakultas_id');
+                let unitId = $(this).data('unit_id');
 
-<!-- Page specific script -->
-<script>
-$(function() {
-    $("#rtm").DataTable({
-        "responsive": true,
-        "autoWidth": false,
-        "columnDefs": [{
-                "width": "10%",
-                "targets": [0]
-            },
-            {
-                "width": "20%",
-                "targets": [1]
-            },
-            {
-                "width": "20%",
-                "targets": [2]
-            },
-            {
-                "width": "10%",
-                "targets": [3]
-            },
-            {
-                "width": "20%",
-                "targets": [4]
-            },
-            {
-                "width": "20%",
-                "targets": [4]
-            },
-        ]
-    });
-})
-</script>
+                console.log("Audit ID:", auditId);
 
-<script>
-    $(document).ready(function() {
-        $(document).on('click', '.tindak-lanjut-btn', function() {
-            console.log("Tombol diklik");
-            let auditId = $(this).data('jadwal_audit_id');
-            let fakultasId = $(this).data('fakultas_id');
-            let unitId = $(this).data('unit_id');
+                $('#konfirmasiModal').modal('show');
+                $('#konfirmasiTindakLanjut').off('click').on('click', function() {
+                    const $btn = $(this);
+                    const $spinner = $btn.find('.spinner-border');
+                    const $text = $btn.find('.btn-text');
+                    $spinner.removeClass('d-none');
+                    $text.addClass('d-none');
+                    $btn.prop('disabled', true);
 
-            console.log("Audit ID:", auditId);
-
-            $('#konfirmasiModal').modal('show');
-
-            $('#konfirmasiTindakLanjut').off('click').on('click', function() {
-                const $btn = $(this);
-                const $spinner = $btn.find('.spinner-border');
-                const $text = $btn.find('.btn-text');
-
-                $spinner.removeClass('d-none');
-                $text.addClass('d-none');
-                $btn.prop('disabled', true);
-
-                $.ajax({
-                    url: "{{ route('admin.rtm-rtl.store') }}",
-                    method: "POST",
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                        jadwal_audit_id: auditId,
-                        fakultas_id: fakultasId,
-                        unit_id: unitId,
-                        jadwal_id: "{{ $rtmJadwal->id }}"
-                    },
-                    
-                    success: function(response) {
-                        location.reload();
-                    },
-                    error: function(xhr) {
-                        alert("Gagal menindaklanjuti: " + xhr.responseText);
-                    },
-
-                    complete: function(){
-                        $spinner.addClass('d-none');
-                        $text.removeClass('d-none');
-                        $btn.prop('disabled', false);
-                    }
+                    $.ajax({
+                        url: "{{ route('admin.rtm-rtl.store') }}",
+                        method: "POST",
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                            jadwal_audit_id: auditId,
+                            fakultas_id: fakultasId,
+                            unit_id: unitId,
+                            jadwal_id: "{{ $rtmJadwal->id }}"
+                        },
+                        success: function(response) {
+                            location.reload(); // This will trigger the session('success') check on reload
+                        },
+                        error: function(xhr) {
+                            alert("Gagal menindaklanjuti: " + xhr.responseText);
+                        },
+                        complete: function(){
+                            $spinner.addClass('d-none');
+                            $text.removeClass('d-none');
+                            $btn.prop('disabled', false);
+                        }
+                    });
                 });
             });
+
+            // SweetAlert2 for session messages
+            @if(session('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Sukses!',
+                    text: '{{ session('success') }}',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            @endif
+
+            @if(session('info_message'))
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Informasi',
+                    text: '{{ session('info_message') }}',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            @endif
+
+            @if(session('warning'))
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Peringatan',
+                    text: '{{ session('warning') }}'
+                });
+            @endif
         });
-    });
-
-</script>
-
-@if(session('info_message'))
-<script>
-    Swal.fire({
-        icon: 'info',
-        title: 'Informasi',
-        text: '{{ session('info_message') }}',
-        timer: 3000,
-        showConfirmButton: false
-    });
-</script>
-@endif
-
-@if(session('warning'))
-<script>
-    Swal.fire({
-        icon: 'warning',
-        title: 'Peringatan',
-        text: '{{ session('warning') }}'
-    });
-</script>
-@endif
+    </script>
 @endsection

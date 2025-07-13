@@ -64,13 +64,13 @@
                                 <div class="dropdown">
                                     <button class="btn btn-outline-primary btn-sm btn-fixed-size dropdown-toggle" type="button"
                                             id="dropdownMenuButton{{ $item->id }}" data-toggle="dropdown" aria-haspopup="true"
-                                            aria-expanded="false">
+                                            aria-expanded="false" dusk="dropdown-toggle-{{ $item->id }}">
                                         Aksi
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $item->id }}">
                                         <li>
                                             <a class="dropdown-item" href="{{ route('admin.rtm-univ.show-livewire', $item->id) }}">
-                                                <i class="fas fa-file"></i> Lihat Agenda
+                                                <i class="fas fa-file" dusk="view-agenda-{{ $item->id }}"></i> Lihat Agenda
                                             </a>
                                         </li>
                                         <li>

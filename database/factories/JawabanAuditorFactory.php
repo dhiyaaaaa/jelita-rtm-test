@@ -20,15 +20,15 @@ class JawabanAuditorFactory extends Factory
     {
         return [
             'catatan' => $this->faker->paragraph,
-            'daftar_tilik' => $this->faker->randomElement(['Memenuhi', 'Tidak Memenuhi', 'Melampaui']),
+            'daftar_tilik' => $this->faker->randomElement(['true', 'false']),
             'form_id' => Form::factory(),
             'jadwal_audit_id' => JadwalAudit::factory(),
             'prodi_id' => null,
             'fakultas_id' => Fakultas::factory(),
-            'unit_id' => null,
+            'unit_id' => Unit::factory(),
             'auditor_id' => Auditor::factory(),
             'kriteria_id' => Kriteria::factory(),
-            'ptk' => $this->faker->randomElement(['Ya', 'Tidak']),
+            'ptk' => $this->faker->randomElement(['true', 'false']),
             'created_at' => now(),
             'updated_at' => now(),
         ];

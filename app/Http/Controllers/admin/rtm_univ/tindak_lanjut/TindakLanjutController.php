@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RtmJadwal;
 use App\Models\RtmRtlUniv;
 use App\Models\Kriteria;
+use App\Models\RtmLampiran;
 use App\Models\RtmUnivApprove;
 use App\Models\StatusRtmRtlUniv;
 use App\Models\User;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 
 class TindakLanjutController extends Controller
@@ -27,7 +29,7 @@ class TindakLanjutController extends Controller
 
     public function show(RtmJadwal $rtmJadwal)
     {
-        $rtmJadwal->load(['jadwal_audit', 'rtm_rtl_univ', 'user']);
+        $rtmJadwal->load(['jadwal_audit', 'rtm_rtl_univ', 'user', 'rtm_lampiran']);
         
         if (!$rtmJadwal->jadwal_audit) {
             abort(404, 'Jadwal audit tidak ditemukan');
@@ -124,6 +126,28 @@ class TindakLanjutController extends Controller
             ->get(); 
 
         $units = $fakultas->merge($unit)->unique('id');
+
+        //paginasi
+        $perPage = 10;
+        $page = request()->get('page', 1);
+        $offset = ($page - 1) * $perPage;
+
+        //Search
+        $search = request()->get('search');
+        if ($search) {
+            $units = $units->filter(function($item) use ($search) {
+                return stripos($item->nama, $search) !== false;
+            });
+        }
+
+        $paginatedUnits = new LengthAwarePaginator(
+            $units->slice($offset, $perPage),
+            $units->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
         $user = $this->user->id;
 
         $rektor = User::whereHas('jabatan', fn($q) => $q->where('slug', 'rektor'))->first();
@@ -147,12 +171,15 @@ class TindakLanjutController extends Controller
         $isRektor = $this->user->jabatan->contains('slug', 'rektor');
         $isKetuaLP3M = $this->user->jabatan->contains('slug', 'ketua-lp3m');
 
+        $lampiran = RtmLampiran::where('rtm_jadwal_id', $rtmJadwal->id)->first();
+
         $data = [
             'title' => 'Tindak Lanjut Hasil Audit',
             'rtmJadwal' => $rtmJadwal,
-            'units' => $units,
+            'units' => $paginatedUnits,
             'kriteriaOptions' => $kriteriaOptions,
             'user' => $user,
+            'lampiran' => $lampiran,
             'approvalRektor' => $approvalRektor,
             'approvalKetuaLP3M' => $approvalKetuaLP3M,
             'isRektor' => $isRektor,

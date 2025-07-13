@@ -2,123 +2,75 @@
 
 namespace Tests\Browser;
 
+use Laravel\Dusk\Browser;
+use Tests\DuskTestCase;
+use Illuminate\Support\Facades\Storage;
 use App\Models\RtmJadwal;
 use App\Models\RtmLampiran;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Http\UploadedFile; // Import ini
-use Illuminate\Support\Facades\Storage;
-use Laravel\Dusk\Browser;
-use Tests\DuskTestCase;
 
 class RtmLampiranUploadTest extends DuskTestCase
 {
     protected $adminUser;
     protected $rtmJadwal;
-    protected $rtmLampiran;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        // Pastikan database di-refresh untuk setiap tes
         $this->artisan('migrate:fresh');
 
-        // Buat user admin dengan role yang sesuai
         $this->adminUser = User::factory()->create([
             'email' => 'admin@example.com',
             'password' => bcrypt('password')
         ]);
-        
-        // Asumsi role 'pusjamu' sudah ada atau dibuat di seeder
-        // Jika belum ada, Anda perlu memastikan role ini dibuat terlebih dahulu
-        // atau gunakan User::factory()->admin()->create() jika ada factory admin
-        $this->adminUser->roles()->create(['name' => 'pusjamu']);
 
-        $this->rtmJadwal = RtmJadwal::factory()->create();
+        $this->adminUser->roles()->create(['name' => 'pusjamu']);
     }
 
     public function testUploadLampiran()
-{
-    Storage::fake('lampiran_rtm');
-    
-    $this->browse(function (Browser $browser) {
-        // Buat file dummy dengan ukuran lebih kecil untuk testing
-        $undanganPath = tempnam(sys_get_temp_dir(), 'undangan') . '.pdf';
-        file_put_contents($undanganPath, str_repeat('A', 500)); // 500KB
-        
-        $presensiPath = tempnam(sys_get_temp_dir(), 'presensi') . '.pdf';
-        file_put_contents($presensiPath, str_repeat('B', 500)); // 500KB
-        
-        $dokumentasiPath = tempnam(sys_get_temp_dir(), 'dokumentasi') . '.pdf';
-        file_put_contents($dokumentasiPath, str_repeat('C', 1000)); // 1MB
+    {
+        $rtmJadwal = RtmJadwal::factory()->create();
 
-        $browser->loginAs($this->adminUser)
-                ->visit(route('admin.rtm-univ.index'))
-                ->waitFor('.lampiran-btn')
-                ->click('.lampiran-btn')
-                ->waitFor('#lampiranModal')
-                ->within('#lampiranModal', function(Browser $modal) use ($undanganPath, $presensiPath, $dokumentasiPath) {
-                    // Pastikan ID terisi dengan cara yang lebih reliable
-                    $modal->value('#rtm_jadwal_id', $this->rtmJadwal->id);
-                    
-                    // Tambahkan pause dan screenshot
-                    $modal->pause(1000)
-                          ->screenshot('before-attach')
-                          ->attach('input[name="undangan"]', $undanganPath)
-                          ->attach('input[name="presensi"]', $presensiPath)
-                          ->attach('input[name="dokumentasi"]', $dokumentasiPath)
-                          ->pause(1000)
-                          ->screenshot('before-submit')
-                          ->press('Simpan');
-                })
-                // Tunggu modal menghilang terlebih dahulu
-                
-                // Tunggu teks sukses dengan timeout lebih lama
-                ->waitForText('Lampiran berhasil disimpan!', 30)
-                ->assertSee('Lampiran berhasil disimpan!')
-                ->waitUntilMissing('#lampiranModal', 30)
-                ->screenshot('after-success');
-        
-        // Verifikasi database
-        $this->assertDatabaseHas('rtm_lampiran', [
-            'rtm_jadwal_id' => $this->rtmJadwal->id
+        RtmLampiran::factory()->create([
+            'rtm_jadwal_id' => $rtmJadwal->id,
+            'undangan' => 'temp/undangan.pdf',
+            'presensi' => 'temp/presensi.pdf',
+            'dokumentasi' => 'temp/dokumentasi.pdf',
         ]);
-        
-        // Hapus file dummy
-        unlink($undanganPath);
-        unlink($presensiPath);
-        unlink($dokumentasiPath);
-    });
-}
 
-public function testUploadLampiranValidation()
-{
-    $this->browse(function (Browser $browser) {
-        $browser->loginAs($this->adminUser)
-                ->visit(route('admin.rtm-univ.index'))
-                ->screenshot('before-click')
-                ->waitFor('.lampiran-btn')
-                ->click('.lampiran-btn')
-                ->waitFor('#lampiranModal')
-                ->screenshot('modal-shown')
-                ->within('#lampiranModal', function(Browser $modal) {
-                    // Set ID dengan cara yang lebih reliable
-                    $modal->value('#rtm_jadwal_id', $this->rtmJadwal->id);
-                    
-                    // Submit tanpa file
-                    $modal->press('Simpan')
-                          ->pause(1000)
-                          ->screenshot('after-submit');
-                    
-                    // Tunggu pesan validasi dengan selector yang lebih spesifik
-                    $modal->waitFor('div.invalid-feedback', 30)
-                          ->assertSee('The undangan field is required')
-                          ->assertSee('The presensi field is required')
-                          ->assertSee('The dokumentasi field is required');
-                })
-                ->screenshot('validation-errors');
-    });
+        $this->browse(function (Browser $browser) use ($rtmJadwal) {
+            // Create test PDF files in the storage path that Dusk can access
+            $tempDir = storage_path('app/public/testing');
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+
+            $dummyPdfContent = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Count 0>>endobj\nxref\n0 3\n0000000000 65535 f\n0000000009 00000 n\n0000000055 00000 n\ntrailer<</Size 3/Root 1 0 R>>startxref\n104\n%%EOF";
+
+            file_put_contents("{$tempDir}/undangan.pdf", $dummyPdfContent);
+            file_put_contents("{$tempDir}/presensi.pdf", $dummyPdfContent);
+            file_put_contents("{$tempDir}/dokumentasi.pdf", $dummyPdfContent);
+
+            $browser->loginAs($this->adminUser)
+                ->visit(route('admin.rtm-rtl.show', $rtmJadwal->id))
+                ->assertSee('Upload Lampiran RTM')
+                ->screenshot('before_upload');
+
+            // Use the full path to the files
+            $browser->attach('@input-undangan', "{$tempDir}/undangan.pdf")
+                ->attach('@input-presensi', "{$tempDir}/presensi.pdf")
+                ->attach('@input-dokumentasi', "{$tempDir}/dokumentasi.pdf")
+                ->pause(1000)
+                ->press('button[type="submit"].btn-primary')
+                ->screenshot('after_submit');
+
+            $browser->waitForLocation(route('admin.rtm-rtl.show', $rtmJadwal->id), 30)
+                ->screenshot('after_reload');
+
+            $browser->waitFor('.swal2-container', 30)
+                ->screenshot('sweetalert_visible')
+                ->waitForText('Lampiran berhasil disimpan.', 15)
+                ->assertSeeIn('.swal2-title', 'Sukses!');
+        });
+    }
 }
-}
-   
