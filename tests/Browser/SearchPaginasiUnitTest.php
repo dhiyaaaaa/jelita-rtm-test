@@ -75,19 +75,19 @@ class SearchPaginasiUnitTest extends DuskTestCase
             ->waitForText('Rapat Tinjauan Manajemen', 60)
             ->pause(2000)
 
-            // First verify pagination exists
+            // halaman 1
             ->assertPresent('[dusk="pagination"]')
             ->pause(1000)
             ->screenshot('pagination-page-1')
             ->assertSee('Menampilkan 1 - 10 dari')
             
-            // Navigate to page 2 using the next button
+            // ke halaman 2
             ->click('@pagination-next')
             ->pause(1000)
-            ->assertSee('Menampilkan 11 - 20 dari') // Adjusted for 15 items
+            ->assertSee('Menampilkan 11 - 20 dari')
             ->screenshot('pagination-page-2')
             
-            // Go back to page 1 using page link
+            //kembali ke halaman 1
             ->click('[dusk="pagination-page-1"]')
             ->pause(1000)
             ->assertSee('Menampilkan 1 - 10 dari');

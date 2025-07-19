@@ -34,4 +34,6 @@ class JadwalRtmStoreRequest extends FormRequest
             'peserta' => 'nullable|integer|min:1',
         ];
     }
+
+    
 }

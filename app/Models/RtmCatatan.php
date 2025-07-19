@@ -12,7 +12,7 @@ class RtmCatatan extends Model
 
     protected $table = 'rtm_catatan';
 
-    protected $fillable = ['rtm_jadwal_id', 'user_id', 'bagian', 'judul', 'isi'];
+    protected $fillable = ['rtm_jadwal_id', 'user_id', 'judul', 'isi'];
 
     public function rtm_jadwal(): BelongsTo
     {

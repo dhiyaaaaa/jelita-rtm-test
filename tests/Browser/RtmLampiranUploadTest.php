@@ -39,7 +39,6 @@ class RtmLampiranUploadTest extends DuskTestCase
         ]);
 
         $this->browse(function (Browser $browser) use ($rtmJadwal) {
-            // Create test PDF files in the storage path that Dusk can access
             $tempDir = storage_path('app/public/testing');
             if (!file_exists($tempDir)) {
                 mkdir($tempDir, 0755, true);
@@ -56,7 +55,6 @@ class RtmLampiranUploadTest extends DuskTestCase
                 ->assertSee('Upload Lampiran RTM')
                 ->screenshot('before_upload');
 
-            // Use the full path to the files
             $browser->attach('@input-undangan', "{$tempDir}/undangan.pdf")
                 ->attach('@input-presensi', "{$tempDir}/presensi.pdf")
                 ->attach('@input-dokumentasi', "{$tempDir}/dokumentasi.pdf")

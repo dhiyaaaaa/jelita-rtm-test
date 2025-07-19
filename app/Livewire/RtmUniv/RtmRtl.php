@@ -4,6 +4,7 @@ namespace App\Livewire\RtmUniv;
 
 use App\Models\Kriteria;
 use App\Models\RtmJadwal;
+use App\Models\RtmLampiran;
 use App\Models\RtmRtlUniv;
 use App\Models\RtmUnivApprove;
 use App\Models\StatusRtmRtlUniv;
@@ -11,12 +12,14 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 class RtmRtl extends Component
 {
-    use WithPagination;
+    use WithPagination, WithFileUploads;
     public $rtmJadwalId;
     public $rtmJadwal;
     public $kriteriaOptions;
@@ -28,6 +31,16 @@ class RtmRtl extends Component
     public $isKetuaLP3M;
     public $rektorId;
     public $ketuaLP3MId;
+
+    //Lampiran
+    public $rtmLampiran;
+    public $undangan;
+    public $presensi;
+    public $dokumentasi;
+
+    public $isUploading = false;
+    public $uploadSuccess = false;
+    public $uploadError = false;
 
     public $search = '';
     protected $paginationTheme = 'bootstrap'; 
@@ -44,11 +57,13 @@ class RtmRtl extends Component
 
     public function mount($rtmJadwalId)
     {
-        $this->rtmJadwal = RtmJadwal::with(['jadwal_audit', 'rtm_rtl_univ', 'user'])->find($rtmJadwalId);
+        $this->rtmJadwal = RtmJadwal::with(['jadwal_audit', 'rtm_rtl_univ', 'user', 'rtm_lampiran'])->find($rtmJadwalId);
 
         if (!$this->rtmJadwal || !$this->rtmJadwal->jadwal_audit) {
             abort(404, 'Jadwal audit tidak ditemukan');
         }
+
+        $this->rtmLampiran = RtmLampiran::where('rtm_jadwal_id', $rtmJadwalId)->first();
 
         $this->kriteriaOptions = Kriteria::all();
         $this->user = Auth::user();
@@ -68,7 +83,7 @@ class RtmRtl extends Component
 
     public function loadData()
     {
-     $this->rtmJadwal = RtmJadwal::with(['jadwal_audit', 'rtm_rtl_univ', 'user'])->find($this->rtmJadwalId);
+     $this->rtmJadwal = RtmJadwal::with(['jadwal_audit', 'rtm_rtl_univ', 'user', 'rtm_lampiran'])->find($this->rtmJadwalId);
 
         if (!$this->rtmJadwal || !$this->rtmJadwal->jadwal_audit) {
             abort(404, 'Jadwal audit tidak ditemukan');
@@ -130,7 +145,10 @@ class RtmRtl extends Component
                 'rtm_rtl_univ_approve.approve as approval_status',
                 DB::raw("'fakultas' as jenis_unit"),
                 DB::raw('COALESCE(temuan_fakultas.jumlah_temuan_fakultas, 0) as jumlah_temuan')
-            ]);
+            ])
+            ->when($this->search, function($query){
+                return $query->whereRaw('LOWER(fakultas.nama) LIKE ?', ['%' . strtolower($this->search) . '%']);
+            });
 
         $unitQuery = DB::table('unit')
             ->leftJoin('rtm_rtl_univ', function ($join) {
@@ -157,20 +175,14 @@ class RtmRtl extends Component
                 'rtm_rtl_univ_approve.approve as approval_status',
                 DB::raw("'unit' as jenis_unit"),
                 DB::raw('COALESCE(temuan_unit.jumlah_temuan_unit, 0) as jumlah_temuan')
-            ]);
+            ])
+            ->when($this->search, function($query){
+                return $query->whereRaw('LOWER(unit.nama) LIKE ?', ['%' . strtolower($this->search) . '%']);
+            });
 
         $unitsQuery = $fakultasQuery->union($unitQuery);
 
-            // Terapkan pencarian manual (jika ada)
-        if ($this->search) {
-            $unitsQuery->where(function ($query) {
-                $query->where('nama', 'like', '%' . $this->search . '%');
-            });
-        }
-
-            // Paginasi hasil
-        $this->units = $unitsQuery->orderBy('nama', 'asc')->paginate(10); // Sesuaikan jumlah item per halaman
-    
+        $this->units = $unitsQuery->orderBy('nama', 'asc')->paginate(10);
 
         $rektor = User::whereHas('jabatan', fn ($q) => $q->where('slug', 'rektor'))->first();
         $ketuaLP3M = User::whereHas('jabatan', fn ($q) => $q->where('slug', 'ketua-lp3m'))->first();
@@ -299,11 +311,53 @@ class RtmRtl extends Component
         $this->loadApprovalStatus(); 
     }
 
+    public function saveLampiran()
+    {
+        $this->validate([
+            'undangan' => 'required|file|mimes:pdf|max:2048',
+            'presensi' => 'required|file|mimes:pdf|max:2048',
+            'dokumentasi' => 'required|file|mimes:pdf|max:5120',
+        ]);
+
+        try {
+            $this->isUploading = true;
+            $rtmJadwalId = $this->rtmJadwal->id; 
+            $timestamp = now()->timestamp;
+
+            $rtmLampiran = RtmLampiran::updateOrCreate(
+                ['rtm_jadwal_id' => $rtmJadwalId],
+                [
+                    'undangan' => $this->undangan->storeAs(
+                        'lampiran_rtm', "undangan_rtm_{$rtmJadwalId}_{$timestamp}.pdf"
+                    ),
+                    'presensi' => $this->presensi->storeAs(
+                        'lampiran_rtm', "presensi_rtm_{$rtmJadwalId}_{$timestamp}.pdf"
+                    ),
+                    'dokumentasi' => $this->dokumentasi->storeAs(
+                        'lampiran_rtm', "dokumentasi_rtm_{$rtmJadwalId}_{$timestamp}.pdf"
+                    ),
+                ]
+            );
+
+            $this->reset(['undangan', 'presensi', 'dokumentasi']); 
+
+            $this->rtmLampiran = $rtmLampiran;
+            $this->isUploading = false;
+            $this->uploadSuccess = true;
+
+            $this->dispatch('show-alert', ['type' => 'success', 'message' => 'Lampiran berhasil disimpan.']);
+        } catch (ValidationException $e) {
+            $this->dispatch('show-alert', ['type' => 'error', 'message' => 'Terdapat kesalahan validasi.']);
+            throw $e; 
+        }
+    }
+
     public function render()
     {
         $this->loadData();
         return view('livewire.rtm-univ.rtm-rtl', [
-            'units' => $this->units
+            'units' => $this->units,
+            'rtmLampiran' => $this->rtmLampiran
         ])->layout('components.layout.main_layout', ['title' => 'Rencana Tindak Lanjut RTM Univ']);
     }
 }

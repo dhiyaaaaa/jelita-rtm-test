@@ -65,7 +65,6 @@ class JadwalRtmCreate extends Component
     {
         $this->validate();
 
-        try {
             RtmJadwal::create([
                 'agenda' => $this->agenda,
                 'tanggal' => $this->tanggal,
@@ -76,8 +75,7 @@ class JadwalRtmCreate extends Component
                 'jadwal_audit_id' => $this->jadwal_audit_id,
                 'peserta' => $this->peserta,
             ]);
-            session()->flash('success', 'Jadwal RTM behasil disimpan!');
-
+            
             $this->reset([
                 'agenda', 'tanggal', 'tempat', 'jam_mulai', 'jam_selesai',
                 'pimpinan', 'jadwal_audit_id', 'peserta'
@@ -87,10 +85,6 @@ class JadwalRtmCreate extends Component
             return redirect()
             ->route('admin.rtm-univ.index-livewire')
             ->with('success', 'Jadwal RTM berhasil disimpan!');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage());
-
-        }
     }
     
 

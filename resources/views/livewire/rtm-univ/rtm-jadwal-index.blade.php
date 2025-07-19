@@ -61,13 +61,13 @@
                             
                             {{-- Aksi --}}
                             <td class="text-center">
-                                <div class="dropdown">
+                                <div class="dropdown" dusk="dropdown-actions-{{ $item->id }}">
                                     <button class="btn btn-outline-primary btn-sm btn-fixed-size dropdown-toggle" type="button"
                                             id="dropdownMenuButton{{ $item->id }}" data-toggle="dropdown" aria-haspopup="true"
                                             aria-expanded="false" dusk="dropdown-toggle-{{ $item->id }}">
                                         Aksi
                                     </button>
-                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $item->id }}">
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $item->id }}" dusk="dropdown-menu-{{ $item->id }}">
                                         <li>
                                             <a class="dropdown-item" href="{{ route('admin.rtm-univ.show-livewire', $item->id) }}">
                                                 <i class="fas fa-file" dusk="view-agenda-{{ $item->id }}"></i> Lihat Agenda

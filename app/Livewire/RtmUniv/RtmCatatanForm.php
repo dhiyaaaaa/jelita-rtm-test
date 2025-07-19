@@ -81,23 +81,24 @@ class RtmCatatanForm extends Component
             session()->forget('session_catatan_' . $this->rtmJadwal->id); 
 
             $this->dispatch('resetSummernote');
-            $this->dispatch('show-alert', ['type' => 'success', 'message' => 'Data berhasil disimpan.']);
+            $this->dispatch('show-alert', ['type' => 'success', 'message' => 'catatan berhasil disimpan.']);
         } catch (ValidationException $e) {
             $this->dispatch('show-alert', ['type' => 'error', 'message' => 'Terdapat kesalahan validasi.']);
             throw $e; 
         }
     }
 
-    public function edit($catatanId)
+    public function edit($id)
     {
-        $catatan = $this->rtmCatatan->find($catatanId);
-        if ($catatan) {
-            $this->editingCatatanId = $catatan->id;
-            $this->editingJudul = $catatan->judul;
-            $this->editingIsi = $catatan->isi;
-            
-            $this->dispatch('initSummernoteEdit', ['id' => 'main', 'content' => $catatan->isi]);
-        }
+        $catatan = RtmCatatan::findOrFail($id);
+        $this->editingCatatanId = $catatan->id;
+        $this->editingJudul = $catatan->judul;
+        $this->editingIsi = $catatan->isi;
+
+        // Emit an event to re-initialize Summernote with the content
+        // Livewire.dispatch('initSummernoteEdit', [{ id: 'main', content: this.editingIsi }]);
+        // This is already in your JS, just make sure your Livewire component triggers it correctly on edit method.
+        $this->dispatch('initSummernoteEdit', ['id' => 'main', 'content' => $catatan->isi]);
     }
 
     public function update()
@@ -135,12 +136,11 @@ class RtmCatatanForm extends Component
         }
     }
 
-    public function summernoteUpdate(array $data)
+    public function summernoteUpdate($data)
     {
         if ($data['id'] === 'create') {
-            $this->isi = $data['content'];
-            $this->saveSession();
-        } else {
+        $this->isi = $data['content'];
+        } elseif ($data['id'] === 'edit') {
             $this->editingIsi = $data['content'];
         }
     }
@@ -156,7 +156,7 @@ class RtmCatatanForm extends Component
         if ($catatan) {
             $catatan->delete();
             $this->loadRtmCatatan();
-            $this->dispatch('show-alert', ['type' => 'success', 'message' => 'Catatan berhasil dihapus.']);
+            $this->dispatch('show-alert', ['type' => 'success', 'message' => 'Catatan narasi berhasil dihapus.']);
             
             if ($this->editingCatatanId == $id) {
                 $this->cancelEdit(); 

@@ -38,8 +38,8 @@ class RtmCatatanTest extends DuskTestCase
     public function testCreateRtmCatatan()
     {
         $this->browse(function (Browser $browser) {
-            $testJudul = 'Dusk Test Catatan Judul ' . uniqid();
-            $testIsi = '<p>Dusk Test Isi Narasi ' . uniqid() . '</p>';
+            $testJudul = 'Test Catatan Judul ' . uniqid();
+            $testIsi = '<p> Test Isi Narasi ' . uniqid() . '</p>';
 
             $browser->loginAs($this->adminUser)
                     ->visit(route('admin.rtm-catatan.form', ['rtmJadwal' => $this->rtmJadwal->id]))

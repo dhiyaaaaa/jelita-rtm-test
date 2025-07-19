@@ -23,6 +23,7 @@ class JadwalRtmShow extends Component
     public function mount($id, $edit = false)
     {
         $this->item = RtmJadwal::with('jadwal_audit')->findOrFail($id);
+        $this->isEditMode = $edit;
 
         if ($this->isEditMode) {
             $this->agenda = $this->item->agenda;
@@ -89,7 +90,7 @@ class JadwalRtmShow extends Component
     public function updateJadwalRtm()
     {
         $this->validate();
-
+        
         try {
             $this->item->update([
                 'agenda' => $this->agenda,
@@ -102,11 +103,13 @@ class JadwalRtmShow extends Component
                 'peserta' => $this->peserta,
             ]);
             
-            session()->flash('success', 'Jadwal RTM behasil diperbarui!');
-            $this->isEditMode = false;
+            return redirect()
+                ->route('admin.rtm-univ.show-livewire', $this->item->id)
+                ->with('success', 'Jadwal RTM berhasil diperbarui!');
         } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage());
-
+            return redirect()
+                ->route('admin.rtm-univ.show-livewire', $this->item->id)
+                ->with('error', 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage());
         }
     }
     

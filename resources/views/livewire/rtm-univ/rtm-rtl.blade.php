@@ -66,6 +66,66 @@
         </div>
     </div>
 
+    <div class="card shadow border-0 mt-3">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-dark"><i class="fas fa-paperclip me-2"></i> Upload Lampiran RTM</h5>
+        </div>
+        <div class="card-body">
+                <form wire:submit.prevent="saveLampiran">
+                    @csrf
+                    <input type="hidden" wire:model="rtmJadwalId">
+                    <div class="mb-4">
+                        <label for="undangan" class="form-label fw-bold">
+                            <i class="fas fa-file-invoice me-1"></i> Upload File Undangan
+                        </label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="undangan" name="undangan" required dusk="input-undangan" wire:model="undangan">
+                            @if($rtmLampiran && $rtmLampiran->undangan)
+                                <a href="{{ Storage::url($rtmLampiran->undangan) }}"
+                                target="_blank"
+                                class="input-group-text text-decoration-none">
+                                <i class="fas fa-eye"></i> Lihat
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="presensi" class="form-label fw-bold">
+                            <i class="fas fa-clipboard me-1"></i> Upload File Presensi
+                        </label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="presensi" name="presensi" required dusk="input-presensi" wire:model="presensi">
+                            @if($rtmLampiran && $rtmLampiran->presensi)
+                                <a href="{{ Storage::url($rtmLampiran->presensi) }}"
+                                target="_blank"
+                                class="input-group-text text-decoration-none">
+                                <i class="fas fa-eye"></i> Lihat
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="dokumentasi" class="form-label fw-bold">
+                            <i class="fas fa-camera me-1"></i> Upload File Dokumentasi
+                        </label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="dokumentasi" name="dokumentasi" required dusk="input-dokumentasi" wire:model="dokumentasi">
+                            @if($rtmLampiran && $rtmLampiran->dokumentasi)
+                                <a href="{{ Storage::url($rtmLampiran->dokumentasi) }}"
+                                target="_blank"
+                                class="input-group-text text-decoration-none">
+                                <i class="fas fa-eye"></i> Lihat
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="saveLampiran, undangan, presensi, dokumentasi">
+                        Simpan
+                    </button>
+                </form>
+        </div>
+    </div>
+
     {{-- Catatan Narasi --}}
     <div class="card shadow border-0 mt-3">
         <div class="card-header bg-white border-bottom">
@@ -85,7 +145,7 @@
         <div class="card-body">
             <div class="mb-3 p-3 bg-light rounded">
                 <h5>Pilih Kriteria:</h5>
-                <form wire:submit.prevent="loadData"> {{-- Gunakan wire:submit.prevent untuk form --}}
+                <form wire:submit.prevent="loadData"> 
                     <div class="row">
                         @foreach($kriteriaOptions as $kriteria)
                         <div class="col-md-3">
@@ -104,7 +164,7 @@
                     </div>
 
                     <div class="mt-3">
-                        <input type="text" wire:model.live="search" class="form-control" placeholder="Cari Fakultas/Unit...">
+                        <input type="text" wire:model.live.debounce.500ms="search" class="form-control" placeholder="Cari Fakultas/Unit..." dusk="search-input">
                     </div>
 
                     <div class="mt-3">
@@ -128,7 +188,7 @@
                 <tbody>
                     {{-- Hapus @php $no = 1; @endphp --}}
                     @foreach ($units as $item)
-                        <tr class="text-center">
+                        <tr class="text-center" wire:key="unit-{{ $item->id }}" dusk="unit-row-{{ $item->id }}">
                             <td>{{ $loop->iteration + ($units->currentPage() - 1) * $units->perPage() }}</td> {{-- Hitung nomor urut dengan paginasi --}}
                             <td>
                                 @if($item->jenis_unit === 'fakultas')
@@ -167,7 +227,7 @@
                                 @endif
                             </td>
                             <td>
-                                @if($item->approval_status !== null && $item->approval_status == 1) {{-- Perhatikan kolom approval_status dari join --}}
+                                @if($item->approval_status !== null && $item->approval_status == 1)
                                     <span class="badge bg-success">Approved</span>
                                 @else
                                     <span class="badge bg-secondary">User belum melakukan approval</span>
@@ -177,15 +237,11 @@
                     @endforeach
                 </tbody>
             </table>
-
-            {{-- Tambahkan link paginasi Livewire di bawah tabel --}}
-            <div class="mt-4">
+            <div class="mt-4" dusk="pagination">
                 {{ $units->links() }}
             </div>
         </div>
     </div>
-
-    
 
     {{-- Download dan Approve --}}
     <div class="row align-items-stretch mb-4">
@@ -284,8 +340,6 @@
 @section('script')
    
     <script>
-        
-
         // Handle modal (tetap pertahankan ini)
         document.addEventListener('livewire:initialized', () => {
             Livewire.on('show-konfirmasi-modal', () => {
@@ -297,6 +351,14 @@
                 if (myModal) {
                     myModal.hide();
                 }
+            });
+
+            Livewire.on('show-alert', (event) => {
+                Swal.fire({
+                    icon: event[0].type,
+                    title: event[0].type === 'success' ? 'Berhasil!' : 'Oops...',
+                    text: event[0].message
+                });
             });
         });
     </script>
@@ -315,4 +377,3 @@
         </div>
     @endif
 @endsection
-

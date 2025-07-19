@@ -22,23 +22,19 @@ class RtmJadwalTest extends DuskTestCase
 
         $this->artisan('migrate:fresh');
 
-        // Buat user admin dengan role yang sesuai
         $this->adminUser = User::factory()->create([
             'email' => 'admin@example.com',
             'password' => bcrypt('password')
         ]);
         
-        // Beri role pusjamu (sesuai middleware)
         $this->adminUser->roles()->create(['name' => 'pusjamu']);
 
-        // Buat data jadwal audit
         $this->jadwalAudit = JadwalAudit::create([
             'jadwal' => 'Periode Audit Test',
             'tgl_mulai' => Carbon::now(),
             'tgl_selesai' => Carbon::now()->addMonth()
         ]);
 
-        // Data untuk test
         $this->rtmData = [
             'agenda' => 'Rapat Dusk Test',
             'tanggal' => Carbon::tomorrow()->format('Y-m-d'),
@@ -51,6 +47,7 @@ class RtmJadwalTest extends DuskTestCase
         ];
 
         $this->rtmEditData = [
+            'agenda' => 'Updated Rapat Tinjauan Manajemen',
             'jam_mulai' => '11:00',
             'jam_selesai' => '13.00'
         ];
@@ -60,8 +57,7 @@ class RtmJadwalTest extends DuskTestCase
     {
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->adminUser)
-                    ->visit(route('admin.rtm-univ.index'))
-                    ->clickLink('Buat Agenda RTM')
+                    ->visit(route('admin.rtm-univ.create'))
                     ->waitForText('Agenda Rapat Tinjauan Manajemen')
                     ->type('agenda', $this->rtmData['agenda'])
                     ->type('tanggal', $this->rtmData['tanggal'])
@@ -80,20 +76,11 @@ class RtmJadwalTest extends DuskTestCase
 
     public function testEditRtmJadwal()
     {
-        // Buat data dulu
         $rtm = RtmJadwal::create($this->rtmData);
 
         $this->browse(function (Browser $browser) use ($rtm) {
             $browser->loginAs($this->adminUser)
-                    ->visit(route('admin.rtm-univ.index'))
-                    ->waitFor('@dropdown-actions-'.$rtm->id)
-                    ->with('@dropdown-actions-'.$rtm->id, function($dropdown) {
-                        $dropdown->click('.dropdown-toggle')
-                                ->waitFor('.dropdown-menu.show');
-                    })
-                    ->waitFor('@view-agenda-'.$rtm->id)
-                    ->click('@view-agenda-'.$rtm->id)
-                    ->waitForLocation(route('admin.rtm-univ.show', $rtm->id))
+                    ->visit(route('admin.rtm-univ.show', $rtm->id))
                     ->screenshot('before-edit-click')
                     ->waitFor('@edit-jadwal-btn')
                     ->assertVisible('@edit-jadwal-btn')
@@ -103,11 +90,11 @@ class RtmJadwalTest extends DuskTestCase
                     ->pause(2000)
                     ->waitUntil('window.location.href.includes("edit=true")', 20)
                     ->waitFor('input[name="agenda"]')
+                    ->type('agenda', $this->rtmEditData['agenda'])
                     ->type('jam_mulai', $this->rtmEditData['jam_mulai'])
                     ->type('jam_selesai', $this->rtmEditData['jam_selesai'])
                     ->screenshot('before-saving')
                     
-                    // Handle form submission and redirect
                     ->press('Simpan Perubahan')
                     ->waitForLocation(route('admin.rtm-univ.show', $rtm->id))
                     ->waitFor('.swal2-container', 15)
@@ -118,7 +105,6 @@ class RtmJadwalTest extends DuskTestCase
 
     public function testDeleteRtmJadwal()
     {
-        // Buat data dulu
         $rtm = RtmJadwal::create($this->rtmData);
 
         $this->browse(function (Browser $browser) use ($rtm) {
@@ -131,10 +117,10 @@ class RtmJadwalTest extends DuskTestCase
                     })
                     ->waitFor('@delete-rtm-id-'.$rtm->id)
                     ->click('@delete-rtm-id-'.$rtm->id)
-                    ->waitFor('.swal2-container', 10) // Increased timeout to 10 seconds
+                    ->waitFor('.swal2-container', 10) 
                     ->screenshot('delete-confirmation')
                     ->assertSee('Apakah Anda yakin ingin menghapus jadwal RTM ini?')
-                    ->press('button.swal2-confirm') // More reliable selector for SweetAlert button
+                    ->press('button.swal2-confirm') 
                     ->waitForText('Jadwal RTM berhasil dihapus', 10)
                     ->assertDontSee($this->rtmData['agenda'])
                     ->screenshot('after-delete');

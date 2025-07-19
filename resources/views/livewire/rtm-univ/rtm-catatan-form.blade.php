@@ -21,7 +21,7 @@
                         <div id="catatan-container">
                             <div class="form-group">
                                 <label>Judul</label>
-                                <input type="text" class="form-control @error('judul') is-invalid @enderror" 
+                                <input type="text" dusk="judul-input" class="form-control @error('judul') is-invalid @enderror" 
                                 wire:model.defer="{{ $editingCatatanId ? 'editingJudul' : 'judul' }}"
                                     placeholder="Tambahkan judul narasi" required>
                                 @error('judul') <span class="invalid-feedback">{{ $message }}</span> @enderror
@@ -29,8 +29,8 @@
                             <div class="form-group">
                                 <label>Isi</label>
                                 <div wire:ignore> 
-                                    <textarea class="form-control summernote" 
-                                    wire:model.defer="{{ $editingCatatanId ? 'editingIsi' : 'isi' }}"
+                                    <textarea class="form-control summernote" dusk="isi-textarea"
+                                        wire:model.defer="{{ $editingCatatanId ? 'editingIsi' : 'isi' }}"
                                         placeholder="Tambahkan isian narasi" required></textarea>
                                 </div>
                                 @error('isi') <span class="invalid-feedback">{{ $message }}</span> @enderror
@@ -78,11 +78,11 @@
                                         <td>{!! $item->isi !!}</td>
                                         <td class="text-center">
                                             <div class="btn-group">
-                                                <button class="btn btn-sm btn-warning" wire:click="edit({{ $item->id }})">
+                                                <button class="btn btn-sm btn-warning" wire:click="edit({{ $item->id }})" dusk="edit-catatan-{{ $item->id }}">
                                                     <i class="fas fa-pencil-alt me-1"></i>
                                                 </button>
 
-                                                <button type="button" class="btn btn-danger btn-sm" wire:click="confirmDelete({{ $item->id }})">
+                                                <button type="button" class="btn btn-danger btn-sm" wire:click="confirmDelete({{ $item->id }})" dusk="delete-catatan-{{ $item->id }}">
                                                     <i class="fas fa-trash-alt me-1"></i>
                                                 </button>
                                             </div>
@@ -140,7 +140,7 @@
                 // SweetAlert2 (untuk konfirmasi hapus)
                 Livewire.on('confirmDeleteAlert', (id) => {
                     Swal.fire({
-                        title: 'Hapus Narasi RTM!',
+                        title: 'Hapus Catatan Narasi RTM?',
                         text: "Apakah Anda yakin ingin menghapus narasi ini?",
                         icon: 'warning',
                         showCancelButton: true,

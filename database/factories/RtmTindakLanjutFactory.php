@@ -12,9 +12,7 @@ use App\Models\RtmTindakLanjut;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RtmTindakLanjut>
- */
+
 class RtmTindakLanjutFactory extends Factory
 {
     protected $model = RtmTindakLanjut::class;
