@@ -154,8 +154,8 @@ class FilterKriteriaCountTest extends DuskTestCase
         $unit1InitialCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
         $unit2InitialCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
 
-        $this->assertEquals(3, $unit1InitialCount, 'Unit Testing 1 should have 3 findings initially');
-        $this->assertEquals(1, $unit2InitialCount, 'Unit Testing 2 should have 1 finding initially');
+        $this->assertEquals(3, $unit1InitialCount, 'Unit Testing 1 memiliki 3 temuan');
+        $this->assertEquals(1, $unit2InitialCount, 'Unit Testing 2 memiliki 1 temuan');
 
         $kriteriaPTK = $this->kriteria[0];
         $browser->click("label[for='kriteria_{$kriteriaPTK->id}']") 
@@ -166,8 +166,8 @@ class FilterKriteriaCountTest extends DuskTestCase
         $unit1FilteredCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
         $unit2FilteredCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
 
-        $this->assertEquals(1, $unit1FilteredCount, 'Unit Testing 1 should have 1 PTK finding');
-        $this->assertEquals(1, $unit2FilteredCount, 'Unit Testing 2 should have 1 PTK finding');
+        $this->assertEquals(1, $unit1FilteredCount, 'Unit Testing 1 memiliki 1 PTK temuan');
+        $this->assertEquals(1, $unit2FilteredCount, 'Unit Testing 2 memiliki 1 PTK temuan');
 
         $browser->clickLink('Reset')
                 ->waitForText('Rapat Tinjauan Manajemen', 30)
@@ -182,8 +182,8 @@ class FilterKriteriaCountTest extends DuskTestCase
         $unit1MultiFilterCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
         $unit2MultiFilterCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
 
-        $this->assertEquals(2, $unit1MultiFilterCount, 'Unit Testing 1 should have 2 findings with multiple filters');
-        $this->assertEquals(1, $unit2MultiFilterCount, 'Unit Testing 2 should have 1 finding with multiple filters');
+        $this->assertEquals(2, $unit1MultiFilterCount, 'Unit Testing 1 memiliki 2 temuan');
+        $this->assertEquals(1, $unit2MultiFilterCount, 'Unit Testing 2 memiliki 1 temuan');
     });
 }
 }

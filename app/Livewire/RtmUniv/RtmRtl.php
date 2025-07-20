@@ -206,6 +206,7 @@ class RtmRtl extends Component
         $this->rektorId = optional($rektor)->id;
         $this->ketuaLP3MId = optional($ketuaLP3M)->id;
     }
+    
 
     public function updatingSearch()
     {

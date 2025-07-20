@@ -21,12 +21,11 @@
                 <thead>
                     <tr>
                         <th class="text-center" style="width: 5%">No</th>
-                        <th class="text-center" style="width: 15%">Agenda</th>
+                        <th class="text-center" style="width: 20%">Agenda</th>
                         <th class="text-center" style="width: 15%">Tanggal</th>
                         <th class="text-center" style="width: 15%">Waktu</th>
                         <th class="text-center" style="width: 15%">Periode Audit</th>
-                        <th class="text-center" style="width: 10%">Lampiran</th>
-                        <th class="text-center" style="width: 10%">Tindak Lanjut Audit</th>
+                        <th class="text-center" style="width: 15%">Tindak Lanjut Audit</th>
                         <th class="text-center" style="width: 15%">Aksi</th>
                     </tr>
                 </thead>
@@ -42,21 +41,10 @@
                                 <td class="text-center">{{ Carbon::parse($item->jam_mulai)->translatedFormat('H:i') }} - {{ Carbon::parse($item->jam_selesai)->translatedFormat('H:i') }}</td>
                                 <td class="text-center">{{ $item->jadwal_audit->jadwal }}</td>
 
-
-                                {{-- Lampiran --}}
-                                <td class="text-center">
-                                    <button class="btn btn-outline-primary btn-sm btn-fixed-size lampiran-btn"
-                                            data-toggle="modal" data-target="#lampiranModal"
-                                            data-id="{{ $item->id }}">
-                                        +Lampiran
-                                    </button>
-                                </td>
-
                                 {{-- Tindak Lanjut RTM --}}
                                 <td class="text-center">
                                     <a href="{{ route('admin.rtm-rtl.show', $item->id) }}" class="btn btn-primary">Lihat RTL</a>
                                 </td>
-                            
 
                             {{-- Aksi --}}
                             <td class="text-center">
@@ -92,47 +80,6 @@
                     @endforeach
                 </tbody>
             </table>
-        </div>
-    </div>
-
-    <!-- Modal Lampiran -->
-    <div class="modal fade" id="lampiranModal" tabindex="-1" aria-labelledby="lampiranModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="lampiranModalLabel">Lampiran RTM</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="lampiranForm" method="POST" action="{{ route('admin.lampiran-rtm-univ.store') }}" enctype="multipart/form-data">
-                    @csrf
-                    <input type="hidden" name="rtm_jadwal_id" id="rtm_jadwal_id">
-
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="undangan" class="form-label">Upload File Undangan</label>
-                            <small class="form-text text-muted" style="margin: -10px 0 8px 0">Upload file pdf dengan ukuran maks. 2mb</small>
-                            <input type="file" class="form-control" id="undangan" name="undangan" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="presensi" class="form-label">Upload File Presensi</label>
-                            <small class="form-text text-muted" style="margin: -10px 0 8px 0">Upload file pdf dengan ukuran maks. 2mb</small>
-                            <input type="file" class="form-control" id="presensi" name="presensi" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="dokumentasi" class="form-label">Upload File Dokumentasi</label>
-                            <small class="form-text text-muted" style="margin: -10px 0 8px 0">Upload file pdf dengan ukuran maks. 5mb</small>
-                            <input type="file" class="form-control" id="dokumentasi" name="dokumentasi" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-primary" id="btnSimpan">
-                            <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            <span id="btnText"> Simpan</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
     </div>
 @endsection
@@ -186,108 +133,6 @@
                 "pageLength": 25,
                 "columnDefs": [
                 ]
-            });
-        });
-    </script>
-
-    <script>
-        $(document).ready(function() {
-            $('.lampiran-btn').click(function() {
-                let jadwalId = $(this).data('id');
-                $('#rtm_jadwal_id').val(jadwalId); // Update input rtm_jadwal_id
-                $('#lampiranModal').modal('show');
-            });
-
-            // Submit form lampiran
-            $('#lampiranForm').submit(function(event) {
-                event.preventDefault();
-                
-                let $form = $(this);
-                let formData = new FormData($form[0]);
-                
-                // Debug: Log form data
-                for (var pair of formData.entries()) {
-                    console.log(pair[0] + ': ' + pair[1]); 
-                }
-                
-                // Tampilkan loading state
-                $form.find('#btnSimpan').prop('disabled', true);
-                $form.find('#spinner').removeClass('d-none');
-                $form.find('#btnText').text(' Menyimpan...');
-
-                $.ajax({
-                    url: $form.attr('action'),
-                    method: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        console.log('Success Response:', response);
-                        
-                        // Tutup modal terlebih dahulu
-                        $('#lampiranModal').modal('hide');
-                        
-                        // Tampilkan SweetAlert
-                        Swal.fire({
-                            icon: 'success',
-                            title: response.message || 'Lampiran berhasil disimpan!',
-                            showConfirmButton: false,
-                            timer: 1500
-                        }).then(() => {
-                            // Refresh halaman setelah alert
-                            window.location.reload();
-                        });
-                    },
-                    error: function(xhr) {
-                        console.log('Error Response:', xhr.responseJSON);
-                        
-                        // Tampilkan error sesuai response
-                        let errorMessage = 'Terjadi kesalahan saat menyimpan';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                            errorMessage = Object.values(xhr.responseJSON.errors).join('<br>');
-                        }
-                        
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            html: errorMessage,
-                            confirmButtonText: 'Tutup'
-                        });
-                        
-                        // Reset button state
-                        $form.find('#btnSimpan').prop('disabled', false);
-                        $form.find('#spinner').addClass('d-none');
-                        $form.find('#btnText').text('Simpan');
-                    },
-                    complete: function() {
-                        console.log('Request completed');
-                    }
-                });
-            });
-
-            $('.form-control').on('input', function() {
-                    let lampiranData = {
-                        undangan: $('#undangan').val(),
-                        presensi: $('#presensi').val(),
-                        dokumentasi: $('#dokumentasi').val()
-                    };
-                    localStorage.setItem('lampiranDraft', JSON.stringify(lampiranData));
-            });
-
-            $('#lampiranModal').on('show.bs.modal', function() {
-                let draft = localStorage.getItem('lampiranDraft');
-                if (draft) {
-                    draft = JSON.parse(draft);
-                    $('#undangan').val(draft.undangan);
-                    $('#presensi').val(draft.presensi);
-                    $('#dokumentasi').val(draft.dokumentasi);
-                }
-            });
-
-            $('#lampiranForm').submit(function() {
-                localStorage.removeItem('lampiranDraft');
             });
         });
     </script>

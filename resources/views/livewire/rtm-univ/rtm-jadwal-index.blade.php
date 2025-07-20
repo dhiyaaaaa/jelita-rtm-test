@@ -28,12 +28,11 @@
                 <thead>
                     <tr>
                         <th class="text-center" style="width: 5%">No</th>
-                        <th class="text-center" style="width: 15%">Agenda</th>
+                        <th class="text-center" style="width: 20%">Agenda</th>
                         <th class="text-center" style="width: 15%">Tanggal</th>
                         <th class="text-center" style="width: 15%">Waktu</th>
                         <th class="text-center" style="width: 15%">Periode Audit</th>
-                        <th class="text-center" style="width: 10%">Lampiran</th>
-                        <th class="text-center" style="width: 10%">Tindak Lanjut Audit</th>
+                        <th class="text-center" style="width: 15%">Tindak Lanjut Audit</th>
                         <th class="text-center" style="width: 15%">Aksi</th>
                     </tr>
                 </thead>
@@ -45,14 +44,6 @@
                             <td class="text-center">{{ Carbon::parse($item->tanggal)->translatedFormat('l, j F Y') }}</td>
                             <td class="text-center">{{ Carbon::parse($item->jam_mulai)->translatedFormat('H:i') }} - {{ Carbon::parse($item->jam_selesai)->translatedFormat('H:i') }}</td>
                             <td class="text-center">{{ $item->jadwal_audit->jadwal }}</td>
-
-                            {{-- Lampiran --}}
-                            <td class="text-center">
-                                <button class="btn btn-outline-primary btn-sm btn-fixed-size lampiran-btn"
-                                        wire:click="openLampiranModal('{{ $item->id }}')">
-                                    +Lampiran
-                                </button>
-                            </td>
 
                             {{-- Tindak Lanjut RTM --}}
                             <td class="text-center">
@@ -102,91 +93,4 @@
             </div>
         </div>
     </div>
-
-    <div class="modal fade" id="livewireLampiranModal" tabindex="-1" aria-labelledby="lampiranModalLabel" aria-hidden="true"
-        wire:ignore.self>
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="lampiranModalLabel">Lampiran RTM</h5>
-                    <button type="button" class="close" wire:click="closeLampiranModal" aria-label="Close"></button>
-                </div>
-                {{-- Gunakan wire:submit.prevent untuk mengirim form melalui Livewire --}}
-                <form wire:submit.prevent="saveLampiran">
-                    <div class="modal-body">
-                        <input type="hidden" wire:model="rtmJadwalId"> {{-- Tidak perlu name di sini --}}
-
-                        <div class="mb-3">
-                            <label for="undangan" class="form-label">Upload File Undangan</label>
-                            <small class="form-text text-muted" style="margin: -10px 0 8px 0">Upload file pdf dengan ukuran maks. 2mb</small>
-                            <input type="file" class="form-control @error('undangan') is-invalid @enderror" id="undangan" wire:model="undangan">
-                            @error('undangan') <span class="text-danger">{{ $message }}</span> @enderror
-                            <div wire:loading wire:target="undangan">Mengunggah Undangan...</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="presensi" class="form-label">Upload File Presensi</label>
-                            <small class="form-text text-muted" style="margin: -10px 0 8px 0">Upload file pdf dengan ukuran maks. 2mb</small>
-                            <input type="file" class="form-control @error('presensi') is-invalid @enderror" id="presensi" wire:model="presensi">
-                            @error('presensi') <span class="text-danger">{{ $message }}</span> @enderror
-                            <div wire:loading wire:target="presensi">Mengunggah Presensi...</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="dokumentasi" class="form-label">Upload File Dokumentasi</label>
-                            <small class="form-text text-muted" style="margin: -10px 0 8px 0">Upload file pdf dengan ukuran maks. 5mb</small>
-                            <input type="file" class="form-control @error('dokumentasi') is-invalid @enderror" id="dokumentasi" wire:model="dokumentasi">
-                            @error('dokumentasi') <span class="text-danger">{{ $message }}</span> @enderror
-                            <div wire:loading wire:target="dokumentasi">Mengunggah Dokumentasi...</div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" wire:click="closeLampiranModal">Tutup</button>
-                        <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="saveLampiran, undangan, presensi, dokumentasi">
-                            <span wire:loading wire:target="saveLampiran, undangan, presensi, dokumentasi" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            <span wire:loading.remove wire:target="saveLampiran, undangan, presensi, dokumentasi">Simpan</span>
-                            <span wire:loading wire:target="saveLampiran, undangan, presensi, dokumentasi">Menyimpan...</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    @push('scripts')
-       
-        <script>
-            document.addEventListener('livewire:initialized', () => {
-                Livewire.on('swal:modal', (event) => {
-                    Swal.fire({
-                        icon: event[0].icon,
-                        title: event[0].title,
-                        text: event[0].text,
-                        showConfirmButton: event[0].showConfirmButton !== undefined ? event[0].showConfirmButton : true,
-                        timer: event[0].timer || null
-                    });
-                });
-
-                Livewire.on('show-modal', () => {
-                    $('#livewireLampiranModal').modal('show');
-                });
-
-                Livewire.on('hide-modal', () => {
-                    $('#livewireLampiranModal').modal('hide');
-                });
-
-                // Event listener untuk memastikan modal tampil/sembunyi dengan benar
-                Livewire.hook('element.init', ({ component, el }) => {
-                    if (el.id === 'livewireLampiranModal') {
-                        $(el).on('show.bs.modal', function() {
-                            component.set('showLampiranModal', true);
-                        });
-                        $(el).on('hide.bs.modal', function() {
-                            component.set('showLampiranModal', false);
-                        });
-                    }
-                });
-
-                
-            });
-        </script>
-    @endpush
 </div>

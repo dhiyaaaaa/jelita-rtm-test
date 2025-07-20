@@ -47,7 +47,7 @@ class SearchPaginasiUnitTest extends DuskTestCase
                 ->pause(1000)
                 ->assertSee('Fakultas Teknik')
                 ->assertDontSee('Fakultas Ekonomi')
-                ->assertDontSee('Unit IT')
+                ->assertDontSee('Unit Lp3m')
 
                 ->type('@search-input', 'Tidak Ada')
                 ->click('@search-button')
@@ -64,33 +64,33 @@ class SearchPaginasiUnitTest extends DuskTestCase
     }
 
     public function testPaginasiUnit()
-{
-    $rtmJadwal = RtmJadwal::factory()->create();
-    $fakultas = Fakultas::factory()->count(15)->create();
-    $units = Unit::factory()->count(15)->create();
+    {
+        $rtmJadwal = RtmJadwal::factory()->create();
+        $fakultas = Fakultas::factory()->count(15)->create();
+        $units = Unit::factory()->count(15)->create();
 
-    $this->browse(function (Browser $browser) use ($rtmJadwal) {
-        $browser->loginAs($this->adminUser)
-            ->visit(route('admin.rtm-rtl.show', $rtmJadwal->id))
-            ->waitForText('Rapat Tinjauan Manajemen', 60)
-            ->pause(2000)
+        $this->browse(function (Browser $browser) use ($rtmJadwal) {
+            $browser->loginAs($this->adminUser)
+                ->visit(route('admin.rtm-rtl.show', $rtmJadwal->id))
+                ->waitForText('Rapat Tinjauan Manajemen', 60)
+                ->pause(2000)
 
-            // halaman 1
-            ->assertPresent('[dusk="pagination"]')
-            ->pause(1000)
-            ->screenshot('pagination-page-1')
-            ->assertSee('Menampilkan 1 - 10 dari')
-            
-            // ke halaman 2
-            ->click('@pagination-next')
-            ->pause(1000)
-            ->assertSee('Menampilkan 11 - 20 dari')
-            ->screenshot('pagination-page-2')
-            
-            //kembali ke halaman 1
-            ->click('[dusk="pagination-page-1"]')
-            ->pause(1000)
-            ->assertSee('Menampilkan 1 - 10 dari');
-    });        
-}
+                // halaman 1
+                ->assertPresent('[dusk="pagination"]')
+                ->pause(1000)
+                ->screenshot('pagination-page-1')
+                ->assertSee('Menampilkan 1 - 10 dari')
+                
+                // ke halaman 2
+                ->click('@pagination-next')
+                ->pause(1000)
+                ->assertSee('Menampilkan 11 - 20 dari')
+                ->screenshot('pagination-page-2')
+                
+                //kembali ke halaman 1
+                ->click('[dusk="pagination-page-1"]')
+                ->pause(1000)
+                ->assertSee('Menampilkan 1 - 10 dari');
+        });        
+    }
 }

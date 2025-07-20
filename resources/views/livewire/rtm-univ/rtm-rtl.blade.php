@@ -153,7 +153,7 @@
                                 <input type="checkbox"
                                     class="custom-control-input"
                                     id="kriteria_{{ $kriteria->id }}"
-                                    wire:model.live="selectedKriteria" {{-- Gunakan .live untuk update real-time --}}
+                                    wire:model.live="selectedKriteria" 
                                     value="{{ $kriteria->id }}">
                                 <label class="custom-control-label" for="kriteria_{{ $kriteria->id }}">
                                     {{ $kriteria->nama }}
@@ -191,11 +191,7 @@
                         <tr class="text-center" wire:key="unit-{{ $item->id }}" dusk="unit-row-{{ $item->id }}">
                             <td>{{ $loop->iteration + ($units->currentPage() - 1) * $units->perPage() }}</td> {{-- Hitung nomor urut dengan paginasi --}}
                             <td>
-                                @if($item->jenis_unit === 'fakultas')
-                                    Fakultas {{ $item->nama }}
-                                @else
-                                    {{ $item->nama }}
-                                @endif
+                                {{ $item->nama }}
                             </td>
                             <td>
                                 @if($item->rtm_rtl_id)
@@ -235,10 +231,20 @@
                             </td>
                         </tr>
                     @endforeach
+                    @if($units->isEmpty())
+                        <tr>
+                            <td colspan="6" class="text-center">Tidak ada data yang ditemukan</td>
+                        </tr>
+                    @endif
                 </tbody>
             </table>
-            <div class="mt-4" dusk="pagination">
-                {{ $units->links() }}
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    Menampilkan {{ $units->firstItem() }} - {{ $units->lastItem() }} dari {{ $units->total() }} entri
+                </div>
+                <nav class="mt-4" dusk="pagination">
+                    {{ $units->onEachSide(1)->links('pagination::bootstrap-4') }}
+                </nav>
             </div>
         </div>
     </div>
