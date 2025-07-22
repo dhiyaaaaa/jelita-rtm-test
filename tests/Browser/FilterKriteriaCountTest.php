@@ -16,7 +16,6 @@ use App\Models\RtmRtl;
 use App\Models\RtmTindakLanjut;
 use App\Models\Unit;
 use App\Models\User;
-use Facebook\WebDriver\WebDriverBy;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
@@ -138,52 +137,52 @@ class FilterKriteriaCountTest extends DuskTestCase
     }
 
     public function testFilterDanHitungTemuanBerdasarkanKriteria()
-{
-    $this->browse(function (Browser $browser) {
-        $browser->loginAs($this->adminUser)
-            ->visit(route('admin.rtm-rtl.show', ['rtmJadwal' => $this->rtmJadwal->id]))
-            ->waitForText('Rapat Tinjauan Manajemen', 60)
-            ->pause(2000);
-
-        $unit1RowSelector = "@unit-row-{$this->units[0]->id}";
-        $unit2RowSelector = "@unit-row-{$this->units[1]->id}";
-
-        $browser->waitFor($unit1RowSelector)
-                ->waitFor($unit2RowSelector);
-
-        $unit1InitialCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
-        $unit2InitialCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
-
-        $this->assertEquals(3, $unit1InitialCount, 'Unit Testing 1 memiliki 3 temuan');
-        $this->assertEquals(1, $unit2InitialCount, 'Unit Testing 2 memiliki 1 temuan');
-
-        $kriteriaPTK = $this->kriteria[0];
-        $browser->click("label[for='kriteria_{$kriteriaPTK->id}']") 
-                ->press('Terapkan Filter')
-                ->waitForText('Rapat Tinjauan Manajemen', 30)
-                ->pause(3000);
-
-        $unit1FilteredCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
-        $unit2FilteredCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
-
-        $this->assertEquals(1, $unit1FilteredCount, 'Unit Testing 1 memiliki 1 PTK temuan');
-        $this->assertEquals(1, $unit2FilteredCount, 'Unit Testing 2 memiliki 1 PTK temuan');
-
-        $browser->clickLink('Reset')
-                ->waitForText('Rapat Tinjauan Manajemen', 30)
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->loginAs($this->adminUser)
+                ->visit(route('admin.rtm-rtl.show', ['rtmJadwal' => $this->rtmJadwal->id]))
+                ->waitForText('Rapat Tinjauan Manajemen', 60)
                 ->pause(2000);
 
-        $browser->click("label[for='kriteria_{$this->kriteria[0]->id}']")
-                ->click("label[for='kriteria_{$this->kriteria[1]->id}']")
-                ->press('Terapkan Filter')
-                ->waitForText('Rapat Tinjauan Manajemen', 30)
-                ->pause(3000);
+            $unit1RowSelector = "@unit-row-{$this->units[0]->id}";
+            $unit2RowSelector = "@unit-row-{$this->units[1]->id}";
 
-        $unit1MultiFilterCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
-        $unit2MultiFilterCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
+            $browser->waitFor($unit1RowSelector)
+                    ->waitFor($unit2RowSelector);
 
-        $this->assertEquals(2, $unit1MultiFilterCount, 'Unit Testing 1 memiliki 2 temuan');
-        $this->assertEquals(1, $unit2MultiFilterCount, 'Unit Testing 2 memiliki 1 temuan');
-    });
-}
+            $unit1InitialCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
+            $unit2InitialCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
+
+            $this->assertEquals(3, $unit1InitialCount, 'Unit Testing 1 memiliki 3 temuan');
+            $this->assertEquals(1, $unit2InitialCount, 'Unit Testing 2 memiliki 1 temuan');
+
+            $kriteriaPTK = $this->kriteria[0];
+            $browser->click("label[for='kriteria_{$kriteriaPTK->id}']") 
+                    ->press('Terapkan Filter')
+                    ->waitForText('Rapat Tinjauan Manajemen', 30)
+                    ->pause(3000);
+
+            $unit1FilteredCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
+            $unit2FilteredCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
+
+            $this->assertEquals(1, $unit1FilteredCount, 'Unit Testing 1 memiliki 1 PTK temuan');
+            $this->assertEquals(1, $unit2FilteredCount, 'Unit Testing 2 memiliki 1 PTK temuan');
+
+            $browser->clickLink('Reset')
+                    ->waitForText('Rapat Tinjauan Manajemen', 30)
+                    ->pause(2000);
+
+            $browser->click("label[for='kriteria_{$this->kriteria[0]->id}']")
+                    ->click("label[for='kriteria_{$this->kriteria[1]->id}']")
+                    ->press('Terapkan Filter')
+                    ->waitForText('Rapat Tinjauan Manajemen', 30)
+                    ->pause(3000);
+
+            $unit1MultiFilterCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
+            $unit2MultiFilterCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
+
+            $this->assertEquals(2, $unit1MultiFilterCount, 'Unit Testing 1 memiliki 2 temuan');
+            $this->assertEquals(1, $unit2MultiFilterCount, 'Unit Testing 2 memiliki 1 temuan');
+        });
+    }
 }

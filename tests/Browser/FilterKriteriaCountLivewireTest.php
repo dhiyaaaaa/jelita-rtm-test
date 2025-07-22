@@ -139,15 +139,15 @@ class FilterKriteriaCountLivewireTest extends DuskTestCase
     {
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->adminUser)
-                ->visit(route('admin.rtm-rtl-univ.show-livewire', ['rtmJadwalId' => $this->rtmJadwal->id]))
-                ->waitForText('Rapat Tinjauan Manajemen', 60)
-                ->pause(2000);
+                    ->visit(route('admin.rtm-rtl-univ.show-livewire', ['rtmJadwalId' => $this->rtmJadwal->id]))
+                    ->waitForText('Rapat Tinjauan Manajemen', 60)
+                    ->pause(2000);
                 
             $unit1RowSelector = "[dusk='unit-row-{$this->units[0]->id}']";
             $unit2RowSelector = "[dusk='unit-row-{$this->units[1]->id}']";
 
             $browser->waitFor($unit1RowSelector, 60)
-                ->waitFor($unit2RowSelector, 60);
+                    ->waitFor($unit2RowSelector, 60);
 
             $unit1InitialCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
             $unit2InitialCount = (int)$browser->text("{$unit2RowSelector} td:nth-child(4) span");
@@ -157,7 +157,6 @@ class FilterKriteriaCountLivewireTest extends DuskTestCase
 
             $kriteriaPTK = $this->kriteria[0];
             $browser->click("label[for='kriteria_{$kriteriaPTK->id}']")
-                    
                     ->waitForTextIn("{$unit1RowSelector} td:nth-child(4) span", '1', 30);
 
             $unit1FilteredCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");
@@ -167,13 +166,10 @@ class FilterKriteriaCountLivewireTest extends DuskTestCase
             $this->assertEquals(1, $unit2FilteredCount, 'Unit Testing 2 memiliki 1 temuan setelah filter Kriteria PTK');
 
             $browser->press('Reset Filter')
-                
                 ->waitForTextIn("{$unit1RowSelector} td:nth-child(4) span", '3', 30);
 
             $browser->click("label[for='kriteria_{$this->kriteria[0]->id}']")
-                
                 ->click("label[for='kriteria_{$this->kriteria[1]->id}']")
-                
                 ->waitForTextIn("{$unit1RowSelector} td:nth-child(4) span", '2', 30);
 
             $unit1MultiFilterCount = (int)$browser->text("{$unit1RowSelector} td:nth-child(4) span");

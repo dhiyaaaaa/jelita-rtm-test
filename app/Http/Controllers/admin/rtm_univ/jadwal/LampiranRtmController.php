@@ -48,12 +48,4 @@ class LampiranRtmController extends Controller
         );
             return redirect()->back()->with('success', 'Lampiran berhasil disimpan.');
     }
-
-    public function edit($rtmJadwal)
-    {
-        $lampiran = RtmLampiran::where('rtm_jadwal_id', $rtmJadwal)->first();
-
-        return response()->json($lampiran ? $lampiran : null);
-    }
-
 }

@@ -82,11 +82,13 @@
                         </label>
                         <div class="input-group">
                             <input type="file" class="form-control" id="undangan" name="undangan" required dusk="input-undangan">
-                            <a href="{{ Storage::url($lampiran->undangan) }}"
-                                target="_blank"
-                                class="input-group-text text-decoration-none">
-                                <i class="fas fa-eye"></i> Lihat
-                            </a>
+                            @if ($lampiran->undangan)
+                                <a href="{{ Storage::url($lampiran->undangan) }}"
+                                    target="_blank"
+                                    class="input-group-text text-decoration-none">
+                                    <i class="fas fa-eye"></i> Lihat
+                                </a>
+                            @endif
                         </div>
                     </div>
                     <div class="mb-4">
@@ -95,11 +97,13 @@
                         </label>
                         <div class="input-group">
                             <input type="file" class="form-control" id="presensi" name="presensi" required dusk="input-presensi">
-                            <a href="{{ Storage::url($lampiran->presensi) }}"
-                                target="_blank"
-                                class="input-group-text text-decoration-none">
-                                <i class="fas fa-eye"></i> Lihat
-                            </a>
+                            @if ($lampiran->presensi)
+                                <a href="{{ Storage::url($lampiran->presensi) }}"
+                                    target="_blank"
+                                    class="input-group-text text-decoration-none">
+                                    <i class="fas fa-eye"></i> Lihat
+                                </a>
+                            @endif
                         </div>
                     </div>
                     <div class="mb-4">
@@ -108,11 +112,13 @@
                         </label>
                         <div class="input-group">
                             <input type="file" class="form-control" id="dokumentasi" name="dokumentasi" required dusk="input-dokumentasi">
-                            <a href="{{ Storage::url($lampiran->dokumentasi) }}"
-                                target="_blank"
-                                class="input-group-text text-decoration-none">
-                                <i class="fas fa-eye"></i> Lihat
-                            </a>
+                            @if ($lampiran->dokumentasi)
+                                <a href="{{ Storage::url($lampiran->dokumentasi) }}"
+                                    target="_blank"
+                                    class="input-group-text text-decoration-none">
+                                    <i class="fas fa-eye"></i> Lihat
+                                </a>
+                            @endif
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary">Simpan</button>
